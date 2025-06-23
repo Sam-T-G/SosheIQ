@@ -52,12 +52,17 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	return (
 		// Root div now flex-grow to take available space in its parent flex column
 		<div className="w-full flex-grow min-h-0 flex flex-col items-center">
-			{/* Image container: mb-2 removed */}
-			<div
-				className="w-full flex-grow rounded-lg bg-slate-700 flex items-center justify-center overflow-hidden shadow-xl relative 
-                      max-h-[calc(85vh_-_200px)] md:max-h-full aspect-[4/3] md:aspect-auto">
+			{/* 
+        Image container: 
+        - Changed from 'min-h-[40vh]' to 'h-[55vh]' for mobile to give more vertical space.
+        - 'md:h-auto' ensures desktop height is determined by flex layout and 'md:max-h-full'.
+        - 'flex-grow' allows it to take more space if parent provides it, beyond the h-[55vh].
+      */}
+			<div className="w-full h-[55vh] md:h-auto flex-grow md:min-h-0 md:max-h-full rounded-lg flex items-center justify-center overflow-hidden shadow-xl relative">
 				{showPlaceholder ? (
-					<div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-700">
+					<div className="w-full h-full flex items-center justify-center text-slate-500">
+						{" "}
+						{/* Removed bg-slate-700 from here, placeholder is transparent to parent now */}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							className="h-1/3 w-1/3 opacity-50 animate-pulse"
@@ -79,7 +84,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								key={`displayed-${displayedImage.substring(0, 20)}`}
 								src={`data:image/jpeg;base64,${displayedImage}`}
 								alt="AI's current visual cue"
-								className="absolute inset-0 w-full h-full object-contain"
+								className="absolute inset-0 w-full h-full object-cover"
 								style={{
 									opacity: incomingImage && isAnimating ? 0 : 1,
 									transition:
@@ -94,7 +99,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								key={`incoming-${incomingImage.substring(0, 20)}`}
 								src={`data:image/jpeg;base64,${incomingImage}`}
 								alt="AI's new visual cue"
-								className="absolute inset-0 w-full h-full object-contain animate-image-cross-fade-in"
+								className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in"
 								onAnimationEnd={handleAnimationEnd}
 							/>
 						)}

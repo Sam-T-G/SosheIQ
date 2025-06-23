@@ -43,15 +43,12 @@ const HomePage: React.FC = () => {
 	const geminiService = useRef<GeminiService | null>(null);
 	const imagenService = useRef<ImagenService | null>(null);
 
-	const [appLoadAnimationPlayed, setAppLoadAnimationPlayed] = useState(false);
-	const [contentDisplayClass, setContentDisplayClass] = useState("opacity-0");
+	// Removed appLoadAnimationPlayed and contentDisplayClass states
 
 	const [showHelpOverlay, setShowHelpOverlay] = useState(false);
 	const [showQuickTipsOverlay, setShowQuickTipsOverlay] = useState(false);
 	const [showConfirmEndDialog, setShowConfirmEndDialog] = useState(false);
 	const [showGlobalAiThoughts, setShowGlobalAiThoughts] = useState(false);
-
-	// engagementChangedVisualTrigger state removed
 
 	useEffect(() => {
 		const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -59,18 +56,13 @@ const HomePage: React.FC = () => {
 			setError(
 				"API key is missing. Please set NEXT_PUBLIC_API_KEY environment variable."
 			);
-			setIsLoading(false); // Stop general loading if API key is missing
+			setIsLoading(false);
 			return;
 		}
 		geminiService.current = new GeminiService(apiKey);
 		imagenService.current = new ImagenService(apiKey);
 
-		setTimeout(() => {
-			setAppLoadAnimationPlayed(true);
-			setContentDisplayClass(
-				"opacity-100 transition-opacity duration-1000 ease-in-out"
-			);
-		}, 100);
+		// Logic for appLoadAnimationPlayed and contentDisplayClass removed
 	}, []);
 
 	const handleNavigate = useCallback((phase: GamePhase) => {
@@ -93,7 +85,7 @@ const HomePage: React.FC = () => {
 				setError("Services not initialized.");
 				return;
 			}
-			setIsLoading(true); // For initial setup and AI first turn
+			setIsLoading(true);
 			setError(null);
 			setScenarioDetails(details);
 			setConversationHistory([]);
@@ -101,7 +93,6 @@ const HomePage: React.FC = () => {
 			setZeroEngagementStreak(0);
 			setAnalysisReport(null);
 			setCurrentAIImage(null);
-			// engagementChangedVisualTrigger reset removed
 
 			try {
 				const {
@@ -123,7 +114,6 @@ const HomePage: React.FC = () => {
 				};
 				setConversationHistory([firstMessage]);
 				setCurrentEngagement(initialEngagementScore);
-				// engagementChangedVisualTrigger increment removed
 
 				const { fullImagenPrompt, newEstablishedVisualSegment } =
 					await geminiService.current.generateImagePromptForBodyLanguage(
@@ -134,7 +124,6 @@ const HomePage: React.FC = () => {
 						details.aiEstablishedVisualPromptSegment
 					);
 				if (newEstablishedVisualSegment && details) {
-					// Check details again due to closure
 					setScenarioDetails((prev) =>
 						prev
 							? {
@@ -185,8 +174,8 @@ const HomePage: React.FC = () => {
 			const thinkingMessage: ChatMessage = {
 				id: uuidv4(),
 				sender: "ai",
-				text: "", // No text, signifies thinking
-				timestamp: new Date(userMessage.timestamp.getTime() + 1), // Ensure it's after user message
+				text: "",
+				timestamp: new Date(userMessage.timestamp.getTime() + 1),
 				isThinkingBubble: true,
 			};
 
@@ -195,7 +184,6 @@ const HomePage: React.FC = () => {
 			setError(null);
 
 			try {
-				// Pass history *before* thinking bubble for AI context, but *after* user message
 				const historyForAI = conversationHistory.filter(
 					(m) => !m.isThinkingBubble
 				);
@@ -216,7 +204,6 @@ const HomePage: React.FC = () => {
 					conversationMomentum: aiResponse.conversationMomentum,
 				};
 
-				// Replace thinking bubble with actual AI message
 				setConversationHistory((prev) => {
 					const newHistory = prev.filter((m) => !m.isThinkingBubble);
 					return [...newHistory, aiMessage];
@@ -226,7 +213,6 @@ const HomePage: React.FC = () => {
 				newEngagementValue -= ENGAGEMENT_DECAY_PER_TURN;
 				newEngagementValue = Math.max(0, Math.min(100, newEngagementValue));
 				setCurrentEngagement(newEngagementValue);
-				// engagementChangedVisualTrigger increment removed
 
 				if (newEngagementValue <= 0) {
 					setZeroEngagementStreak((prev) => prev + 1);
@@ -271,9 +257,6 @@ const HomePage: React.FC = () => {
 					);
 				}
 
-				// Check for conversation end conditions *after* AI message is fully processed and history updated
-				// The `zeroEngagementStreak` used here is the state *before* this turn's update.
-				// We check `zeroEngagementStreak + 1` if `newEngagementValue <= 0` to see if this turn *makes* it hit the streak.
 				const currentTurnZeroStreak =
 					newEngagementValue <= 0 ? zeroEngagementStreak + 1 : 0;
 
@@ -296,7 +279,7 @@ const HomePage: React.FC = () => {
 					timestamp: new Date(),
 				};
 				setConversationHistory((prev) => {
-					const newHistory = prev.filter((m) => !m.isThinkingBubble); // Clear thinking bubble
+					const newHistory = prev.filter((m) => !m.isThinkingBubble);
 					return [...newHistory, errorMessageContent];
 				});
 			} finally {
@@ -325,11 +308,10 @@ const HomePage: React.FC = () => {
 			setIsLoading(true);
 			setError(null);
 
-			// Ensure no thinking bubble carries over to analysis
 			const historyForAnalysis = conversationHistory.filter(
 				(m) => !m.isThinkingBubble
 			);
-			setConversationHistory(historyForAnalysis); // Update state to reflect this cleaning
+			setConversationHistory(historyForAnalysis);
 
 			setCurrentPhase(GamePhase.ANALYSIS);
 
@@ -361,7 +343,6 @@ const HomePage: React.FC = () => {
 		setError(null);
 		setCurrentAIImage(null);
 		setShowGlobalAiThoughts(false);
-		// engagementChangedVisualTrigger reset removed
 	}, []);
 
 	const handleToggleHelpOverlay = () => setShowHelpOverlay((prev) => !prev);
@@ -374,15 +355,14 @@ const HomePage: React.FC = () => {
 	};
 
 	const handleAttemptEndConversation = () => {
-		// Check using currentEngagement and zeroEngagementStreak state
 		if (
 			currentEngagement >= 100 ||
 			(currentEngagement <= 0 &&
 				zeroEngagementStreak >= MAX_ZERO_ENGAGEMENT_STREAK)
 		) {
-			handleEndConversation(true); // AI effectively initiated or conditions met
+			handleEndConversation(true);
 		} else {
-			handleEndConversation(false); // User initiated
+			handleEndConversation(false);
 		}
 	};
 
@@ -448,7 +428,6 @@ const HomePage: React.FC = () => {
 						onToggleGlobalAiThoughts={() =>
 							setShowGlobalAiThoughts((prev) => !prev)
 						}
-						// engagementChangedVisualTrigger prop removed
 					/>
 				);
 			case GamePhase.ANALYSIS:
@@ -482,10 +461,8 @@ const HomePage: React.FC = () => {
 				<link rel="icon" href="/logo.svg" />
 			</Head>
 
-			<div
-				className={`flex flex-col min-h-screen bg-slate-900 text-gray-100 ${
-					appLoadAnimationPlayed ? "" : "opacity-0"
-				}`}>
+			{/* Outermost div now visible by default */}
+			<div className="flex flex-col min-h-screen bg-slate-900 text-gray-100">
 				<Header
 					onLogoClick={() => {
 						if (currentPhase === GamePhase.INTERACTION) {
@@ -497,8 +474,9 @@ const HomePage: React.FC = () => {
 					onToggleQuickTips={handleToggleQuickTipsOverlay}
 				/>
 
+				{/* Main content area gets a quick, direct fade-in */}
 				<main
-					className={`flex-grow flex flex-col items-center p-4 md:p-6 ${contentDisplayClass} ${
+					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] ${
 						currentPhase === GamePhase.HERO ? "justify-center" : ""
 					}`}>
 					{renderContent()}

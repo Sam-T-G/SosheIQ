@@ -161,7 +161,7 @@ export class GeminiService {
     let newSegmentForReturn: string | null = null;
 
     if (!existingEstablishedVisualSegment) {
-      const createdBaseSegment = `Photorealistic portrait of a ${ageVisualCue} ${genderTerm} named "${aiName}", wearing simple neutral-colored attire (like a dark gray t-shirt or simple blue sweater). The background is simple and neutral, slightly out of focus, with soft natural lighting. The shot is typically chest-up. ${noTextLogosInstructionGlobal}`;
+      const createdBaseSegment = `Photorealistic portrait of a ${ageVisualCue} ${genderTerm} who embodies the character ${aiName}, wearing simple neutral-colored attire (like a dark gray t-shirt or simple blue sweater). The background is simple and neutral, slightly out of focus, with soft natural lighting. The shot is typically chest-up. ${noTextLogosInstructionGlobal}`;
       currentEstablishedVisualBase = createdBaseSegment;
       newSegmentForReturn = this.cleanAiDialogue(createdBaseSegment);
     } else {
@@ -169,7 +169,7 @@ export class GeminiService {
     }
     
     const baseWithoutNoText = currentEstablishedVisualBase
-        .replace(noTextLogosInstructionGlobal, '')
+        .replace(noTextLogosInstructionGlobal, '') 
         .replace(/\.\s*$/, '') 
         .trim();
     
