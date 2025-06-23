@@ -1,0 +1,416 @@
+
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, PowerDynamic, AIPersonality, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
+import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
+
+// Helper to construct a more informative error message from Google API errors
+const getGoogleApiErrorMessage = (error: any, defaultMessage: string): string => {
+  if (error && typeof error === 'object' && error.error && typeof error.error === 'object') {
+    const apiError = error.error;
+    let message = apiError.message || defaultMessage;
+    if (apiError.code === 429 || apiError.status === 'RESOURCE_EXHAUSTED') {
+      message = `API quota exceeded (Error ${apiError.code || '429'}: ${apiError.status || 'RESOURCE_EXHAUSTED'}). Please check your Google Cloud project plan and billing details. For more information, visit https://ai.google.dev/gemini-api/docs/rate-limits. Original message: ${apiError.message || 'No specific message.'}`;
+    } else if (apiError.message) {
+      message = `API Error ${apiError.code || 'Unknown Code'} (${apiError.status || 'Unknown Status'}): ${apiError.message}`;
+    }
+    return message;
+  }
+  return error instanceof Error ? error.message : defaultMessage;
+};
+
+// Helper to get text description for LLM prompts based on age bracket
+const getAgeDescriptionForLLM = (ageBracket?: AIAgeBracket): string => {
+  if (!ageBracket || ageBracket === AIAgeBracket.NOT_SPECIFIED) return "Not specified. Assume a general adult age unless context implies otherwise. Adapt naturally.";
+  switch (ageBracket) {
+    case AIAgeBracket.TEENAGER: return "Teenager (e.g., around 13-17 years old). Your vocabulary, concerns, and social understanding should reflect this age group.";
+    case AIAgeBracket.YOUNG_ADULT: return "Young Adult (e.g., around 18-29 years old). Your experiences and perspectives should align with this life stage.";
+    case AIAgeBracket.ADULT: return "Adult (e.g., around 30-55 years old). Portray maturity and life experiences typical of this age range.";
+    case AIAgeBracket.SENIOR: return "Senior (e.g., 55+ years old). Your demeanor, references, and pace might reflect this age group.";
+    default: return "Not specified. Assume a general adult age.";
+  }
+};
+
+// Helper to get visual description for Imagen prompts based on age bracket
+const getAgeVisualDescriptionForImagen = (ageBracket?: AIAgeBracket): string => {
+    if (!ageBracket || ageBracket === AIAgeBracket.NOT_SPECIFIED) return "adult"; // Default visual age
+    switch (ageBracket) {
+        case AIAgeBracket.TEENAGER: return "teenage";
+        case AIAgeBracket.YOUNG_ADULT: return "young adult";
+        case AIAgeBracket.ADULT: return "adult";
+        case AIAgeBracket.SENIOR: return "senior citizen, elderly, mature looking";
+        default: return "adult";
+    }
+};
+
+export class GeminiService {
+  private ai: GoogleGenAI;
+
+  constructor(apiKey: string) {
+    this.ai = new GoogleGenAI({ apiKey });
+  }
+
+  private parseJsonFromText<T,>(text: string): T | null {
+    let jsonStr = text.trim();
+    const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
+    const match = jsonStr.match(fenceRegex);
+    if (match && match[2]) {
+      jsonStr = match[2].trim();
+    }
+    try {
+      return JSON.parse(jsonStr) as T;
+    } catch (e) {
+      console.error("Failed to parse JSON response:", e, "Attempted to parse:", jsonStr, "Original text from API:", text);
+      return null;
+    }
+  }
+
+  private cleanAiDialogue(text: string | undefined): string {
+    if (typeof text !== 'string') return text || "";
+    let cleanedText = text.replace(/\\n/g, '\n');
+    cleanedText = cleanedText.replace(/\s*\[.*?\]\s*|\s*<.*?>\s*/g, ' ');
+    cleanedText = cleanedText.replace(/\s+/g, ' ').trim();
+    return cleanedText;
+  }
+
+  async startConversation(scenario: ScenarioDetails): Promise<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }> {
+    const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
+    const agePromptSegment = `\n    - AI Age Bracket: ${getAgeDescriptionForLLM(scenario.aiAgeBracket)}`;
+
+    const prompt = `You are an AI simulating a social interaction for training purposes.
+    Your AI Name: ${scenario.aiName}
+    Your AI Persona Details:
+    - Environment: ${scenario.environment}
+    - AI Personality: ${scenario.aiPersonality}
+    - AI Gender: ${scenario.aiGender}${agePromptSegment}
+    - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
+
+    As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona, name, gender, age bracket (if specified), and all provided scenario details.
+    IMPORTANT: For this first message, your language MUST BE VERY CASUAL AND SIMPLE, universally approachable. Avoid jargon, complex idioms, or overly formal sentences. Aim for simple, direct speech as if talking to a new acquaintance in a relaxed setting.
+    Describe your initial body language, appropriate for your persona, and the scenario. This 'initialBodyLanguage' field is mandatory.
+    Provide your initial internal thoughts about this upcoming interaction (e.g., your expectations, how you feel about the scenario, initial assessment of the user if applicable). This should be a brief, candid first-person internal monologue reflecting your persona and age. This 'initialAiThoughts' field is a absolutely mandatory part of your response.
+    Set an initial engagement level for the user (a number between 0 and 100, let's start with ${INITIAL_ENGAGEMENT}). This 'initialEngagementScore' field is mandatory.
+    Set an initial conversation momentum score (0-100, start with a neutral 55). This 'initialConversationMomentum' field is mandatory.
+
+    Respond ONLY in a single, valid JSON object. Do not include any text, comments, or markdown fences outside of this JSON object.
+    Ensure all string values are correctly quoted. Special characters within strings (e.g., double quotes, backslashes, newlines) must be properly escaped (e.g., \`\\"\`, \`\\\\\`, \`\\\\n\`).
+    The JSON object must have the following structure:
+    {
+      "initialDialogue": "Your opening line as ${scenario.aiName} here.",
+      "initialBodyLanguage": "Description of your body language.",
+      "initialAiThoughts": "Your initial internal monologue about the interaction as ${scenario.aiName}.",
+      "initialEngagementScore": ${INITIAL_ENGAGEMENT},
+      "initialConversationMomentum": 55
+    }`;
+
+    try {
+        const response: GenerateContentResponse = await this.ai.models.generateContent({
+            model: GEMINI_TEXT_MODEL,
+            contents: [{role: "user", parts: [{text: prompt}]}],
+            config: { responseMimeType: "application/json" }
+        });
+
+        const parsed = this.parseJsonFromText<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }>(response.text);
+
+        if (parsed && typeof parsed.initialDialogue === 'string' && 
+            typeof parsed.initialBodyLanguage === 'string' && 
+            typeof parsed.initialAiThoughts === 'string' && 
+            typeof parsed.initialEngagementScore === 'number' &&
+            typeof parsed.initialConversationMomentum === 'number') {
+            parsed.initialDialogue = this.cleanAiDialogue(parsed.initialDialogue);
+            parsed.initialBodyLanguage = this.cleanAiDialogue(parsed.initialBodyLanguage);
+            parsed.initialAiThoughts = this.cleanAiDialogue(parsed.initialAiThoughts);
+            return parsed;
+        }
+        console.error("Failed to parse initial conversation data from Gemini, using defaults.", response.text);
+        return { 
+            initialDialogue: `Hello! I'm ${scenario.aiName}. Let's talk.`, 
+            initialBodyLanguage: "Neutral and open.", 
+            initialAiThoughts: "I'm ready to see how this interaction goes. I hope the user is engaging.",
+            initialEngagementScore: INITIAL_ENGAGEMENT,
+            initialConversationMomentum: 55,
+        };
+
+    } catch (error) {
+        const errorMessage = getGoogleApiErrorMessage(error, "Failed to initialize conversation with AI.");
+        console.error("Error starting conversation with Gemini:", errorMessage, error);
+        throw new Error(errorMessage);
+    }
+  }
+
+  async generateImagePromptForBodyLanguage(
+    bodyLanguageDescription: string,
+    aiGender: AIGender,
+    aiName: string,
+    aiAgeBracket: AIAgeBracket | undefined,
+    existingEstablishedVisualSegment?: string
+  ): Promise<{ fullImagenPrompt: string, newEstablishedVisualSegment: string | null }> {
+    
+    let genderTerm = "person";
+    switch (aiGender) {
+        case AIGender.MALE: genderTerm = "man"; break;
+        case AIGender.FEMALE: genderTerm = "woman"; break;
+        case AIGender.NON_BINARY: genderTerm = "non-binary person"; break;
+        case AIGender.PREFER_NOT_TO_SPECIFY: genderTerm = "person with an androgynous appearance"; break;
+    }
+    
+    const ageVisualCue = getAgeVisualDescriptionForImagen(aiAgeBracket);
+    const cleanedBodyLanguage = this.cleanAiDialogue(bodyLanguageDescription);
+    const noTextLogosInstructionGlobal = "Ensure no text, letters, words, logos, or watermarks appear in the generated image.";
+
+    let currentEstablishedVisualBase: string;
+    let newSegmentForReturn: string | null = null;
+
+    if (!existingEstablishedVisualSegment) {
+      const createdBaseSegment = `Photorealistic portrait of a ${ageVisualCue} ${genderTerm} named "${aiName}", wearing simple neutral-colored attire (like a dark gray t-shirt or simple blue sweater). The background is simple and neutral, slightly out of focus, with soft natural lighting. The shot is typically chest-up. ${noTextLogosInstructionGlobal}`;
+      currentEstablishedVisualBase = createdBaseSegment;
+      newSegmentForReturn = this.cleanAiDialogue(createdBaseSegment);
+    } else {
+      currentEstablishedVisualBase = existingEstablishedVisualSegment;
+    }
+    
+    const baseWithoutNoText = currentEstablishedVisualBase
+        .replace(noTextLogosInstructionGlobal, '')
+        .replace(/\.\s*$/, '') 
+        .trim();
+    
+    const fullImagenPromptString = `${baseWithoutNoText}, who is currently ${cleanedBodyLanguage}. ${noTextLogosInstructionGlobal}`;
+    
+    return { 
+        fullImagenPrompt: this.cleanAiDialogue(fullImagenPromptString), 
+        newEstablishedVisualSegment: newSegmentForReturn
+    };
+  }
+
+  async getNextAITurn(
+    conversationHistory: ChatMessage[],
+    userInput: string,
+    currentEngagement: number,
+    scenario: ScenarioDetails
+  ): Promise<{
+    aiDialogue: string;
+    aiBodyLanguage: string;
+    aiThoughts: string;
+    newEngagement: number;
+    conversationMomentum: number;
+    isEndingConversation: boolean;
+  }> {
+    const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
+    const agePromptSegment = `\n    - AI Age Bracket: ${getAgeDescriptionForLLM(scenario.aiAgeBracket)}`;
+    
+    const historyForPrompt = conversationHistory
+      .slice(-MAX_CONVERSATION_HISTORY_FOR_PROMPT)
+      .map(msg => {
+        const prefix = msg.sender === 'user' ? 'User' : scenario.aiName;
+        let content = `${prefix}: "${msg.text}"`;
+        if (msg.sender === 'ai' && msg.bodyLanguageDescription) {
+          content += ` (Body Language: ${msg.bodyLanguageDescription})`;
+        }
+        return content;
+      })
+      .join('\n');
+
+    const prompt = `You are ${scenario.aiName}, an AI in a social interaction simulation.
+    Your Persona:
+    - Environment: ${scenario.environment}
+    - AI Personality: ${scenario.aiPersonality}
+    - AI Gender: ${scenario.aiGender}${agePromptSegment}
+    - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
+
+    Current Conversation Context:
+    - User's Current Engagement Score with you: ${currentEngagement}% (0-100 scale). This reflects how interested and positive the user feels towards you. Your response should naturally reflect this. If engagement is very low (e.g., < 20), you might sound disengaged or try to end the conversation. If high (e.g., > 80), you'd be more enthusiastic.
+    - Recent Conversation History (last ${MAX_CONVERSATION_HISTORY_FOR_PROMPT} turns):
+    ${historyForPrompt}
+    - User's latest message to you: "${userInput}"
+
+    Your Task:
+    Based on your persona (including specified age bracket), the current engagement, the conversation history, and the user's latest message:
+    1.  Craft your next spoken dialogue as ${scenario.aiName} ("aiDialogue"). This should be natural, in character, and react appropriately to the user and engagement level. Avoid overly long responses.
+    2.  Describe your current body language and facial expression ("aiBodyLanguage"). This should align with your dialogue and emotional state.
+    3.  Provide your internal thoughts as ${scenario.aiName} ("aiThoughts"). This is your candid, private reaction to the user's message and your plan for your response. These thoughts influence your dialogue and body language and should reflect your age.
+    4.  Calculate a new engagement score ("newEngagement") from your perspective of how the user's last message affected your engagement with them. This score (0-100) should realistically change based on the user's input. For example, a positive, engaging message might increase it, a rude one decrease it.
+    5.  Assess the current "conversationMomentum" (0-100). This reflects the energy and flow. Is it picking up, stalling, or negative?
+    6.  Decide if you want to end the conversation ("isEndingConversation": true/false). You might end it if engagement is critically low, a natural conclusion is reached, or your persona dictates it.
+
+    Response Format:
+    Respond ONLY in a single, valid JSON object. No extra text or markdown. Ensure correct JSON syntax, especially for strings and escaping.
+    Example JSON structure:
+    {
+      "aiDialogue": "Your response here...",
+      "aiBodyLanguage": "Your body language description...",
+      "aiThoughts": "Your internal thoughts here...",
+      "newEngagement": 75,
+      "conversationMomentum": 60,
+      "isEndingConversation": false
+    }
+    Focus on natural, human-like interaction. Your response length for aiDialogue should typically be 1-3 sentences.`;
+
+    try {
+      const response: GenerateContentResponse = await this.ai.models.generateContent({
+        model: GEMINI_TEXT_MODEL,
+        contents: [{role: "user", parts: [{text: prompt}]}],
+        config: { responseMimeType: "application/json" }
+      });
+      
+      const parsed = this.parseJsonFromText<{
+        aiDialogue: string;
+        aiBodyLanguage: string;
+        aiThoughts: string;
+        newEngagement: number;
+        conversationMomentum: number;
+        isEndingConversation: boolean;
+      }>(response.text);
+
+      if (parsed && typeof parsed.aiDialogue === 'string' &&
+          typeof parsed.aiBodyLanguage === 'string' &&
+          typeof parsed.aiThoughts === 'string' &&
+          typeof parsed.newEngagement === 'number' &&
+          typeof parsed.conversationMomentum === 'number' &&
+          typeof parsed.isEndingConversation === 'boolean') {
+        parsed.aiDialogue = this.cleanAiDialogue(parsed.aiDialogue);
+        parsed.aiBodyLanguage = this.cleanAiDialogue(parsed.aiBodyLanguage);
+        parsed.aiThoughts = this.cleanAiDialogue(parsed.aiThoughts);
+        return parsed;
+      }
+      console.error("Failed to parse AI turn data from Gemini, using fallback.", response.text);
+      return {
+        aiDialogue: "I'm not sure how to respond to that. Could you try rephrasing?",
+        aiBodyLanguage: "Looks a bit confused.",
+        aiThoughts: "The AI response was not in the expected format. Need to debug the prompt or parsing.",
+        newEngagement: Math.max(0, currentEngagement - 10),
+        conversationMomentum: 30,
+        isEndingConversation: false,
+      };
+    } catch (error) {
+      const errorMessage = getGoogleApiErrorMessage(error, "Failed to get next AI turn.");
+      console.error("Error in getNextAITurn:", errorMessage, error);
+      throw new Error(errorMessage);
+    }
+  }
+
+  async analyzeConversation(
+    fullConversationHistory: ChatMessage[],
+    scenario: ScenarioDetails,
+    finalEngagementSnapshot: number
+  ): Promise<AnalysisReport> {
+    const historyForAnalysis = fullConversationHistory
+      .slice(-MAX_HISTORY_FOR_ANALYSIS) 
+      .map(msg => {
+        let turn = "";
+        if (msg.sender === 'user') {
+          turn += `User: "${msg.text}"\n`;
+        } else {
+          turn += `${scenario.aiName}: "${msg.text}"\n`;
+          if (msg.bodyLanguageDescription) {
+            turn += `AI Body Language: ${msg.bodyLanguageDescription}\n`;
+          }
+          if (msg.aiThoughts) {
+            turn += `AI Internal Thoughts: ${msg.aiThoughts}\n`;
+          }
+          if (typeof msg.conversationMomentum === 'number') {
+            turn += `Conversation Momentum (AI perceived): ${msg.conversationMomentum}%\n`;
+          }
+        }
+        return turn.trim();
+      })
+      .join('\n\n---\n\n');
+
+    const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
+    const agePromptSegment = scenario.aiAgeBracket && scenario.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED 
+        ? `\n    - AI Age Bracket: ${scenario.aiAgeBracket}` 
+        : "";
+
+    const prompt = `You are a sophisticated AI Social Skills Coach. Your task is to analyze the following conversation and provide a detailed performance report.
+
+    Scenario Context:
+    - Social Environment: ${scenario.environment}
+    - AI Interlocutor Name: ${scenario.aiName}
+    - AI Interlocutor Personality: ${scenario.aiPersonality}
+    - AI Interlocutor Gender: ${scenario.aiGender}${agePromptSegment}
+    - Power Dynamic: ${scenario.powerDynamic}${customContextPrompt}
+    - The AI's final engagement score with the user was: ${finalEngagementSnapshot}%
+
+    Full Conversation History (or relevant excerpt):
+    ${historyForAnalysis}
+
+    Analysis Task:
+    Based on the scenario (including AI's age bracket if specified) and the conversation history, generate a comprehensive analysis report.
+    The report MUST be a single, valid JSON object with the following structure and data types:
+    {
+      "overallCharismaScore": number, // (0-100) User's overall charisma and likability.
+      "responseClarityScore": number, // (0-100) Clarity and coherence of the user's responses.
+      "engagementMaintenanceScore": number, // (0-100) User's ability to keep the AI engaged.
+      "adaptabilityScore": number, // (0-100) User's skill in adapting to the AI's persona (including age) and conversation flow.
+      "overallAiEffectivenessScore": number, // (0-100, optional) Your assessment of how well the AI played its role based on its persona and the interaction. If unsure, you can omit or use a placeholder like 75.
+      "finalEngagementSnapshot": ${finalEngagementSnapshot}, // User's final engagement score with the AI.
+      "turnByTurnAnalysis": [ 
+        {
+          "userInput": "User's message in that turn (if any).",
+          "aiResponse": "AI's response in that turn (if any).",
+          "aiBodyLanguage": "AI's body language at that turn (if any).",
+          "aiThoughts": "AI's internal thoughts at that turn (if any, from history).",
+          "userTurnEffectivenessScore": number, // (0-100) How effective was the user's specific input in this turn?
+          "conversationMomentum": number, // (0-100) The AI's perceived conversation momentum from that AI turn (from history, if available).
+          "analysis": "Your concise analysis of this specific exchange (user's part, AI's part, dynamics)."
+        }
+      ],
+      "overallFeedback": "Detailed overall feedback for the user. Include specific strengths, areas for improvement, and actionable tips. Be constructive and encouraging. Consider how user adapted to AI's age if specified.",
+      "aiEvolvingThoughtsSummary": "A brief summary of how the AI's internal thoughts (from 'AI Internal Thoughts' in history) seemed to evolve or react to the user throughout the conversation. If not enough data, state that."
+    }
+
+    Guidelines for Analysis:
+    - Be objective and fair.
+    - Provide specific examples from the conversation to support your scores and feedback.
+    - For turn-by-turn analysis, focus on key moments or turns that significantly impacted the interaction. You don't need to analyze every single message if some are trivial. Try to get 3-7 key turns.
+    - Ensure all numerical scores are within the 0-100 range.
+    - The "aiEvolvingThoughtsSummary" should be based *only* on the AI's thoughts provided in the history.
+    - The "conversationMomentum" in turnByTurnAnalysis should be taken from the AI's message data if present for that turn.
+
+    Respond ONLY with the single, valid JSON object. No explanations or text outside the JSON structure.
+    All string values within the JSON must be properly quoted and escaped.
+    `;
+
+    try {
+        const response: GenerateContentResponse = await this.ai.models.generateContent({
+            model: GEMINI_TEXT_MODEL,
+            contents: [{role: "user", parts: [{text: prompt}]}],
+            config: { responseMimeType: "application/json" }
+        });
+
+        const parsedReport = this.parseJsonFromText<AnalysisReport>(response.text);
+
+        if (parsedReport &&
+            typeof parsedReport.overallCharismaScore === 'number' &&
+            typeof parsedReport.responseClarityScore === 'number' &&
+            typeof parsedReport.engagementMaintenanceScore === 'number' &&
+            typeof parsedReport.adaptabilityScore === 'number' &&
+            typeof parsedReport.finalEngagementSnapshot === 'number' &&
+            Array.isArray(parsedReport.turnByTurnAnalysis) &&
+            typeof parsedReport.overallFeedback === 'string') {
+            
+            parsedReport.turnByTurnAnalysis = parsedReport.turnByTurnAnalysis.map(item => ({
+                ...item,
+                userInput: this.cleanAiDialogue(item.userInput),
+                aiResponse: this.cleanAiDialogue(item.aiResponse),
+                aiBodyLanguage: this.cleanAiDialogue(item.aiBodyLanguage),
+                aiThoughts: this.cleanAiDialogue(item.aiThoughts),
+                analysis: this.cleanAiDialogue(item.analysis),
+                userTurnEffectivenessScore: typeof item.userTurnEffectivenessScore === 'number' ? item.userTurnEffectivenessScore : undefined,
+                conversationMomentum: typeof item.conversationMomentum === 'number' ? item.conversationMomentum : undefined,
+            }));
+            parsedReport.overallFeedback = this.cleanAiDialogue(parsedReport.overallFeedback);
+            if (parsedReport.aiEvolvingThoughtsSummary) {
+                 parsedReport.aiEvolvingThoughtsSummary = this.cleanAiDialogue(parsedReport.aiEvolvingThoughtsSummary);
+            }
+
+            return parsedReport;
+        }
+        console.error("Failed to parse analysis report from Gemini, or structure is invalid.", response.text, parsedReport);
+        throw new Error("Failed to generate a valid analysis report. The AI's response was not in the expected format.");
+
+    } catch (error) {
+        const errorMessage = getGoogleApiErrorMessage(error, "Failed to analyze conversation.");
+        console.error("Error analyzing conversation with Gemini:", errorMessage, error);
+        throw new Error(errorMessage);
+    }
+  }
+}
