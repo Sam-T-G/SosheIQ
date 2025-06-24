@@ -99,7 +99,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								key={`incoming-${incomingImage.substring(0, 20)}`}
 								src={`data:image/jpeg;base64,${incomingImage}`}
 								alt="AI's new visual cue"
-								className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in"
+								className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in opacity-0"
 								onAnimationEnd={handleAnimationEnd}
 							/>
 						)}
@@ -108,7 +108,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 			</div>
 
 			{currentBodyLanguageText && (
-				<p className="w-full text-sm text-center md:text-left text-sky-300 italic px-2 py-1 whitespace-pre-wrap flex-shrink-0">
+				<p className="w-full text-sm text-center md:text-left text-sky-300 italic px-2 py-1 whitespace-pre-wrap break-words flex-shrink-0">
 					{currentBodyLanguageText}
 				</p>
 			)}

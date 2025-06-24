@@ -140,7 +140,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 			{/* Mobile: Full Screen Chat Overlay */}
 			{showChatOverlay && (
-				<div className="md:hidden fixed inset-0 z-40 bg-slate-900 flex flex-col animate-[fadeIn_0.2s_ease-out]">
+				<div className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-md flex flex-col animate-[fadeIn_0.2s_ease-out]">
 					<div className="flex-1 flex flex-col overflow-hidden">
 						<RenderChatInterface
 							conversationHistory={conversationHistory}

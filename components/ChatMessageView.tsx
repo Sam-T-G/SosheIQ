@@ -21,6 +21,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 		return (
 			<div className="flex justify-end">
 				<div className="max-w-xl px-4 py-3 rounded-xl shadow-md bg-sky-600 text-white rounded-br-none">
+					{/* Ensure break-words is present for proper word wrapping. */}
 					<p className="whitespace-pre-wrap break-words">{message.text}</p>
 					<p className="text-xs mt-1 opacity-70 text-right">
 						{new Date(message.timestamp).toLocaleTimeString([], {

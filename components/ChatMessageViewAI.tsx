@@ -58,7 +58,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			{/* Body Language Description */}
 			{formattedBodyLanguage && (
 				<p
-					className={`text-sm italic text-sky-300 mb-2 whitespace-pre-wrap ${
+					className={`text-sm italic text-sky-300 mb-2 whitespace-pre-wrap break-words ${
 						shouldAnimateText ? "animate-[fadeIn_0.5s_ease-out_forwards]" : ""
 					}`}>
 					{formattedBodyLanguage}
@@ -70,7 +70,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 				<AnimatedDialogue
 					text={message.text}
 					startAnimation={shouldAnimateText}
-					typingSpeed={30} // Adjust speed as desired
+					// typingSpeed={30} // Not used by current AnimatedDialogue
 					// onComplete={() => console.log("AI dialogue animation complete")} // Optional: callback when typing finishes
 				/>
 			) : (
