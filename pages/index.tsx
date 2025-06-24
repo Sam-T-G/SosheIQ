@@ -51,18 +51,28 @@ const HomePage: React.FC = () => {
 	const [showGlobalAiThoughts, setShowGlobalAiThoughts] = useState(false);
 
 	useEffect(() => {
-		const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-		if (!apiKey) {
-			setError(
-				"API key is missing. Please set NEXT_PUBLIC_API_KEY environment variable."
-			);
-			setIsLoading(false);
-			return;
-		}
-		geminiService.current = new GeminiService(apiKey);
-		imagenService.current = new ImagenService(apiKey);
+		const initServices = async () => {
+			try {
+				const res = await fetch("/api/init");
+				const data = await res.json();
 
-		// Logic for appLoadAnimationPlayed and contentDisplayClass removed
+				if (!data.apiKey) {
+					setError("API key is missing.");
+					setIsLoading(false);
+					return;
+				}
+
+				geminiService.current = new GeminiService(data.apiKey);
+				imagenService.current = new ImagenService(data.apiKey);
+			} catch (err) {
+				console.error("Failed to fetch API key:", err);
+				setError("Could not initialize services.");
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		initServices();
 	}, []);
 
 	const handleNavigate = useCallback((phase: GamePhase) => {

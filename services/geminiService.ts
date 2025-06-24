@@ -109,7 +109,7 @@ export class GeminiService {
             config: { responseMimeType: "application/json" }
         });
 
-        const parsed = this.parseJsonFromText<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }>(response.text);
+        const parsed = this.parseJsonFromText<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }>(response.text ?? ' ');
 
         if (parsed && typeof parsed.initialDialogue === 'string' && 
             typeof parsed.initialBodyLanguage === 'string' && 
@@ -258,7 +258,7 @@ export class GeminiService {
         newEngagement: number;
         conversationMomentum: number;
         isEndingConversation: boolean;
-      }>(response.text);
+      }>(response.text ?? '');
 
       if (parsed && typeof parsed.aiDialogue === 'string' &&
           typeof parsed.aiBodyLanguage === 'string' &&
@@ -376,7 +376,7 @@ export class GeminiService {
             config: { responseMimeType: "application/json" }
         });
 
-        const parsedReport = this.parseJsonFromText<AnalysisReport>(response.text);
+        const parsedReport = this.parseJsonFromText<AnalysisReport>(response.text ?? '');
 
         if (parsedReport &&
             typeof parsedReport.overallCharismaScore === 'number' &&

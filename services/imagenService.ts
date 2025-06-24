@@ -17,12 +17,13 @@ export class ImagenService {
         config: { numberOfImages: 1, outputMimeType: 'image/jpeg' }, 
       });
 
-      if (response.generatedImages && response.generatedImages.length > 0 && response.generatedImages[0].image.imageBytes) {
-        return response.generatedImages[0].image.imageBytes; // This is already a base64 string
-      } else {
-        console.error("Imagen response did not contain image data:", response);
-        throw new Error("No image data received from Imagen.");
-      }
+    if (response.generatedImages?.[0]?.image?.imageBytes) {
+      return response.generatedImages[0].image.imageBytes; // This is already a base64 string
+    } else {
+    console.error("Imagen response did not contain image data:", response);
+    throw new Error("No image data received from Imagen.");
+    }
+
     } catch (error) {
       console.error("Error generating image with ImagenService:", error);
       // It's possible the error object has more details, e.g. error.response.data
