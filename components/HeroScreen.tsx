@@ -29,7 +29,7 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({ onNavigate }) => {
 					style={{ animationDelay: "0.6s" }}
 					aria-label="View Instructions">
 					<InfoIcon />
-					<span>View Instructions</span>
+					<span>Instructions</span>
 				</button>
 				<button
 					onClick={() => onNavigate(GamePhase.SETUP)}
@@ -40,7 +40,7 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({ onNavigate }) => {
 					style={{ animationDelay: "0.8s" }}
 					aria-label="Start Interaction">
 					<PlayIcon />
-					<span>Start Interaction</span>
+					<span>Get Started</span>
 				</button>
 			</div>
 		</div>
