@@ -36,9 +36,12 @@ export enum AIGender {
 export enum AIAgeBracket {
   NOT_SPECIFIED = "Not Specified / Auto",
   TEENAGER = "Teenager (13-17)",
-  YOUNG_ADULT = "Young Adult (18-29)",
-  ADULT = "Adult (30-55)",
-  SENIOR = "Senior (55+)",
+  YOUNG_ADULT_18_23 = "Young Adult (18-23)",
+  YOUNG_ADULT_24_29 = "Young Adult (24-29)",
+  ADULT_30_39 = "Adult (30-39)",
+  ADULT_40_50 = "Adult (40-50)",
+  SENIOR_51_PLUS = "Senior (51+)",
+  CUSTOM = "Custom Age", // For internal use when custom age is entered
 }
 
 export interface ScenarioDetails {
@@ -47,9 +50,10 @@ export interface ScenarioDetails {
   powerDynamic: PowerDynamic;
   aiGender: AIGender;
   aiName: string;
-  aiAgeBracket?: AIAgeBracket; 
+  aiAgeBracket?: AIAgeBracket;
+  customAiAge?: number; // To store validated custom age
   customContext?: string;
-  aiEstablishedVisualPromptSegment?: string; 
+  aiEstablishedVisualPromptSegment?: string;
 }
 
 export interface ChatMessage {
@@ -58,7 +62,7 @@ export interface ChatMessage {
   text: string;
   bodyLanguageDescription?: string;
   aiThoughts?: string;
-  conversationMomentum?: number; 
+  conversationMomentum?: number;
   imagePrompt?: string;
   imageUrl?: string; // base64
   timestamp: Date;
@@ -72,7 +76,7 @@ export interface TurnByTurnAnalysisItem {
   aiBodyLanguage?: string;
   aiThoughts?: string;
   userTurnEffectivenessScore?: number;
-  conversationMomentum?: number; 
+  conversationMomentum?: number;
   analysis: string;
 }
 

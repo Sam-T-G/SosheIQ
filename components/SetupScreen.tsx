@@ -13,29 +13,32 @@ interface SetupScreenProps {
 }
 
 type NameInputMode = "manual" | "automatic";
-type AgeInputMode = "automatic" | "manual"; // For age specification toggle
+type AgeConfigMode = "automatic" | "manual_select" | "manual_custom";
 
-interface OptionButtonProps<T extends string | NameInputMode | AgeInputMode> {
+interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
 	value: T;
-	selectedValue: T;
+	selectedValue: T | AIAgeBracket; // Allow AIAgeBracket for age bracket buttons
 	onChange: (value: T) => void;
 	children: React.ReactNode;
 	className?: string;
 	disabled?: boolean;
+	title?: string;
 }
 
-const OptionButton = <T extends string | NameInputMode | AgeInputMode>({
+const OptionButton = <T extends string | NameInputMode | AgeConfigMode>({
 	value,
 	selectedValue,
 	onChange,
 	children,
 	className = "",
 	disabled = false,
+	title,
 }: OptionButtonProps<T>): React.ReactElement => (
 	<button
 		type="button"
 		onClick={() => !disabled && onChange(value)}
 		disabled={disabled}
+		title={title}
 		className={`p-3 m-1 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75
                 ${
 									disabled
@@ -188,10 +191,13 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 	const [nameError, setNameError] = useState<string | null>(null);
 	const [customContext, setCustomContext] = useState<string>("");
 
+	const [ageConfigMode, setAgeConfigMode] =
+		useState<AgeConfigMode>("automatic");
 	const [aiAgeBracket, setAiAgeBracket] = useState<AIAgeBracket>(
 		AIAgeBracket.NOT_SPECIFIED
 	);
-	const [ageInputMode, setAgeInputMode] = useState<AgeInputMode>("automatic");
+	const [customAiAgeString, setCustomAiAgeString] = useState<string>("");
+	const [customAgeError, setCustomAgeError] = useState<string | null>(null);
 
 	const handleSuggestName = () => {
 		if (nameInputMode === "manual") {
@@ -209,15 +215,49 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		}
 	};
 
-	const handleAgeInputModeChange = (mode: AgeInputMode) => {
-		setAgeInputMode(mode);
+	const handleAgeConfigModeChange = (mode: AgeConfigMode) => {
+		setAgeConfigMode(mode);
 		if (mode === "automatic") {
 			setAiAgeBracket(AIAgeBracket.NOT_SPECIFIED);
-		} else {
-			// If switching to manual and current is NOT_SPECIFIED, set a default sensible one
-			if (aiAgeBracket === AIAgeBracket.NOT_SPECIFIED) {
-				setAiAgeBracket(AIAgeBracket.ADULT); // Default to Adult when switching to manual
+			setCustomAiAgeString("");
+			setCustomAgeError(null);
+		} else if (mode === "manual_select") {
+			if (
+				aiAgeBracket === AIAgeBracket.NOT_SPECIFIED ||
+				aiAgeBracket === AIAgeBracket.CUSTOM
+			) {
+				setAiAgeBracket(AIAgeBracket.ADULT_30_39); // Default to a common bracket
 			}
+			setCustomAiAgeString("");
+			setCustomAgeError(null);
+		} else {
+			// manual_custom
+			setAiAgeBracket(AIAgeBracket.CUSTOM); // Mark as custom
+			// If custom age input was empty or invalid, clear it or keep the error
+			if (customAiAgeString.trim() === "" || customAgeError) {
+				setCustomAiAgeString("");
+			}
+		}
+	};
+
+	const handleAgeBracketSelect = (bracket: AIAgeBracket) => {
+		setAiAgeBracket(bracket);
+		setCustomAiAgeString(""); // Clear custom age if a bracket is selected
+		setCustomAgeError(null);
+	};
+
+	const handleCustomAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		setCustomAiAgeString(value);
+		if (value.trim() === "") {
+			setCustomAgeError(null);
+			return;
+		}
+		const ageNum = parseInt(value, 10);
+		if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+			setCustomAgeError("Please enter a valid age (13-100).");
+		} else {
+			setCustomAgeError(null);
 		}
 	};
 
@@ -228,9 +268,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		if (nameInputMode === "automatic") {
 			finalAiName = generateRandomAiName(aiGender);
 		} else {
-			if (!finalAiName) {
-				finalAiName = generateRandomAiName(aiGender);
-			}
+			if (!finalAiName) finalAiName = generateRandomAiName(aiGender);
 		}
 
 		if (!finalAiName) {
@@ -243,9 +281,42 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		}
 		if (nameError) setNameError(null);
 
+		let finalAiAgeBracket: AIAgeBracket | undefined = aiAgeBracket;
+		let finalCustomAiAge: number | undefined = undefined;
+
+		if (ageConfigMode === "automatic") {
+			finalAiAgeBracket = AIAgeBracket.NOT_SPECIFIED;
+		} else if (ageConfigMode === "manual_custom") {
+			if (customAgeError || customAiAgeString.trim() === "") {
+				setCustomAgeError(
+					customAiAgeString.trim() === ""
+						? "Custom age cannot be empty."
+						: "Please enter a valid age (13-100)."
+				);
+				return;
+			}
+			const ageNum = parseInt(customAiAgeString, 10);
+			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+				// Re-validate just in case
+				setCustomAgeError(
+					"Invalid custom age. Please enter between 13 and 100."
+				);
+				return;
+			}
+			finalCustomAiAge = ageNum;
+			finalAiAgeBracket = AIAgeBracket.CUSTOM;
+		} else {
+			// manual_select
+			if (
+				finalAiAgeBracket === AIAgeBracket.NOT_SPECIFIED ||
+				finalAiAgeBracket === AIAgeBracket.CUSTOM
+			) {
+				finalAiAgeBracket = AIAgeBracket.ADULT_30_39;
+			}
+		}
+		if (customAgeError) return;
+
 		const finalCustomContext = customContext.trim() || undefined;
-		const finalAiAgeBracket =
-			ageInputMode === "manual" ? aiAgeBracket : AIAgeBracket.NOT_SPECIFIED;
 
 		onStart({
 			environment,
@@ -254,12 +325,19 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 			aiGender,
 			aiName: finalAiName,
 			aiAgeBracket: finalAiAgeBracket,
+			customAiAge: finalCustomAiAge,
 			customContext: finalCustomContext,
 		});
 	};
 
-	const sectionBaseDelay = 0.2; // Base delay for the first section after title/subtitle
+	const sectionBaseDelay = 0.2;
 	const sectionDelayIncrement = 0.1;
+
+	const ageBracketOptions = (
+		Object.values(AIAgeBracket) as AIAgeBracket[]
+	).filter(
+		(age) => age !== AIAgeBracket.NOT_SPECIFIED && age !== AIAgeBracket.CUSTOM
+	);
 
 	return (
 		<div className="w-full max-w-3xl p-6 md:p-10 bg-slate-800 rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
@@ -378,46 +456,90 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 				</Section>
 
 				<Section
-					title="AI Age Bracket"
+					title="AI Age"
 					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 2}s`}>
-					<div className="grid grid-cols-2 gap-3 mb-4">
-						<OptionButton<AgeInputMode>
+					<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+						<OptionButton<AgeConfigMode>
 							value="automatic"
-							selectedValue={ageInputMode}
-							onChange={handleAgeInputModeChange}>
+							selectedValue={ageConfigMode}
+							onChange={handleAgeConfigModeChange}
+							title="AI age will be general adult or adapt to context.">
 							Auto-Select Age
 						</OptionButton>
-						<OptionButton<AgeInputMode>
-							value="manual"
-							selectedValue={ageInputMode}
-							onChange={handleAgeInputModeChange}>
-							Specify Age Bracket
+						<OptionButton<AgeConfigMode>
+							value="manual_select"
+							selectedValue={ageConfigMode}
+							onChange={handleAgeConfigModeChange}
+							title="Choose from predefined age brackets.">
+							Select Bracket
+						</OptionButton>
+						<OptionButton<AgeConfigMode>
+							value="manual_custom"
+							selectedValue={ageConfigMode}
+							onChange={handleAgeConfigModeChange}
+							title="Enter a specific age for the AI.">
+							Enter Custom Age
 						</OptionButton>
 					</div>
-					<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-						{(Object.values(AIAgeBracket) as AIAgeBracket[])
-							.filter((age) => age !== AIAgeBracket.NOT_SPECIFIED) // Don't show "Not Specified" as a manual option
-							.map((age) => (
-								<OptionButton<AIAgeBracket>
-									key={age}
-									value={age}
-									selectedValue={aiAgeBracket}
-									onChange={setAiAgeBracket}
-									disabled={ageInputMode === "automatic"}>
-									{age}
-								</OptionButton>
-							))}
-					</div>
-					{ageInputMode === "automatic" && (
+
+					{ageConfigMode === "manual_select" && (
+						<>
+							<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+								{ageBracketOptions.map((ageOpt) => (
+									<OptionButton<AIAgeBracket>
+										key={ageOpt}
+										value={ageOpt}
+										selectedValue={aiAgeBracket}
+										onChange={() => handleAgeBracketSelect(ageOpt)}
+										disabled={ageConfigMode !== "manual_select"}>
+										{ageOpt}
+									</OptionButton>
+								))}
+							</div>
+							<p className="text-xs text-gray-400 mt-2">
+								Select an age bracket to influence AI's persona, language, and
+								appearance.
+							</p>
+						</>
+					)}
+
+					{ageConfigMode === "manual_custom" && (
+						<div className="mt-2">
+							<input
+								type="number"
+								value={customAiAgeString}
+								onChange={handleCustomAgeChange}
+								placeholder="Enter age (13-100)"
+								className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 
+                            ${
+															customAgeError
+																? "ring-red-500"
+																: "focus:ring-teal-500"
+														}`}
+								min="13"
+								max="100"
+								aria-describedby={
+									customAgeError ? "custom-age-error" : undefined
+								}
+								aria-invalid={!!customAgeError}
+								disabled={ageConfigMode !== "manual_custom"}
+							/>
+							{customAgeError && (
+								<p id="custom-age-error" className="text-xs text-red-400 mt-1">
+									{customAgeError}
+								</p>
+							)}
+							{!customAgeError && (
+								<p className="text-xs text-gray-400 mt-1">
+									Enter a specific age between 13 and 100.
+								</p>
+							)}
+						</div>
+					)}
+					{ageConfigMode === "automatic" && (
 						<p className="text-xs text-gray-400 mt-2">
 							AI will generally adopt an adult persona unless context implies
 							otherwise.
-						</p>
-					)}
-					{ageInputMode === "manual" && (
-						<p className="text-xs text-gray-400 mt-2">
-							Select an age bracket to influence AI's persona, language, and
-							appearance.
 						</p>
 					)}
 				</Section>

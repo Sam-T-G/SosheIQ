@@ -18,26 +18,43 @@ const getGoogleApiErrorMessage = (error: any, defaultMessage: string): string =>
   return error instanceof Error ? error.message : defaultMessage;
 };
 
-// Helper to get text description for LLM prompts based on age bracket
-const getAgeDescriptionForLLM = (ageBracket?: AIAgeBracket): string => {
-  if (!ageBracket || ageBracket === AIAgeBracket.NOT_SPECIFIED) return "Not specified. Assume a general adult age unless context implies otherwise. Adapt naturally.";
+// Helper to get text description for LLM prompts based on age bracket or custom age
+const getAgeDescriptionForLLM = (ageBracket?: AIAgeBracket, customAge?: number): string => {
+  if (typeof customAge === 'number' && customAge >= 13) {
+    return `Specific Age: Approximately ${customAge} years old. Your vocabulary, concerns, and social understanding should reflect this specific age.`;
+  }
+  if (!ageBracket || ageBracket === AIAgeBracket.NOT_SPECIFIED || ageBracket === AIAgeBracket.CUSTOM) { // CUSTOM falls back if no customAge
+    return "Not specified. Assume a general adult age unless context implies otherwise. Adapt naturally.";
+  }
   switch (ageBracket) {
     case AIAgeBracket.TEENAGER: return "Teenager (e.g., around 13-17 years old). Your vocabulary, concerns, and social understanding should reflect this age group.";
-    case AIAgeBracket.YOUNG_ADULT: return "Young Adult (e.g., around 18-29 years old). Your experiences and perspectives should align with this life stage.";
-    case AIAgeBracket.ADULT: return "Adult (e.g., around 30-55 years old). Portray maturity and life experiences typical of this age range.";
-    case AIAgeBracket.SENIOR: return "Senior (e.g., 55+ years old). Your demeanor, references, and pace might reflect this age group.";
+    case AIAgeBracket.YOUNG_ADULT_18_23: return "Young Adult (e.g., around 18-23 years old). Your experiences and perspectives should align with this life stage.";
+    case AIAgeBracket.YOUNG_ADULT_24_29: return "Young Adult (e.g., around 24-29 years old). Your experiences and perspectives should align with this life stage.";
+    case AIAgeBracket.ADULT_30_39: return "Adult (e.g., around 30-39 years old). Portray maturity and life experiences typical of this age range.";
+    case AIAgeBracket.ADULT_40_50: return "Adult (e.g., around 40-50 years old). Portray maturity and life experiences typical of this age range.";
+    case AIAgeBracket.SENIOR_51_PLUS: return "Senior (e.g., 51+ years old). Your demeanor, references, and pace might reflect this age group.";
     default: return "Not specified. Assume a general adult age.";
   }
 };
 
-// Helper to get visual description for Imagen prompts based on age bracket
-const getAgeVisualDescriptionForImagen = (ageBracket?: AIAgeBracket): string => {
-    if (!ageBracket || ageBracket === AIAgeBracket.NOT_SPECIFIED) return "adult"; // Default visual age
+// Helper to get visual description for Imagen prompts based on age bracket or custom age
+const getAgeVisualDescriptionForImagen = (ageBracket?: AIAgeBracket, customAge?: number): string => {
+    if (typeof customAge === 'number' && customAge >= 13) {
+        if (customAge <= 17) return "teenage, around " + customAge + " years old";
+        if (customAge <= 23) return "young adult, around " + customAge + " years old";
+        if (customAge <= 29) return "young adult, around " + customAge + " years old";
+        if (customAge <= 39) return "adult, around " + customAge + " years old";
+        if (customAge <= 50) return "middle-aged adult, around " + customAge + " years old";
+        return "senior citizen, elderly, appearing around " + customAge + " years old";
+    }
+    if (!ageBracket || ageBracket === AIAgeBracket.NOT_SPECIFIED || ageBracket === AIAgeBracket.CUSTOM) return "adult";
     switch (ageBracket) {
         case AIAgeBracket.TEENAGER: return "teenage";
-        case AIAgeBracket.YOUNG_ADULT: return "young adult";
-        case AIAgeBracket.ADULT: return "adult";
-        case AIAgeBracket.SENIOR: return "senior citizen, elderly, mature looking";
+        case AIAgeBracket.YOUNG_ADULT_18_23: return "young adult, early 20s";
+        case AIAgeBracket.YOUNG_ADULT_24_29: return "young adult, late 20s";
+        case AIAgeBracket.ADULT_30_39: return "adult, in their 30s";
+        case AIAgeBracket.ADULT_40_50: return "adult, in their 40s";
+        case AIAgeBracket.SENIOR_51_PLUS: return "senior citizen, 50+ years old, mature looking";
         default: return "adult";
     }
 };
@@ -74,7 +91,7 @@ export class GeminiService {
 
   async startConversation(scenario: ScenarioDetails): Promise<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }> {
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
-    const agePromptSegment = `\n    - AI Age Bracket: ${getAgeDescriptionForLLM(scenario.aiAgeBracket)}`;
+    const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
 
     const prompt = `You are an AI simulating a social interaction for training purposes.
     Your AI Name: ${scenario.aiName}
@@ -84,7 +101,7 @@ export class GeminiService {
     - AI Gender: ${scenario.aiGender}${agePromptSegment}
     - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
 
-    As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona, name, gender, age bracket (if specified), and all provided scenario details.
+    As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona, name, gender, age (bracket or specific, if specified), and all provided scenario details.
     IMPORTANT: For this first message, your language MUST BE VERY CASUAL AND SIMPLE, universally approachable. Avoid jargon, complex idioms, or overly formal sentences. Aim for simple, direct speech as if talking to a new acquaintance in a relaxed setting.
     Describe your initial body language, appropriate for your persona, and the scenario. This 'initialBodyLanguage' field is mandatory.
     Provide your initial internal thoughts about this upcoming interaction (e.g., your expectations, how you feel about the scenario, initial assessment of the user if applicable). This should be a brief, candid first-person internal monologue reflecting your persona and age. This 'initialAiThoughts' field is a absolutely mandatory part of your response.
@@ -111,9 +128,9 @@ export class GeminiService {
 
         const parsed = this.parseJsonFromText<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }>(response.text ?? ' ');
 
-        if (parsed && typeof parsed.initialDialogue === 'string' && 
-            typeof parsed.initialBodyLanguage === 'string' && 
-            typeof parsed.initialAiThoughts === 'string' && 
+        if (parsed && typeof parsed.initialDialogue === 'string' &&
+            typeof parsed.initialBodyLanguage === 'string' &&
+            typeof parsed.initialAiThoughts === 'string' &&
             typeof parsed.initialEngagementScore === 'number' &&
             typeof parsed.initialConversationMomentum === 'number') {
             parsed.initialDialogue = this.cleanAiDialogue(parsed.initialDialogue);
@@ -122,9 +139,9 @@ export class GeminiService {
             return parsed;
         }
         console.error("Failed to parse initial conversation data from Gemini, using defaults.", response.text);
-        return { 
-            initialDialogue: `Hello! I'm ${scenario.aiName}. Let's talk.`, 
-            initialBodyLanguage: "Neutral and open.", 
+        return {
+            initialDialogue: `Hello! I'm ${scenario.aiName}. Let's talk.`,
+            initialBodyLanguage: "Neutral and open.",
             initialAiThoughts: "I'm ready to see how this interaction goes. I hope the user is engaging.",
             initialEngagementScore: INITIAL_ENGAGEMENT,
             initialConversationMomentum: 55,
@@ -142,9 +159,10 @@ export class GeminiService {
     aiGender: AIGender,
     aiName: string,
     aiAgeBracket: AIAgeBracket | undefined,
+    customAiAge: number | undefined,
     existingEstablishedVisualSegment?: string
   ): Promise<{ fullImagenPrompt: string, newEstablishedVisualSegment: string | null }> {
-    
+
     let genderTerm = "person";
     switch (aiGender) {
         case AIGender.MALE: genderTerm = "man"; break;
@@ -152,8 +170,8 @@ export class GeminiService {
         case AIGender.NON_BINARY: genderTerm = "non-binary person"; break;
         case AIGender.PREFER_NOT_TO_SPECIFY: genderTerm = "person with an androgynous appearance"; break;
     }
-    
-    const ageVisualCue = getAgeVisualDescriptionForImagen(aiAgeBracket);
+
+    const ageVisualCue = getAgeVisualDescriptionForImagen(aiAgeBracket, customAiAge);
     const cleanedBodyLanguage = this.cleanAiDialogue(bodyLanguageDescription);
     const noTextLogosInstructionGlobal = "Ensure no text, letters, words, logos, or watermarks appear in the generated image.";
 
@@ -167,16 +185,16 @@ export class GeminiService {
     } else {
       currentEstablishedVisualBase = existingEstablishedVisualSegment;
     }
-    
+
     const baseWithoutNoText = currentEstablishedVisualBase
-        .replace(noTextLogosInstructionGlobal, '') 
-        .replace(/\.\s*$/, '') 
+        .replace(noTextLogosInstructionGlobal, '')
+        .replace(/\.\s*$/, '')
         .trim();
-    
+
     const fullImagenPromptString = `${baseWithoutNoText}, who is currently ${cleanedBodyLanguage}. ${noTextLogosInstructionGlobal}`;
-    
-    return { 
-        fullImagenPrompt: this.cleanAiDialogue(fullImagenPromptString), 
+
+    return {
+        fullImagenPrompt: this.cleanAiDialogue(fullImagenPromptString),
         newEstablishedVisualSegment: newSegmentForReturn
     };
   }
@@ -195,8 +213,8 @@ export class GeminiService {
     isEndingConversation: boolean;
   }> {
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
-    const agePromptSegment = `\n    - AI Age Bracket: ${getAgeDescriptionForLLM(scenario.aiAgeBracket)}`;
-    
+    const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+
     const historyForPrompt = conversationHistory
       .slice(-MAX_CONVERSATION_HISTORY_FOR_PROMPT)
       .map(msg => {
@@ -223,7 +241,7 @@ export class GeminiService {
     - User's latest message to you: "${userInput}"
 
     Your Task:
-    Based on your persona (including specified age bracket), the current engagement, the conversation history, and the user's latest message:
+    Based on your persona (including specified age), the current engagement, the conversation history, and the user's latest message:
     1.  Craft your next spoken dialogue as ${scenario.aiName} ("aiDialogue"). This should be natural, in character, and react appropriately to the user and engagement level. Avoid overly long responses.
     2.  Describe your current body language and facial expression ("aiBodyLanguage"). This should align with your dialogue and emotional state.
     3.  Provide your internal thoughts as ${scenario.aiName} ("aiThoughts"). This is your candid, private reaction to the user's message and your plan for your response. These thoughts influence your dialogue and body language and should reflect your age.
@@ -250,7 +268,7 @@ export class GeminiService {
         contents: [{role: "user", parts: [{text: prompt}]}],
         config: { responseMimeType: "application/json" }
       });
-      
+
       const parsed = this.parseJsonFromText<{
         aiDialogue: string;
         aiBodyLanguage: string;
@@ -293,7 +311,7 @@ export class GeminiService {
     finalEngagementSnapshot: number
   ): Promise<AnalysisReport> {
     const historyForAnalysis = fullConversationHistory
-      .slice(-MAX_HISTORY_FOR_ANALYSIS) 
+      .slice(-MAX_HISTORY_FOR_ANALYSIS)
       .map(msg => {
         let turn = "";
         if (msg.sender === 'user') {
@@ -315,9 +333,8 @@ export class GeminiService {
       .join('\n\n---\n\n');
 
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
-    const agePromptSegment = scenario.aiAgeBracket && scenario.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED 
-        ? `\n    - AI Age Bracket: ${scenario.aiAgeBracket}` 
-        : "";
+    const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+
 
     const prompt = `You are a sophisticated AI Social Skills Coach. Your task is to analyze the following conversation and provide a detailed performance report.
 
@@ -333,7 +350,7 @@ export class GeminiService {
     ${historyForAnalysis}
 
     Analysis Task:
-    Based on the scenario (including AI's age bracket if specified) and the conversation history, generate a comprehensive analysis report.
+    Based on the scenario (including AI's age if specified) and the conversation history, generate a comprehensive analysis report.
     The report MUST be a single, valid JSON object with the following structure and data types:
     {
       "overallCharismaScore": number, // (0-100) User's overall charisma and likability.
@@ -342,7 +359,7 @@ export class GeminiService {
       "adaptabilityScore": number, // (0-100) User's skill in adapting to the AI's persona (including age) and conversation flow.
       "overallAiEffectivenessScore": number, // (0-100, optional) Your assessment of how well the AI played its role based on its persona and the interaction. If unsure, you can omit or use a placeholder like 75.
       "finalEngagementSnapshot": ${finalEngagementSnapshot}, // User's final engagement score with the AI.
-      "turnByTurnAnalysis": [ 
+      "turnByTurnAnalysis": [
         {
           "userInput": "User's message in that turn (if any).",
           "aiResponse": "AI's response in that turn (if any).",
@@ -386,7 +403,7 @@ export class GeminiService {
             typeof parsedReport.finalEngagementSnapshot === 'number' &&
             Array.isArray(parsedReport.turnByTurnAnalysis) &&
             typeof parsedReport.overallFeedback === 'string') {
-            
+
             parsedReport.turnByTurnAnalysis = parsedReport.turnByTurnAnalysis.map(item => ({
                 ...item,
                 userInput: this.cleanAiDialogue(item.userInput),

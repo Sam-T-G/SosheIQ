@@ -60,16 +60,19 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						then type a custom name or have one suggested/auto-generated.
 					</li>
 					<li>
+						<strong>AI Age:</strong> You can let the AI's age be auto-selected
+						(generally adult), choose a specific age bracket (e.g., Teenager,
+						Young Adult 18-23, Adult 30-39, etc.), or enter a precise custom age
+						(13-100). This influences the AI's persona and visual
+						representation.
+					</li>
+					<li>
 						<strong>Social Environment:</strong> Select the context of your
 						interaction (e.g., Dating, Work).
 					</li>
 					<li>
 						<strong>AI Personality:</strong> Define how the AI will behave
 						(e.g., Friendly, Skeptical).
-					</li>
-					<li>
-						<strong>AI Age Bracket:</strong> Specify the AI's general age group
-						to influence its persona and visual representation.
 					</li>
 					<li>
 						<strong>Power Dynamic:</strong> Set the relationship hierarchy
@@ -193,8 +196,8 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 			<div className="flex flex-col sm:flex-row gap-4 mt-10">
 				<button
 					onClick={() => onNavigate(GamePhase.HERO)}
-					className="w-full sm:w-auto flex-grow px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-lg shadow-md 
-                     transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
+					className="w-full sm:w-auto flex-grow px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-lg shadow-md
+                     transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none
                      focus:ring-4 focus:ring-slate-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Back to Home">
 					<ArrowLeftIcon />
@@ -202,8 +205,8 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 				</button>
 				<button
 					onClick={() => onNavigate(GamePhase.SETUP)}
-					className="w-full sm:w-auto flex-grow px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-lg shadow-lg 
-                     transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
+					className="w-full sm:w-auto flex-grow px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-lg shadow-lg
+                     transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none
                      focus:ring-4 focus:ring-green-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Start Interaction Setup">
 					<PlayIcon />

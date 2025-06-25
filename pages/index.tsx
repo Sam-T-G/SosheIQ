@@ -131,6 +131,7 @@ const HomePage: React.FC = () => {
 						details.aiGender,
 						details.aiName,
 						details.aiAgeBracket,
+						details.customAiAge,
 						details.aiEstablishedVisualPromptSegment
 					);
 				if (newEstablishedVisualSegment && details) {
@@ -237,6 +238,7 @@ const HomePage: React.FC = () => {
 							scenarioDetails.aiGender,
 							scenarioDetails.aiName,
 							scenarioDetails.aiAgeBracket,
+							scenarioDetails.customAiAge,
 							scenarioDetails.aiEstablishedVisualPromptSegment
 						);
 					if (newEstablishedVisualSegment) {
