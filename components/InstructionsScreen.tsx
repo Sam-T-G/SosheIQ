@@ -6,11 +6,31 @@ import {
 	PlayIcon,
 	QuestionMarkIcon,
 	ThoughtBubbleIcon,
-} from "./Icons"; // Added QuestionMarkIcon
+	SendIcon,
+	StopCircleIcon,
+	InfoIcon, // Added for consistency, though not strictly needed for button replicas here
+} from "./Icons";
 
 interface InstructionsScreenProps {
 	onNavigate: (phase: GamePhase) => void;
 }
+
+const ReplicaButtonWrapper: React.FC<{
+	children: React.ReactNode;
+	ariaLabel?: string;
+}> = ({ children, ariaLabel }) => (
+	<div className="mt-2 flex justify-start">
+		<button
+			className="cursor-not-allowed opacity-70"
+			aria-hidden="true"
+			disabled
+			aria-label={ariaLabel || "Example button"}
+			tabIndex={-1} // Make it non-focusable
+		>
+			{children}
+		</button>
+	</div>
+);
 
 export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 	onNavigate,
@@ -48,6 +68,10 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						(e.g., Friendly, Skeptical).
 					</li>
 					<li>
+						<strong>AI Age Bracket:</strong> Specify the AI's general age group
+						to influence its persona and visual representation.
+					</li>
+					<li>
 						<strong>Power Dynamic:</strong> Set the relationship hierarchy
 						(e.g., AI is boss, peers).
 					</li>
@@ -81,23 +105,72 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						Try to be thoughtful, relevant, and engaging.
 					</li>
 					<li>
-						<strong>Sending Messages:</strong> Click "Send" or press Enter and
-						the generated AI will read and respond to your message.
+						<strong>Sending Messages:</strong> Click "Send" or press Enter
+						(without Shift) and the AI will read and respond to your message.
+						<ReplicaButtonWrapper ariaLabel="Example Send button">
+							<div className="p-3 bg-sky-700/80 text-white/80 rounded-lg flex items-center justify-center space-x-2 min-w-[80px]">
+								<SendIcon />
+								<span>Send</span>
+							</div>
+						</ReplicaButtonWrapper>
 					</li>
 					<li>
 						<strong>Ending Conversation:</strong> You can click "End
 						Conversation" at any time to move to the analysis. If engagement is
 						maxed out, this button will change to "Finish".
+						<div className="mt-2 flex flex-wrap gap-3 justify-start">
+							<ReplicaButtonWrapper ariaLabel="Example End button">
+								<div className="p-3 bg-red-700/80 text-white/80 rounded-lg flex items-center justify-center space-x-2 min-w-[80px]">
+									<StopCircleIcon />
+									<span>End</span>
+								</div>
+							</ReplicaButtonWrapper>
+							<ReplicaButtonWrapper ariaLabel="Example Finish button">
+								<div className="p-3 bg-green-700/80 text-white/80 rounded-lg flex items-center justify-center space-x-2 min-w-[90px]">
+									<CheckCircleIcon />
+									<span>Finish</span>
+								</div>
+							</ReplicaButtonWrapper>
+						</div>
 					</li>
-					<li>
-						<strong>Need Help Mid-Chat?</strong>
-						<QuestionMarkIcon /> Click this button icon in the top right of the
-						chat screen for a quick guide to the interface elements.
+					<li className="list-none -ml-4 mt-1 clear-both">
+						{" "}
+						{/* Adjusted for alignment and spacing */}
+						<div className="flex items-start">
+							<QuestionMarkIcon className="mr-2 h-5 w-5 flex-shrink-0 mt-0.5 text-sky-400" />
+							<div>
+								<strong>Need Help Mid-Chat?</strong>
+								<p className="text-sm text-gray-400">
+									Click the question mark icon in the top right of the chat
+									screen for a quick guide to the interface elements.
+								</p>
+								<ReplicaButtonWrapper ariaLabel="Example Help button">
+									<div className="p-2 rounded-full bg-slate-600/70 text-sky-400/80 ring-1 ring-slate-500/70">
+										<QuestionMarkIcon className="h-5 w-5" />
+									</div>
+								</ReplicaButtonWrapper>
+							</div>
+						</div>
 					</li>
-					<li>
-						<strong>AI Thoughts Button!</strong> <ThoughtBubbleIcon /> Click
-						this button if you're stuck or want more context of how the AI
-						internally interpreted your previous given dialogue.
+					<li className="list-none -ml-4 mt-1 clear-both">
+						{" "}
+						{/* Adjusted for alignment and spacing */}
+						<div className="flex items-start">
+							<ThoughtBubbleIcon className="mr-2 h-5 w-5 flex-shrink-0 mt-0.5 text-purple-400" />
+							<div>
+								<strong>AI Thoughts Button!</strong>
+								<p className="text-sm text-gray-400">
+									Click the thought bubble icon if you're stuck or want more
+									context on how the AI internally interpreted your previous
+									dialogue. This can be toggled on/off.
+								</p>
+								<ReplicaButtonWrapper ariaLabel="Example AI Thoughts button">
+									<div className="p-2 rounded-full bg-purple-700/70 text-purple-300/80 ring-1 ring-purple-500/70">
+										<ThoughtBubbleIcon className="h-5 w-5" />
+									</div>
+								</ReplicaButtonWrapper>
+							</div>
+						</div>
 					</li>
 				</ul>
 			</section>
