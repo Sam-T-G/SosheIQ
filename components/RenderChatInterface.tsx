@@ -142,7 +142,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			className={`flex-shrink-0 flex justify-between items-center p-3 
                     ${
 											isOverlay
-												? "bg-slate-800/40 backdrop-blur-sm border-b border-slate-700/50"
+												? "bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50" // Restored semi-transparent blurred background
 												: "bg-slate-700/50 border-b border-slate-600/50"
 										}`}>
 			<h3 className="text-lg font-semibold text-sky-400">
@@ -159,9 +159,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 																? "bg-purple-600 hover:bg-purple-500 text-white ring-1 ring-purple-400"
 																: `${
 																		isOverlay
-																			? "bg-slate-700/30"
-																			: "bg-slate-700/70"
-																  } hover:bg-slate-600 text-purple-300 hover:text-purple-100 ring-1 ring-slate-500`
+																			? "bg-slate-700/40 hover:bg-slate-600/50" // Slightly more transparent for overlay buttons
+																			: "bg-slate-700/70 hover:bg-slate-600"
+																  } text-purple-300 hover:text-purple-100 ring-1 ring-slate-500`
 														}`}
 					aria-label={
 						showGlobalAiThoughts ? "Hide AI's thoughts" : "Show AI's thoughts"
@@ -177,8 +177,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					onClick={onToggleQuickTipsOverlay}
 					className={`p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm
                             ${
-															isOverlay ? "bg-slate-700/30" : "bg-slate-700/70"
-														} hover:bg-slate-600`}
+															isOverlay
+																? "bg-slate-700/40 hover:bg-slate-600/50"
+																: "bg-slate-700/70 hover:bg-slate-600"
+														}`}
 					aria-label="View Quick Tips"
 					title="Quick Tips">
 					<InfoIcon />
@@ -187,8 +189,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					onClick={onToggleHelpOverlay}
 					className={`p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm
                             ${
-															isOverlay ? "bg-slate-700/30" : "bg-slate-700/70"
-														} hover:bg-slate-600`}
+															isOverlay
+																? "bg-slate-700/40 hover:bg-slate-600/50"
+																: "bg-slate-700/70 hover:bg-slate-600"
+														}`}
 					aria-label="Show help for chat interface"
 					title="Help">
 					<QuestionMarkIcon />
@@ -196,7 +200,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 				{isOverlay && onCloseOverlay && (
 					<button
 						onClick={onCloseOverlay}
-						className="p-2 text-gray-400 hover:text-gray-200 bg-slate-700/30 hover:bg-slate-600 rounded-full transition-colors"
+						className="p-2 text-gray-400 hover:text-gray-200 bg-slate-700/40 hover:bg-slate-600/50 rounded-full transition-colors"
 						aria-label="Close chat"
 						title="Close Chat">
 						<CloseIcon />
@@ -209,25 +213,30 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	return (
 		<div
 			className={`flex flex-col h-full ${
-				isOverlay ? "bg-transparent" : "bg-slate-800"
+				isOverlay ? "bg-transparent" : "bg-slate-800" // Main chat interface container is transparent in overlay
 			}`}>
 			<ChatAreaHeader />
 
 			<div
 				ref={messagesContainerRef}
 				className={`flex-grow p-1 md:p-4 overflow-y-auto space-y-2 min-h-0 relative ${
-					isOverlay ? "bg-transparent" : "bg-slate-800/90"
+					isOverlay ? "bg-transparent" : "bg-slate-800/90" // Message area itself is transparent in overlay
 				}`}>
 				{canCompressHistory && (
 					<div
 						className={`sticky top-0 z-10 py-2 ${
 							isOverlay
-								? "bg-slate-900/30 backdrop-blur-sm"
+								? "bg-slate-800/30 backdrop-blur-sm" // Give "Show More" a subtle blurred bg in overlay
 								: "bg-slate-800/80 backdrop-blur-sm"
 						} flex justify-center`}>
 						<button
 							onClick={toggleShowFullHistoryView}
-							className="text-xs text-sky-300 hover:text-sky-100 bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-full shadow transition-colors duration-150 flex items-center space-x-1.5">
+							className={`text-xs text-sky-300 hover:text-sky-100 px-3 py-1.5 rounded-full shadow transition-colors duration-150 flex items-center space-x-1.5
+														${
+															isOverlay
+																? "bg-slate-700/50 hover:bg-slate-600/60"
+																: "bg-slate-700 hover:bg-slate-600"
+														}`}>
 							{showFullHistoryView ? <ChevronUpIcon /> : <ChevronDownIcon />}
 							<span>
 								{showFullHistoryView
@@ -268,7 +277,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			<div
 				className={`p-4 border-t ${
 					isOverlay
-						? "border-slate-700/50 bg-slate-800/40 backdrop-blur-sm"
+						? "border-slate-700/50 bg-slate-800/50 backdrop-blur-sm" // Restored semi-transparent blurred background
 						: "border-slate-600 bg-slate-700"
 				} flex-shrink-0`}>
 				{isMaxEngagement && (
@@ -284,7 +293,11 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						onKeyPress={handleKeyPress}
 						placeholder="Type your response..."
 						className={`flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none
-                        ${isOverlay ? "bg-slate-700/80" : "bg-slate-600"}`} // Textarea slightly more opaque for readability
+                        ${
+													isOverlay
+														? "bg-transparent placeholder-gray-300"
+														: "bg-slate-600 placeholder-gray-400"
+												}`} // Textarea itself is transparent in overlay
 						rows={
 							userInput.split("\n").length > 2
 								? 3
@@ -294,11 +307,11 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						}
 						style={{
 							maxHeight: "calc(3 * 1.5rem + 2 * 0.75rem + 2 * 0.125rem)",
-						}} // Approx 3 lines based on 1.5rem line height
+						}}
 						aria-label="Your response input"
 						disabled={isLoadingAI}
 					/>
-					<div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 h-full">
+					<div className="flex items-center space-x-2">
 						<button
 							onClick={handleSend}
 							disabled={!userInput.trim() || isLoadingAI}
@@ -309,7 +322,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						</button>
 						<button
 							onClick={handleEndOrFinish}
-							disabled={isLoadingAI} // Also disable if AI is responding, to prevent premature ending before AI's turn is fully processed
+							disabled={isLoadingAI}
 							className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-grow sm:flex-grow-0 min-h-[48px] sm:min-h-0
                             ${
 															isMaxEngagement

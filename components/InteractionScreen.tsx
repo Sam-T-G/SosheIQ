@@ -71,13 +71,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	}, [showChatOverlay]);
 
 	return (
-		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl overflow-hidden relative">
+		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-transparent shadow-2xl rounded-xl relative">
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`
-          w-full md:w-2/5 flex flex-col p-4 bg-slate-800/80
-          ${showChatOverlay ? "hidden" : "flex"} 
-          md:flex md:flex-col md:h-full md:border-r md:border-slate-700 md:overflow-y-auto
+          w-full md:w-2/5 flex flex-col p-4 bg-slate-800/80 
+          md:h-full md:border-r md:border-slate-700 md:overflow-y-auto
         `}>
 				<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
 					<h2 className="text-lg font-semibold text-sky-400">
@@ -140,7 +139,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 			{/* Mobile: Full Screen Chat Overlay */}
 			{showChatOverlay && (
-				<div className="md:hidden fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-md flex flex-col animate-[fadeIn_0.2s_ease-out]">
+				<div className="md:hidden fixed inset-0 z-40 bg-transparent flex flex-col animate-[fadeIn_0.2s_ease-out]">
 					<div className="flex-1 flex flex-col overflow-hidden">
 						<RenderChatInterface
 							conversationHistory={conversationHistory}
