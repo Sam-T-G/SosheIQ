@@ -59,17 +59,71 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 	showPerTurnScores,
 }) => (
 	<div className="p-4 bg-slate-700 rounded-lg shadow mb-3">
-		<p className="text-sm text-sky-300 font-semibold mb-1">
+		<p className="text-sm text-sky-300 font-semibold mb-2">
 			Exchange {index + 1}
 		</p>
+
+		{/* AI's Part of the Exchange */}
+		<div
+			className={`pb-3 ${
+				item.userInput && item.analysis ? "border-b border-slate-600/70" : ""
+			}`}>
+			{item.aiResponse && (
+				<p className="text-gray-400 italic mb-1">
+					<strong>{aiName}:</strong> "{item.aiResponse}"
+				</p>
+			)}
+			{item.aiBodyLanguage && (
+				<div className="mt-2 p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md">
+					<div className="flex items-center text-xs text-yellow-500 mb-1">
+						<ChatBubbleIcon />
+						<span className="ml-1.5 font-semibold">
+							{aiName}'s Body Language:
+						</span>
+					</div>
+					<p className="text-yellow-200 italic text-sm whitespace-pre-wrap">
+						{item.aiBodyLanguage}
+					</p>
+				</div>
+			)}
+			{item.aiThoughts && (
+				<div className="mt-2 p-2.5 bg-purple-800/50 border border-purple-700/60 rounded-md">
+					<div className="flex items-center text-xs text-purple-400 mb-1">
+						<ThoughtBubbleIcon />
+						<span className="ml-1.5 font-semibold">
+							{aiName}'s Internal Thoughts:
+						</span>
+					</div>
+					<p className="text-purple-200 italic text-sm whitespace-pre-wrap">
+						{item.aiThoughts}
+					</p>
+				</div>
+			)}
+			{showPerTurnScores && typeof item.conversationMomentum === "number" && (
+				<div className="mt-2 p-1.5 bg-green-800/40 border border-green-700/50 rounded-md">
+					<div className="flex items-center text-xs text-green-400">
+						<TrendingUpIcon />
+						<span className="ml-1.5 font-semibold">
+							Conversation Momentum (after AI turn):
+						</span>
+						<span className="ml-auto text-green-200 font-bold text-sm">
+							{item.conversationMomentum}%
+						</span>
+					</div>
+					<ProgressBar percentage={item.conversationMomentum} />
+				</div>
+			)}
+		</div>
+
+		{/* User's Turn & Analysis of User's Turn */}
 		{item.userInput && (
-			<div className="mb-2">
+			<div className="mt-3">
 				<p className="text-gray-300 italic mb-1">
 					<strong>You:</strong> "{item.userInput}"
 				</p>
 				{showPerTurnScores &&
 					typeof item.userTurnEffectivenessScore === "number" && (
-						<div className="mt-1 p-1.5 bg-cyan-800/40 border border-cyan-700/50 rounded-md">
+						<div className="mt-1 mb-2 p-1.5 bg-cyan-800/40 border border-cyan-700/50 rounded-md">
 							<div className="flex items-center text-xs text-cyan-400">
 								<EyeIcon />
 								<span className="ml-1.5 font-semibold">
@@ -82,62 +136,16 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 							<ProgressBar percentage={item.userTurnEffectivenessScore} />
 						</div>
 					)}
-			</div>
-		)}
-
-		{item.aiResponse && (
-			<div className="mb-1">
-				<p className="text-gray-400 italic">
-					<strong>{aiName}:</strong> "{item.aiResponse}"
-				</p>
-				{showPerTurnScores && typeof item.conversationMomentum === "number" && (
-					<div className="mt-1 p-1.5 bg-green-800/40 border border-green-700/50 rounded-md">
-						<div className="flex items-center text-xs text-green-400">
-							<TrendingUpIcon />
-							<span className="ml-1.5 font-semibold">
-								Conversation Momentum:
-							</span>
-							<span className="ml-auto text-green-200 font-bold text-sm">
-								{item.conversationMomentum}%
-							</span>
-						</div>
-						<ProgressBar percentage={item.conversationMomentum} />
+				{item.analysis && item.analysis.trim() !== "" && (
+					<div className="mt-2 pt-2 border-t border-slate-600/70">
+						<p className="text-sm font-semibold text-sky-300 mb-1">
+							Feedback on Your Response:
+						</p>
+						<p className="text-gray-200 whitespace-pre-wrap">{item.analysis}</p>
 					</div>
 				)}
 			</div>
 		)}
-
-		{item.aiBodyLanguage && (
-			<div className="mt-2 p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md">
-				<div className="flex items-center text-xs text-yellow-500 mb-1">
-					<ChatBubbleIcon />
-					<span className="ml-1.5 font-semibold">
-						{aiName}'s Body Language:
-					</span>
-				</div>
-				<p className="text-yellow-200 italic text-sm whitespace-pre-wrap">
-					{item.aiBodyLanguage}
-				</p>
-			</div>
-		)}
-
-		{item.aiThoughts && (
-			<div className="mt-2 p-2.5 bg-purple-800/50 border border-purple-700/60 rounded-md">
-				<div className="flex items-center text-xs text-purple-400 mb-1">
-					<ThoughtBubbleIcon />
-					<span className="ml-1.5 font-semibold">
-						{aiName}'s Internal Thoughts:
-					</span>
-				</div>
-				<p className="text-purple-200 italic text-sm whitespace-pre-wrap">
-					{item.aiThoughts}
-				</p>
-			</div>
-		)}
-
-		<p className="text-gray-200 mt-2 pt-2 border-t border-slate-600/70 whitespace-pre-wrap">
-			{item.analysis}
-		</p>
 	</div>
 );
 

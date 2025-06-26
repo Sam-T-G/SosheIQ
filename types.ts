@@ -91,13 +91,16 @@ export interface ChatMessage {
 }
 
 export interface TurnByTurnAnalysisItem {
-  userInput?: string;
+  // AI's part of the exchange
   aiResponse?: string;
   aiBodyLanguage?: string;
   aiThoughts?: string;
-  userTurnEffectivenessScore?: number;
-  conversationMomentum?: number;
-  analysis: string;
+  conversationMomentum?: number; // Momentum after AI's turn
+
+  // User's part of the exchange (optional, if user responded)
+  userInput?: string;
+  userTurnEffectivenessScore?: number; // Score for user's input
+  analysis?: string; // Analysis *of the userInput*, if present. Will be omitted or empty if no userInput.
 }
 
 export interface AnalysisReport {

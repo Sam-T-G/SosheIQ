@@ -353,7 +353,7 @@ export class GeminiService {
     const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 
 
-    const prompt = `You are a sophisticated AI Social Skills Coach. Your task is to analyze the following conversation and provide a detailed performance report.
+    const prompt = `You are a sophisticated AI Social Skills Coach. Your task is to analyze the following conversation and provide a detailed performance report FOR THE USER.
 
     Scenario Context:
     - Social Environment: ${scenario.environment}
@@ -375,25 +375,30 @@ export class GeminiService {
       "adaptabilityScore": number, // (0-100) User's skill in adapting to the AI's persona (traits, custom description, age) and conversation flow.
       "overallAiEffectivenessScore": number, // (0-100, optional) Your assessment of how well the AI played its role based on its persona and the interaction. If unsure, you can omit or use a placeholder like 75.
       "finalEngagementSnapshot": ${finalEngagementSnapshot}, // User's final engagement score with the AI.
-      "turnByTurnAnalysis": [
+      "turnByTurnAnalysis": [ // An array of exchanges. Each exchange starts with the AI's turn, followed by the User's turn if they responded.
         {
-          "userInput": "User's message in that turn (if any).",
-          "aiResponse": "AI's response in that turn (if any).",
+          // AI's part of the exchange
+          "aiResponse": "AI's dialogue in that turn (if any).",
           "aiBodyLanguage": "AI's body language at that turn (if any).",
           "aiThoughts": "AI's internal thoughts at that turn (if any, from history).",
-          "userTurnEffectivenessScore": number, // (0-100) How effective was the user's specific input in this turn?
-          "conversationMomentum": number, // (0-100) The AI's perceived conversation momentum from that AI turn (from history, if available).
-          "analysis": "Your concise analysis of this specific exchange (user's part, AI's part, dynamics)."
+          "conversationMomentum": number, // (0-100, optional) The AI's perceived conversation momentum from that AI turn (from history, if available).
+
+          // User's response (if any)
+          "userInput": "User's message in response to the AI (if any).",
+          "userTurnEffectivenessScore": number, // (0-100, optional) How effective was the user's specific input in this turn? Only if userInput is present.
+          "analysis": "Concise analysis and feedback *specifically for the userInput*. If userInput is not present for this exchange (e.g., AI's initial message or if AI spoke last), this 'analysis' field should be omitted or be an empty string. The focus is on evaluating the user's performance when they provide input."
         }
+        // ... more exchanges
       ],
       "overallFeedback": "Detailed overall feedback for the user. Include specific strengths, areas for improvement, and actionable tips. Be constructive and encouraging. Consider how user adapted to AI's persona (traits, custom text, age) if specified.",
       "aiEvolvingThoughtsSummary": "A brief summary of how the AI's internal thoughts (from 'AI Internal Thoughts' in history) seemed to evolve or react to the user throughout the conversation. If not enough data, state that."
     }
 
     Guidelines for Analysis:
-    - Be objective and fair.
-    - Provide specific examples from the conversation to support your scores and feedback.
-    - For turn-by-turn analysis, focus on key moments or turns that significantly impacted the interaction. You don't need to analyze every single message if some are trivial. Try to get 3-7 key turns.
+    - Process the conversation sequentially. For each instance where the AI makes a statement/asks a question, and the user provides a subsequent 'userInput', generate an entry in 'turnByTurnAnalysis'.
+    - If the AI makes a statement and there's no subsequent user input (e.g., the very first AI message, or the last AI message if the conversation ends there), you can still create an entry for the AI's part, but 'userInput', 'userTurnEffectivenessScore', and 'analysis' (for user input) should be omitted or empty for that entry.
+    - Be objective and fair in user assessment.
+    - Provide specific examples from the conversation to support your scores and feedback for the user.
     - Ensure all numerical scores are within the 0-100 range.
     - The "aiEvolvingThoughtsSummary" should be based *only* on the AI's thoughts provided in the history.
     - The "conversationMomentum" in turnByTurnAnalysis should be taken from the AI's message data if present for that turn.
@@ -426,7 +431,7 @@ export class GeminiService {
                 aiResponse: this.cleanAiDialogue(item.aiResponse),
                 aiBodyLanguage: this.cleanAiDialogue(item.aiBodyLanguage),
                 aiThoughts: this.cleanAiDialogue(item.aiThoughts),
-                analysis: this.cleanAiDialogue(item.analysis),
+                analysis: item.userInput && item.analysis ? this.cleanAiDialogue(item.analysis) : (item.analysis || ""), // Ensure analysis is cleaned if present, or empty string
                 userTurnEffectivenessScore: typeof item.userTurnEffectivenessScore === 'number' ? item.userTurnEffectivenessScore : undefined,
                 conversationMomentum: typeof item.conversationMomentum === 'number' ? item.conversationMomentum : undefined,
             }));
