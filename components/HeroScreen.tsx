@@ -1,13 +1,16 @@
 import React from "react";
-import { GamePhase } from "../types";
 import { PlayIcon, InfoIcon } from "./Icons";
-import { SosheIQLogo } from "./SosheIQLogo"; // Import the new SVG Logo component
+import { SosheIQLogo } from "./SosheIQLogo";
 
 interface HeroScreenProps {
-	onNavigate: (phase: GamePhase) => void;
+	onStartGuided: () => void;
+	onStartAdvanced: () => void;
 }
 
-export const HeroScreen: React.FC<HeroScreenProps> = ({ onNavigate }) => {
+export const HeroScreen: React.FC<HeroScreenProps> = ({
+	onStartGuided,
+	onStartAdvanced,
+}) => {
 	return (
 		<div className="flex flex-col items-center justify-center text-center w-full max-w-3xl p-6 md:p-10">
 			<SosheIQLogo
@@ -21,24 +24,24 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({ onNavigate }) => {
 			</p>
 			<div className="space-y-4 md:space-y-0 md:space-x-6 flex flex-col md:flex-row">
 				<button
-					onClick={() => onNavigate(GamePhase.INSTRUCTIONS)}
+					onClick={onStartAdvanced}
 					className="px-8 py-4 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-lg shadow-lg 
                      transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
                      focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50
                      opacity-0 animate-[heroButtonAppear_0.5s_ease-out_forwards] flex items-center justify-center space-x-2"
 					style={{ animationDelay: "0.6s" }}
-					aria-label="View Instructions">
+					aria-label="Advanced Setup">
 					<InfoIcon />
-					<span>Instructions</span>
+					<span>Advanced Setup</span>
 				</button>
 				<button
-					onClick={() => onNavigate(GamePhase.SETUP)}
+					onClick={onStartGuided}
 					className="px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-lg shadow-lg 
                      transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
                      focus:ring-4 focus:ring-green-400 focus:ring-opacity-50
                      opacity-0 animate-[heroButtonAppear_0.5s_ease-out_forwards] flex items-center justify-center space-x-2"
 					style={{ animationDelay: "0.8s" }}
-					aria-label="Start Interaction">
+					aria-label="Start Guided Interaction">
 					<PlayIcon />
 					<span>Get Started</span>
 				</button>

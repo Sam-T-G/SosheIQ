@@ -1,11 +1,14 @@
 
+
 export enum SocialEnvironment {
+  CASUAL = "Casual Chat",
   DATING = "Dating",
   WORK = "Work Environment",
   SOCIAL_GATHERING = "Social Gathering (e.g., party, networking event)",
   FAMILY = "Family Interaction",
   CUSTOMER_SERVICE = "Customer Service Scenario",
   NEGOTIATION = "Negotiation or Debate",
+  CUSTOM = "Custom...",
 }
 
 export enum AIPersonalityTrait {
@@ -65,6 +68,8 @@ export enum AIAgeBracket {
 
 export interface ScenarioDetails {
   environment: SocialEnvironment;
+  customEnvironment?: string;
+  aiCulture?: string;
   aiPersonalityTraits: AIPersonalityTrait[];
   customAiPersonality?: string;
   powerDynamic: PowerDynamic;
@@ -73,6 +78,7 @@ export interface ScenarioDetails {
   aiAgeBracket?: AIAgeBracket;
   customAiAge?: number; // To store validated custom age
   customContext?: string;
+  conversationGoal?: string;
   aiEstablishedVisualPromptSegment?: string;
 }
 
@@ -83,6 +89,8 @@ export interface ChatMessage {
   bodyLanguageDescription?: string;
   aiThoughts?: string;
   conversationMomentum?: number;
+  userTurnEffectivenessScore?: number;
+  engagementDelta?: number;
   imagePrompt?: string;
   imageUrl?: string; // base64
   timestamp: Date;
@@ -100,6 +108,7 @@ export interface TurnByTurnAnalysisItem {
   // User's part of the exchange (optional, if user responded)
   userInput?: string;
   userTurnEffectivenessScore?: number; // Score for user's input
+  engagementDelta?: number;
   analysis?: string; // Analysis *of the userInput*, if present. Will be omitted or empty if no userInput.
 }
 
@@ -108,10 +117,12 @@ export interface AnalysisReport {
   responseClarityScore: number;
   engagementMaintenanceScore: number;
   adaptabilityScore: number;
+  goalAchievementScore?: number; // Optional score for the new goal feature
   overallAiEffectivenessScore?: number;
   finalEngagementSnapshot: number;
   turnByTurnAnalysis: TurnByTurnAnalysisItem[];
   overallFeedback: string;
+  goalAchievementFeedback?: string; // Optional feedback for the new goal feature
   aiEvolvingThoughtsSummary?: string;
 }
 

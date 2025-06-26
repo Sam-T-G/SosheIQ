@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -102,22 +103,82 @@ html {
   opacity: 0;
   animation: letter-fade-in 0.3s ease-out forwards;
 }
-/* Added from original index.html - END */
 
-/* Engagement Progress Bar Glow - Removed as the effect is simplified in ProgressBar.tsx */
-/*
-@keyframes progress-glow-effect {
+/* Goal Banner Animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slideDown {
+  animation: slideDown 0.5s ease-out forwards;
+}
+
+/* --- NEW & UPDATED ANIMATIONS --- */
+
+/* Engagement Delta Badge Animation (persistent) */
+@keyframes popIn {
+  0% { opacity: 0; transform: translateY(5px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-popIn {
+  animation: popIn 0.3s ease-out forwards;
+}
+
+/* Effectiveness Score Badge Animation (persistent) */
+@keyframes zoomIn {
+  0% { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-zoomIn {
+  animation: zoomIn 0.3s ease-out forwards;
+}
+
+/* Notification Single Pulse Animation */
+@keyframes slowPulseOnce {
   0%, 100% {
-    box-shadow: 0 0 0px 0px rgba(56, 189, 248, 0); 
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 12px 4px rgba(56, 189, 248, 0.7); 
+    transform: scale(1.03);
   }
 }
-.animate-progress-glow {
-  animation: progress-glow-effect 1.5s ease-out;
+.animate-slowPulseOnce {
+  animation: slowPulseOnce 2s ease-in-out 1; /* Run once */
 }
-*/
+
+/* Guided Setup Animations */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+}
+.animate-slideInFromRight {
+  animation: slideInFromRight 0.35s ease-out forwards;
+}
+.animate-slideOutToLeft {
+  animation: slideOutToLeft 0.35s ease-out forwards;
+}
 
 /* AI Image Crossfade Animation */
 @keyframes image-cross-fade-in {

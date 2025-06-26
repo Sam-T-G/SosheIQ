@@ -45,6 +45,22 @@ const ScoreDisplay: React.FC<{ label: string; score: number | undefined }> = ({
 	</div>
 );
 
+const DeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
+	const isPositive = delta >= 0;
+	const colorClasses = isPositive
+		? "bg-green-500/20 text-green-300"
+		: "bg-red-500/20 text-red-300";
+	const sign = isPositive ? "+" : "";
+
+	return (
+		<span
+			className={`px-2 py-0.5 rounded-full text-xs font-bold ${colorClasses}`}>
+			{sign}
+			{delta}%
+		</span>
+	);
+};
+
 interface TurnAnalysisItemDisplayProps {
 	item: TurnByTurnAnalysisItem;
 	index: number;
@@ -121,21 +137,31 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 				<p className="text-gray-300 italic mb-1">
 					<strong>You:</strong> "{item.userInput}"
 				</p>
-				{showPerTurnScores &&
-					typeof item.userTurnEffectivenessScore === "number" && (
-						<div className="mt-1 mb-2 p-1.5 bg-cyan-800/40 border border-cyan-700/50 rounded-md">
-							<div className="flex items-center text-xs text-cyan-400">
-								<EyeIcon />
-								<span className="ml-1.5 font-semibold">
-									Your Effectiveness This Turn:
-								</span>
-								<span className="ml-auto text-cyan-200 font-bold text-sm">
-									{item.userTurnEffectivenessScore}%
-								</span>
+				{showPerTurnScores && (
+					<div className="grid grid-cols-2 gap-2 mt-2 mb-2 text-xs">
+						{typeof item.userTurnEffectivenessScore === "number" && (
+							<div className="p-1.5 bg-cyan-800/40 border border-cyan-700/50 rounded-md">
+								<div className="flex justify-between items-center text-cyan-400">
+									<span className="font-semibold">Effectiveness</span>
+									<span className="font-bold text-cyan-200 text-sm">
+										{item.userTurnEffectivenessScore}%
+									</span>
+								</div>
+								<ProgressBar percentage={item.userTurnEffectivenessScore} />
 							</div>
-							<ProgressBar percentage={item.userTurnEffectivenessScore} />
-						</div>
-					)}
+						)}
+						{typeof item.engagementDelta === "number" && (
+							<div className="p-1.5 bg-slate-800/40 border border-slate-600/50 rounded-md">
+								<div className="flex justify-between items-center">
+									<span className="font-semibold text-gray-300">
+										Engagement Impact
+									</span>
+									<DeltaBadge delta={item.engagementDelta} />
+								</div>
+							</div>
+						)}
+					</div>
+				)}
 				{item.analysis && item.analysis.trim() !== "" && (
 					<div className="mt-2 pt-2 border-t border-slate-600/70">
 						<p className="text-sm font-semibold text-sky-300 mb-1">
@@ -176,31 +202,35 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	const [showPerTurnScores, setShowPerTurnScores] = useState(false);
 
 	const handleExportToPdf = async () => {
-		if (
-			!reportContentRef.current ||
-			!report ||
-			!turnByTurnAnalysisContainerRef.current
-		)
-			return;
+		const contentToPrint = reportContentRef.current;
+		if (!contentToPrint) return;
 
+		// Temporarily adjust styles for rendering full content
+		const turnContainer = turnByTurnAnalysisContainerRef.current;
+		let originalTurnContainerStyles: {
+			maxHeight: string;
+			overflow: string;
+		} | null = null;
+		if (turnContainer) {
+			originalTurnContainerStyles = {
+				maxHeight: turnContainer.style.maxHeight,
+				overflow: turnContainer.style.overflow,
+			};
+			turnContainer.style.maxHeight = "none";
+			turnContainer.style.overflow = "visible";
+		}
 		const originalBodyBg = document.body.style.backgroundColor;
-		const scrollableContainer = turnByTurnAnalysisContainerRef.current;
-		const mainContent = reportContentRef.current;
-
-		const originalScrollableMaxHeight = scrollableContainer.style.maxHeight;
-		const originalScrollableOverflow = scrollableContainer.style.overflow;
-		const originalMainContentMaxWidth = mainContent.style.maxWidth;
+		document.body.style.backgroundColor = "white";
 
 		try {
-			document.body.style.backgroundColor = "white";
-			scrollableContainer.style.maxHeight = "none";
-			scrollableContainer.style.overflow = "visible";
-			mainContent.style.maxWidth = "none";
-
-			const canvas = await html2canvas(mainContent, {
+			const canvas = await html2canvas(contentToPrint, {
 				scale: 2,
 				useCORS: true,
-				backgroundColor: "#1e293b",
+				backgroundColor: "#1e293b", // slate-800
+				width: contentToPrint.scrollWidth,
+				height: contentToPrint.scrollHeight,
+				windowWidth: contentToPrint.scrollWidth,
+				windowHeight: contentToPrint.scrollHeight,
 			});
 
 			const imgData = canvas.toDataURL("image/png");
@@ -212,25 +242,30 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
 			const pdfWidth = pdf.internal.pageSize.getWidth();
 			const pdfHeight = pdf.internal.pageSize.getHeight();
+
 			const canvasWidth = canvas.width;
 			const canvasHeight = canvas.height;
-			const ratio = canvasWidth / canvasHeight;
 
-			let imgWidth = pdfWidth - 40;
-			let imgHeight = imgWidth / ratio;
+			// Calculate image dimensions to fit PDF width, maintaining aspect ratio
+			const imgWidth = pdfWidth;
+			const imgHeight = (canvasHeight * imgWidth) / canvasWidth;
 
-			if (imgHeight > pdfHeight - 40) {
-				imgHeight = pdfHeight - 40;
-				imgWidth = imgHeight * ratio;
+			let heightLeft = imgHeight;
+			let position = 0;
+
+			// Add the first page
+			pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+			heightLeft -= pdfHeight;
+
+			// Add subsequent pages if content is taller than one page
+			while (heightLeft > 0) {
+				position -= pdfHeight;
+				pdf.addPage();
+				pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+				heightLeft -= pdfHeight;
 			}
 
-			const x = (pdfWidth - imgWidth) / 2;
-			const y = 20;
-
-			pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
-			const safeAiName = scenarioDetails.aiName
-				? scenarioDetails.aiName.replace(/\s+/g, "_")
-				: "AI";
+			const safeAiName = (scenarioDetails.aiName || "AI").replace(/\s+/g, "_");
 			pdf.save(
 				`SosheIQ-Analysis-${safeAiName}-${
 					new Date().toISOString().split("T")[0]
@@ -238,11 +273,14 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 			);
 		} catch (err) {
 			console.error("Error generating PDF:", err);
+			// You might want to show an error message to the user here
 		} finally {
+			// Restore original styles
 			document.body.style.backgroundColor = originalBodyBg;
-			scrollableContainer.style.maxHeight = originalScrollableMaxHeight;
-			scrollableContainer.style.overflow = originalScrollableOverflow;
-			mainContent.style.maxWidth = originalMainContentMaxWidth;
+			if (turnContainer && originalTurnContainerStyles) {
+				turnContainer.style.maxHeight = originalTurnContainerStyles.maxHeight;
+				turnContainer.style.overflow = originalTurnContainerStyles.overflow;
+			}
 		}
 	};
 
@@ -310,6 +348,11 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					{ageText})
 					<br />
 					Dynamic: {scenarioDetails.powerDynamic}
+					{scenarioDetails.conversationGoal && (
+						<span className="block mt-1 font-semibold text-teal-300">
+							Goal: {scenarioDetails.conversationGoal}
+						</span>
+					)}
 					{scenarioDetails.customContext && (
 						<span className="block mt-1 text-xs italic">
 							Custom Context: {scenarioDetails.customContext}
@@ -331,6 +374,12 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 						score={report.engagementMaintenanceScore}
 					/>
 					<ScoreDisplay label="Adaptability" score={report.adaptabilityScore} />
+					{typeof report.goalAchievementScore === "number" && (
+						<ScoreDisplay
+							label="Goal Achievement"
+							score={report.goalAchievementScore}
+						/>
+					)}
 					{typeof report.overallAiEffectivenessScore === "number" && (
 						<ScoreDisplay
 							label="Overall AI Effectiveness"
@@ -342,6 +391,17 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					label={`Final ${scenarioDetails.aiName}'s Engagement`}
 					score={report.finalEngagementSnapshot}
 				/>
+
+				{report.goalAchievementFeedback && (
+					<div className="bg-slate-700 p-4 rounded-lg shadow mt-6">
+						<h3 className="text-xl font-semibold text-teal-400 mb-3">
+							Goal Achievement Feedback
+						</h3>
+						<p className="text-gray-200 whitespace-pre-wrap">
+							{report.goalAchievementFeedback}
+						</p>
+					</div>
+				)}
 
 				<div className="bg-slate-700 p-4 rounded-lg shadow mt-6">
 					<h3 className="text-xl font-semibold text-sky-400 mb-3">

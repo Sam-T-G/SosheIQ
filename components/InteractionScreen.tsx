@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import type { ScenarioDetails, ChatMessage } from "../types";
 import { ProgressBar } from "./ProgressBar";
 import { AIVisualCue } from "./AIVisualCue";
-import { ChatBubbleIcon } from "./Icons";
+import { ChatBubbleIcon, TargetIcon } from "./Icons";
 import { RenderChatInterface } from "./RenderChatInterface";
 
 interface InteractionScreenProps {
 	scenarioDetails: ScenarioDetails;
 	conversationHistory: ChatMessage[];
 	currentEngagement: number;
+	displayedGoal: { text: string; progress: number } | null;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	aiImageBase64: string | null;
@@ -52,10 +53,31 @@ const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
 	return personalityDisplay;
 };
 
+const GoalBanner: React.FC<{ goal: { text: string; progress: number } }> = ({
+	goal,
+}) => (
+	<div className="bg-teal-900/80 backdrop-blur-sm border-b-2 border-teal-500/50 p-3 shadow-lg animate-slideDown">
+		<div className="flex items-center gap-3 mb-1.5">
+			<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
+			<div className="flex-grow">
+				<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
+					Conversation Goal
+				</p>
+				<p className="text-sm text-teal-100 truncate" title={goal.text}>
+					{goal.text}
+				</p>
+			</div>
+			<span className="text-lg font-bold text-white">{goal.progress}%</span>
+		</div>
+		<ProgressBar percentage={goal.progress} />
+	</div>
+);
+
 export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	scenarioDetails,
 	conversationHistory,
 	currentEngagement,
+	displayedGoal,
 	onSendMessage,
 	onEndConversation,
 	aiImageBase64,
@@ -88,14 +110,19 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
 
 	return (
-		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-transparent shadow-2xl rounded-xl relative">
+		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-transparent shadow-2xl rounded-xl relative overflow-hidden">
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`
           w-full md:w-2/5 flex flex-col p-4 bg-slate-800/80 
           md:h-full md:border-r md:border-slate-700 md:overflow-y-auto
         `}>
-				<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
+				{/* Desktop Goal Banner */}
+				<div className="hidden md:block">
+					{displayedGoal && <GoalBanner goal={displayedGoal} />}
+				</div>
+
+				<div className="text-center md:text-left w-full px-2 mt-2 mb-2 flex-shrink-0">
 					<h2 className="text-lg font-semibold text-sky-400">
 						{scenarioDetails.aiName}
 					</h2>
@@ -123,7 +150,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					<label
 						htmlFor="engagement"
 						className="block text-sm font-medium text-sky-300 mb-1 text-center md:text-left">
-						{scenarioDetails.aiName}'s Engagement: {currentEngagement}%
+						Engagement: {currentEngagement}%
 					</label>
 					<ProgressBar percentage={currentEngagement} />
 				</div>
@@ -134,11 +161,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				<RenderChatInterface
 					conversationHistory={conversationHistory}
 					currentEngagement={currentEngagement}
+					displayedGoal={displayedGoal}
 					onSendMessage={onSendMessage}
 					onEndConversation={onEndConversation}
 					isLoadingAI={isLoadingAI} // Pass this to disable send button etc.
 					scenarioDetailsAiName={scenarioDetails.aiName}
-					isMaxEngagement={currentEngagement >= 100}
+					isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
 					isOverlay={false}
 					showGlobalAiThoughts={showGlobalAiThoughts}
 					onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
@@ -159,24 +187,23 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 			{/* Mobile: Full Screen Chat Overlay */}
 			{showChatOverlay && (
-				<div className="md:hidden fixed inset-0 z-40 bg-transparent flex flex-col animate-[fadeIn_0.2s_ease-out] min-h-screen">
-					<div className="flex-1 flex flex-col overflow-hidden">
-						<RenderChatInterface
-							conversationHistory={conversationHistory}
-							currentEngagement={currentEngagement}
-							onSendMessage={onSendMessage}
-							onEndConversation={onEndConversation}
-							isLoadingAI={isLoadingAI}
-							scenarioDetailsAiName={scenarioDetails.aiName}
-							isMaxEngagement={currentEngagement >= 100}
-							isOverlay={true}
-							onCloseOverlay={() => setShowChatOverlay(false)}
-							showGlobalAiThoughts={showGlobalAiThoughts}
-							onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
-							onToggleHelpOverlay={onToggleHelpOverlay}
-							onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
-						/>
-					</div>
+				<div className="md:hidden fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-lg flex flex-col animate-[fadeIn_0.2s_ease-out]">
+					<RenderChatInterface
+						conversationHistory={conversationHistory}
+						currentEngagement={currentEngagement}
+						displayedGoal={displayedGoal}
+						onSendMessage={onSendMessage}
+						onEndConversation={onEndConversation}
+						isLoadingAI={isLoadingAI}
+						scenarioDetailsAiName={scenarioDetails.aiName}
+						isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
+						isOverlay={true}
+						onCloseOverlay={() => setShowChatOverlay(false)}
+						showGlobalAiThoughts={showGlobalAiThoughts}
+						onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
+						onToggleHelpOverlay={onToggleHelpOverlay}
+						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+					/>
 				</div>
 			)}
 		</div>

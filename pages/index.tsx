@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { HeroScreen } from "../components/HeroScreen";
 import { InstructionsScreen } from "../components/InstructionsScreen";
 import { SetupScreen } from "../components/SetupScreen";
+import { GuidedSetup } from "../components/GuidedSetup";
 import { InteractionScreen } from "../components/InteractionScreen";
 import { AnalysisScreen } from "../components/AnalysisScreen";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -22,8 +23,14 @@ import {
 	INITIAL_ENGAGEMENT,
 } from "../constants";
 
+type DisplayedGoal = {
+	text: string;
+	progress: number;
+} | null;
+
 const HomePage: React.FC = () => {
 	const [currentPhase, setCurrentPhase] = useState<GamePhase>(GamePhase.HERO);
+	const [setupMode, setSetupMode] = useState<"guided" | "advanced">("guided");
 	const [scenarioDetails, setScenarioDetails] =
 		useState<ScenarioDetails | null>(null);
 	const [conversationHistory, setConversationHistory] = useState<ChatMessage[]>(
@@ -31,6 +38,8 @@ const HomePage: React.FC = () => {
 	);
 	const [currentEngagement, setCurrentEngagement] =
 		useState<number>(INITIAL_ENGAGEMENT);
+	const [displayedGoal, setDisplayedGoal] = useState<DisplayedGoal>(null);
+
 	const [zeroEngagementStreak, setZeroEngagementStreak] = useState<number>(0);
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
 	const [isAiResponding, setIsAiResponding] = useState<boolean>(false); // Specific for AI turn processing (image and text)
@@ -42,8 +51,6 @@ const HomePage: React.FC = () => {
 
 	const geminiService = useRef<GeminiService | null>(null);
 	const imagenService = useRef<ImagenService | null>(null);
-
-	// Removed appLoadAnimationPlayed and contentDisplayClass states
 
 	const [showHelpOverlay, setShowHelpOverlay] = useState(false);
 	const [showQuickTipsOverlay, setShowQuickTipsOverlay] = useState(false);
@@ -75,16 +82,21 @@ const HomePage: React.FC = () => {
 		initServices();
 	}, []);
 
+	const resetStateForNewGame = () => {
+		setScenarioDetails(null);
+		setConversationHistory([]);
+		setCurrentEngagement(INITIAL_ENGAGEMENT);
+		setDisplayedGoal(null);
+		setZeroEngagementStreak(0);
+		setAnalysisReport(null);
+		setCurrentAIImage(null);
+		setShowGlobalAiThoughts(false);
+	};
+
 	const handleNavigate = useCallback((phase: GamePhase) => {
 		setError(null);
 		if (phase === GamePhase.HERO) {
-			setScenarioDetails(null);
-			setConversationHistory([]);
-			setCurrentEngagement(INITIAL_ENGAGEMENT);
-			setZeroEngagementStreak(0);
-			setAnalysisReport(null);
-			setCurrentAIImage(null);
-			setShowGlobalAiThoughts(false);
+			resetStateForNewGame();
 		}
 		setCurrentPhase(phase);
 	}, []);
@@ -98,19 +110,19 @@ const HomePage: React.FC = () => {
 			setIsLoading(true);
 			setError(null);
 
-			// Ensure scenarioDetails includes the new personality structure
+			resetStateForNewGame();
+
 			const fullDetails: ScenarioDetails = {
 				...details,
 				aiPersonalityTraits: details.aiPersonalityTraits || [],
 				customAiPersonality: details.customAiPersonality || undefined,
+				conversationGoal: details.conversationGoal || undefined,
 			};
 			setScenarioDetails(fullDetails);
 
-			setConversationHistory([]);
-			setCurrentEngagement(INITIAL_ENGAGEMENT);
-			setZeroEngagementStreak(0);
-			setAnalysisReport(null);
-			setCurrentAIImage(null);
+			if (fullDetails.conversationGoal) {
+				setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
+			}
 
 			try {
 				const {
@@ -140,7 +152,8 @@ const HomePage: React.FC = () => {
 						fullDetails.aiName,
 						fullDetails.aiAgeBracket,
 						fullDetails.customAiAge,
-						fullDetails.aiEstablishedVisualPromptSegment
+						fullDetails.aiEstablishedVisualPromptSegment,
+						fullDetails.aiCulture
 					);
 				if (newEstablishedVisualSegment) {
 					setScenarioDetails((prev) =>
@@ -213,6 +226,10 @@ const HomePage: React.FC = () => {
 					scenarioDetails
 				);
 
+				const engagementDelta = aiResponse.engagementDelta || 0;
+				const userTurnEffectivenessScore =
+					aiResponse.userTurnEffectivenessScore;
+
 				const aiMessage: ChatMessage = {
 					id: uuidv4(),
 					sender: "ai",
@@ -223,15 +240,46 @@ const HomePage: React.FC = () => {
 					conversationMomentum: aiResponse.conversationMomentum,
 				};
 
+				// Update history: remove thinking bubble, add new AI message, and update user message with feedback
 				setConversationHistory((prev) => {
-					const newHistory = prev.filter((m) => !m.isThinkingBubble);
-					return [...newHistory, aiMessage];
+					const historyWithoutThinking = prev.filter(
+						(m) => !m.isThinkingBubble
+					);
+					const updatedHistory = historyWithoutThinking.map((m) =>
+						m.id === userMessage.id
+							? { ...m, engagementDelta, userTurnEffectivenessScore }
+							: m
+					);
+					return [...updatedHistory, aiMessage];
 				});
 
-				let newEngagementValue = aiResponse.newEngagement;
-				newEngagementValue -= ENGAGEMENT_DECAY_PER_TURN;
-				newEngagementValue = Math.max(0, Math.min(100, newEngagementValue));
+				const newEngagementValue = Math.max(
+					0,
+					Math.min(
+						100,
+						currentEngagement + engagementDelta - ENGAGEMENT_DECAY_PER_TURN
+					)
+				);
 				setCurrentEngagement(newEngagementValue);
+
+				// Update goal display
+				const currentGoalText =
+					displayedGoal?.text || scenarioDetails.conversationGoal;
+				if (aiResponse.emergingGoal && !currentGoalText) {
+					setDisplayedGoal({
+						text: aiResponse.emergingGoal,
+						progress: aiResponse.goalProgress,
+					});
+					// Update scenario details in state with the new goal
+					setScenarioDetails((prev) =>
+						prev ? { ...prev, conversationGoal: aiResponse.emergingGoal } : null
+					);
+				} else if (currentGoalText) {
+					setDisplayedGoal({
+						text: currentGoalText,
+						progress: aiResponse.goalProgress,
+					});
+				}
 
 				if (newEngagementValue <= 0) {
 					setZeroEngagementStreak((prev) => prev + 1);
@@ -247,7 +295,8 @@ const HomePage: React.FC = () => {
 							scenarioDetails.aiName,
 							scenarioDetails.aiAgeBracket,
 							scenarioDetails.customAiAge,
-							scenarioDetails.aiEstablishedVisualPromptSegment
+							scenarioDetails.aiEstablishedVisualPromptSegment,
+							scenarioDetails.aiCulture
 						);
 					if (newEstablishedVisualSegment) {
 						setScenarioDetails((prev) =>
@@ -280,9 +329,12 @@ const HomePage: React.FC = () => {
 				const currentTurnZeroStreak =
 					newEngagementValue <= 0 ? zeroEngagementStreak + 1 : 0;
 
+				const goalIsActive = displayedGoal || scenarioDetails.conversationGoal;
+
 				if (
 					aiResponse.isEndingConversation ||
-					newEngagementValue >= 100 ||
+					(goalIsActive && aiResponse.achieved) ||
+					(goalIsActive && aiResponse.goalProgress >= 100) ||
 					(newEngagementValue <= 0 &&
 						currentTurnZeroStreak >= MAX_ZERO_ENGAGEMENT_STREAK)
 				) {
@@ -310,6 +362,7 @@ const HomePage: React.FC = () => {
 			scenarioDetails,
 			conversationHistory,
 			currentEngagement,
+			displayedGoal,
 			zeroEngagementStreak,
 		]
 	);
@@ -336,9 +389,15 @@ const HomePage: React.FC = () => {
 			setCurrentPhase(GamePhase.ANALYSIS);
 
 			try {
+				const finalScenarioDetails = { ...scenarioDetails };
+				// This ensures that an emerged goal is passed to the analysis screen
+				if (displayedGoal && !finalScenarioDetails.conversationGoal) {
+					finalScenarioDetails.conversationGoal = displayedGoal.text;
+				}
+
 				const report = await geminiService.current.analyzeConversation(
 					historyForAnalysis,
-					scenarioDetails,
+					finalScenarioDetails,
 					currentEngagement
 				);
 				setAnalysisReport(report);
@@ -350,19 +409,13 @@ const HomePage: React.FC = () => {
 				setIsLoading(false);
 			}
 		},
-		[conversationHistory, scenarioDetails, currentEngagement]
+		[conversationHistory, scenarioDetails, currentEngagement, displayedGoal]
 	);
 
 	const handleRestart = useCallback(() => {
 		setCurrentPhase(GamePhase.SETUP);
-		setScenarioDetails(null);
-		setConversationHistory([]);
-		setCurrentEngagement(INITIAL_ENGAGEMENT);
-		setZeroEngagementStreak(0);
-		setAnalysisReport(null);
+		resetStateForNewGame();
 		setError(null);
-		setCurrentAIImage(null);
-		setShowGlobalAiThoughts(false);
 	}, []);
 
 	const handleToggleHelpOverlay = () => setShowHelpOverlay((prev) => !prev);
@@ -375,15 +428,7 @@ const HomePage: React.FC = () => {
 	};
 
 	const handleAttemptEndConversation = () => {
-		if (
-			currentEngagement >= 100 ||
-			(currentEngagement <= 0 &&
-				zeroEngagementStreak >= MAX_ZERO_ENGAGEMENT_STREAK)
-		) {
-			handleEndConversation(true);
-		} else {
-			handleEndConversation(false);
-		}
+		handleEndConversation(false);
 	};
 
 	const renderContent = () => {
@@ -425,19 +470,42 @@ const HomePage: React.FC = () => {
 
 		switch (currentPhase) {
 			case GamePhase.HERO:
-				return <HeroScreen onNavigate={handleNavigate} />;
+				return (
+					<HeroScreen
+						onStartGuided={() => {
+							setSetupMode("guided");
+							handleNavigate(GamePhase.SETUP);
+						}}
+						onStartAdvanced={() => {
+							setSetupMode("advanced");
+							handleNavigate(GamePhase.SETUP);
+						}}
+					/>
+				);
 			case GamePhase.INSTRUCTIONS:
 				return <InstructionsScreen onNavigate={handleNavigate} />;
 			case GamePhase.SETUP:
+				if (setupMode === "guided") {
+					return (
+						<GuidedSetup
+							onStart={handleStartInteraction}
+							onSwitchToAdvanced={() => setSetupMode("advanced")}
+						/>
+					);
+				}
 				return <SetupScreen onStart={handleStartInteraction} />;
 			case GamePhase.INTERACTION:
 				if (!scenarioDetails)
 					return <LoadingIndicator message="Loading scenario..." />;
+
+				const isMaxEngagement = currentEngagement >= 100 && !displayedGoal;
+
 				return (
 					<InteractionScreen
 						scenarioDetails={scenarioDetails}
 						conversationHistory={conversationHistory}
 						currentEngagement={currentEngagement}
+						displayedGoal={displayedGoal}
 						onSendMessage={handleSendMessage}
 						onEndConversation={handleAttemptEndConversation}
 						aiImageBase64={currentAIImage}
@@ -465,7 +533,18 @@ const HomePage: React.FC = () => {
 					/>
 				);
 			default:
-				return <HeroScreen onNavigate={handleNavigate} />;
+				return (
+					<HeroScreen
+						onStartGuided={() => {
+							setSetupMode("guided");
+							handleNavigate(GamePhase.SETUP);
+						}}
+						onStartAdvanced={() => {
+							setSetupMode("advanced");
+							handleNavigate(GamePhase.SETUP);
+						}}
+					/>
+				);
 		}
 	};
 
@@ -497,7 +576,9 @@ const HomePage: React.FC = () => {
 				{/* Main content area gets a quick, direct fade-in */}
 				<main
 					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] ${
-						currentPhase === GamePhase.HERO ? "justify-center" : ""
+						currentPhase === GamePhase.HERO || currentPhase === GamePhase.SETUP
+							? "justify-center"
+							: ""
 					}`}>
 					{renderContent()}
 				</main>
