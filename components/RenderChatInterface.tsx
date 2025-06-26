@@ -49,7 +49,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const [userInput, setUserInput] = useState("");
 	const [showFullHistoryView, setShowFullHistoryView] = useState(false);
 	const chatEndRef = useRef<HTMLDivElement>(null);
-	const messagesContainerRef = useRef<HTMLDivElement>(null);
+	const messagesContainerRef = useRef<HTMLDivElement>(null); // Overall container for button + messages
+	const scrollableMessagesPaneRef = useRef<HTMLDivElement>(null); // Specifically for scrolling messages
 
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
@@ -86,7 +87,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		) {
 			chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 		} else {
-			const container = messagesContainerRef.current;
+			const container = scrollableMessagesPaneRef.current; // Check the scrollable pane now
 			if (
 				container &&
 				container.scrollHeight - container.scrollTop <=
@@ -142,7 +143,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			className={`flex-shrink-0 flex justify-between items-center p-3 
                     ${
 											isOverlay
-												? "bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50" // Restored semi-transparent blurred background
+												? "bg-slate-900/60 backdrop-blur-md shadow-lg border-b border-slate-700/40"
 												: "bg-slate-700/50 border-b border-slate-600/50"
 										}`}>
 			<h3 className="text-lg font-semibold text-sky-400">
@@ -159,7 +160,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 																? "bg-purple-600 hover:bg-purple-500 text-white ring-1 ring-purple-400"
 																: `${
 																		isOverlay
-																			? "bg-slate-700/40 hover:bg-slate-600/50" // Slightly more transparent for overlay buttons
+																			? "bg-slate-700/40 hover:bg-slate-600/50"
 																			: "bg-slate-700/70 hover:bg-slate-600"
 																  } text-purple-300 hover:text-purple-100 ring-1 ring-slate-500`
 														}`}
@@ -213,28 +214,25 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	return (
 		<div
 			className={`flex flex-col h-full ${
-				isOverlay ? "bg-transparent" : "bg-slate-800" // Main chat interface container is transparent in overlay
+				isOverlay ? "bg-transparent" : "bg-slate-800"
 			}`}>
 			<ChatAreaHeader />
 
+			{/* Main container for button and scrollable messages */}
 			<div
 				ref={messagesContainerRef}
-				className={`flex-grow p-1 md:p-4 overflow-y-auto space-y-2 min-h-0 relative ${
-					isOverlay ? "bg-transparent" : "bg-slate-800/90" // Message area itself is transparent in overlay
-				}`}>
+				className="flex flex-col flex-grow min-h-0 px-1 md:px-4">
+				{" "}
+				{/* MODIFIED: p-1 md:p-4 to px-1 md:px-4 */}
 				{canCompressHistory && (
 					<div
-						className={`sticky top-0 z-10 py-2 ${
-							isOverlay
-								? "bg-slate-800/30 backdrop-blur-sm" // Give "Show More" a subtle blurred bg in overlay
-								: "bg-slate-800/80 backdrop-blur-sm"
-						} flex justify-center`}>
+						className={`flex-shrink-0 sticky top-0 z-10 py-2 bg-transparent flex justify-center`}>
 						<button
 							onClick={toggleShowFullHistoryView}
 							className={`text-xs text-sky-300 hover:text-sky-100 px-3 py-1.5 rounded-full shadow transition-colors duration-150 flex items-center space-x-1.5
 														${
 															isOverlay
-																? "bg-slate-700/50 hover:bg-slate-600/60"
+																? "bg-slate-700/50 backdrop-blur-md hover:bg-slate-600/60"
 																: "bg-slate-700 hover:bg-slate-600"
 														}`}>
 							{showFullHistoryView ? <ChevronUpIcon /> : <ChevronDownIcon />}
@@ -250,34 +248,45 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						</button>
 					</div>
 				)}
-				<div className="space-y-4 pt-1">
-					{messagesToRender.map((msg, index) => (
-						<ChatMessageView
-							key={msg.id}
-							message={msg}
-							isLastMessage={
-								index === messagesToRender.length - 1 &&
-								msg.id ===
-									conversationHistory[conversationHistory.length - 1]?.id &&
-								!msg.isThoughtBubble
-							}
-							isLoadingAI={
-								isLoadingAI &&
-								index === messagesToRender.length - 1 &&
-								msg.id ===
-									conversationHistory[conversationHistory.length - 1]?.id &&
-								!msg.isThoughtBubble
-							}
-						/>
-					))}
+				{/* New scrollable and masked pane for messages */}
+				<div
+					ref={scrollableMessagesPaneRef}
+					className={`flex-grow flex flex-col min-h-0 overflow-y-auto relative justify-end ${
+						isOverlay
+							? "bg-slate-900/20 gradient-mask-top-fade"
+							: "bg-slate-800/90"
+					}`}>
+					<div className="space-y-4">
+						{" "}
+						{/* MODIFIED: Removed pt-1 */}
+						{messagesToRender.map((msg, index) => (
+							<ChatMessageView
+								key={msg.id}
+								message={msg}
+								isLastMessage={
+									index === messagesToRender.length - 1 &&
+									msg.id ===
+										conversationHistory[conversationHistory.length - 1]?.id &&
+									!msg.isThoughtBubble
+								}
+								isLoadingAI={
+									isLoadingAI &&
+									index === messagesToRender.length - 1 &&
+									msg.id ===
+										conversationHistory[conversationHistory.length - 1]?.id &&
+									!msg.isThoughtBubble
+								}
+							/>
+						))}
+						<div ref={chatEndRef} />
+					</div>
 				</div>
-				<div ref={chatEndRef} />
 			</div>
 
 			<div
-				className={`p-4 border-t ${
+				className={`${isOverlay ? "p-3" : "p-4"} border-t ${
 					isOverlay
-						? "border-slate-700/50 bg-slate-800/50 backdrop-blur-sm" // Restored semi-transparent blurred background
+						? "border-slate-700/40 bg-slate-900/60 backdrop-blur-md shadow-lg"
 						: "border-slate-600 bg-slate-700"
 				} flex-shrink-0`}>
 				{isMaxEngagement && (
@@ -297,7 +306,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 													isOverlay
 														? "bg-transparent placeholder-gray-300"
 														: "bg-slate-600 placeholder-gray-400"
-												}`} // Textarea itself is transparent in overlay
+												}`}
 						rows={
 							userInput.split("\n").length > 2
 								? 3
