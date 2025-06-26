@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { ChatMessage } from "../types";
 import { ChatMessageView } from "./ChatMessageView";
+import { ProgressBar } from "./ProgressBar"; // Import ProgressBar
 import {
 	SendIcon,
 	StopCircleIcon,
@@ -49,8 +50,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const [userInput, setUserInput] = useState("");
 	const [showFullHistoryView, setShowFullHistoryView] = useState(false);
 	const chatEndRef = useRef<HTMLDivElement>(null);
-	const messagesContainerRef = useRef<HTMLDivElement>(null); // Overall container for button + messages
-	const scrollableMessagesPaneRef = useRef<HTMLDivElement>(null); // Specifically for scrolling messages
+	const messagesContainerRef = useRef<HTMLDivElement>(null);
+	const scrollableMessagesPaneRef = useRef<HTMLDivElement>(null);
 
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
@@ -87,7 +88,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		) {
 			chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
 		} else {
-			const container = scrollableMessagesPaneRef.current; // Check the scrollable pane now
+			const container = scrollableMessagesPaneRef.current;
 			if (
 				container &&
 				container.scrollHeight - container.scrollTop <=
@@ -218,12 +219,23 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			}`}>
 			<ChatAreaHeader />
 
-			{/* Main container for button and scrollable messages */}
+			{isOverlay && (
+				<div className="px-4 pt-2 pb-3 bg-slate-900/60 backdrop-blur-md border-b border-slate-700/40 shadow-sm">
+					<div className="flex justify-between items-center mb-1">
+						<span className="text-sm font-medium text-sky-300">
+							{scenarioDetailsAiName}'s Engagement
+						</span>
+						<span className="text-sm font-bold text-white">
+							{currentEngagement}%
+						</span>
+					</div>
+					<ProgressBar percentage={currentEngagement} />
+				</div>
+			)}
+
 			<div
 				ref={messagesContainerRef}
 				className="flex flex-col flex-grow min-h-0 px-1 md:px-4">
-				{" "}
-				{/* MODIFIED: p-1 md:p-4 to px-1 md:px-4 */}
 				{canCompressHistory && (
 					<div
 						className={`flex-shrink-0 sticky top-0 z-10 py-2 bg-transparent flex justify-center`}>
@@ -232,7 +244,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 							className={`text-xs text-sky-300 hover:text-sky-100 px-3 py-1.5 rounded-full shadow transition-colors duration-150 flex items-center space-x-1.5
 														${
 															isOverlay
-																? "bg-slate-700/50 backdrop-blur-md hover:bg-slate-600/60"
+																? "bg-slate-700/50 backdrop-blur-sm hover:bg-slate-600/60"
 																: "bg-slate-700 hover:bg-slate-600"
 														}`}>
 							{showFullHistoryView ? <ChevronUpIcon /> : <ChevronDownIcon />}
@@ -248,17 +260,18 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						</button>
 					</div>
 				)}
-				{/* New scrollable and masked pane for messages */}
+
 				<div
 					ref={scrollableMessagesPaneRef}
-					className={`flex-grow flex flex-col min-h-0 overflow-y-auto relative justify-end ${
-						isOverlay
-							? "bg-slate-900/20 gradient-mask-top-fade"
-							: "bg-slate-800/90"
-					}`}>
+					className={`flex-grow flex flex-col min-h-0 overflow-y-auto relative justify-end 
+            ${
+							isOverlay
+								? "bg-slate-900/20 backdrop-blur-lg gradient-mask-top-fade pb-32" // Added backdrop-blur and padding-bottom for fixed input
+								: "bg-slate-800/90"
+						}
+            px-1 md:px-0`} // Use px-1 on mobile, no extra px on desktop as parent has it
+				>
 					<div className="space-y-4">
-						{" "}
-						{/* MODIFIED: Removed pt-1 */}
 						{messagesToRender.map((msg, index) => (
 							<ChatMessageView
 								key={msg.id}
@@ -284,11 +297,12 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			</div>
 
 			<div
-				className={`${isOverlay ? "p-3" : "p-4"} border-t ${
-					isOverlay
-						? "border-slate-700/40 bg-slate-900/60 backdrop-blur-md shadow-lg"
-						: "border-slate-600 bg-slate-700"
-				} flex-shrink-0`}>
+				className={`flex-shrink-0
+          ${
+						isOverlay
+							? "p-3 border-t border-slate-700/40 bg-slate-900/80 backdrop-blur-md shadow-lg fixed bottom-0 left-0 right-0 w-full z-10" // Fixed input for overlay
+							: "p-4 border-t border-slate-600 bg-slate-700"
+					}`}>
 				{isMaxEngagement && (
 					<p className="text-center text-green-400 font-semibold mb-2 animate-pulse">
 						🎉 Max Engagement Reached! Click 'Finish' to review your
@@ -304,7 +318,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						className={`flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none
                         ${
 													isOverlay
-														? "bg-transparent placeholder-gray-300"
+														? "bg-slate-700/60 placeholder-gray-300"
 														: "bg-slate-600 placeholder-gray-400"
 												}`}
 						rows={
@@ -315,7 +329,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 								: 1
 						}
 						style={{
-							maxHeight: "calc(3 * 1.5rem + 2 * 0.75rem + 2 * 0.125rem)",
+							maxHeight: "calc(3 * 1.5rem + 2 * 0.75rem + 2 * 0.125rem)", // Max 3 lines visible
 						}}
 						aria-label="Your response input"
 						disabled={isLoadingAI}

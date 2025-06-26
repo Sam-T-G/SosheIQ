@@ -47,8 +47,11 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 		);
 	}
 
+	// Standard AI message (handles its own internal layout for avatar + bubble)
 	return (
 		<div className="flex justify-start">
+			{" "}
+			{/* This ensures the whole AI group (avatar + bubble) aligns left */}
 			<ChatMessageViewAI
 				message={message}
 				isLastMessage={isLastMessage}

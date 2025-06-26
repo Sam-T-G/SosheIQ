@@ -118,10 +118,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					/>
 				</div>
 
-				<div className="pt-4 w-full px-2 flex-shrink-0">
+				{/* Progress bar for desktop, hidden on mobile where it's in the chat overlay */}
+				<div className="pt-4 w-full px-2 flex-shrink-0 hidden md:block">
 					<label
 						htmlFor="engagement"
-						className="block text-sm font-medium text-sky-300 mb-1 text-center">
+						className="block text-sm font-medium text-sky-300 mb-1 text-center md:text-left">
 						{scenarioDetails.aiName}'s Engagement: {currentEngagement}%
 					</label>
 					<ProgressBar percentage={currentEngagement} />
