@@ -16,7 +16,7 @@ import {
 	EyeSlashIcon,
 	TrendingUpIcon,
 } from "./Icons";
-import { AIAgeBracket } from "../types"; // Import AIAgeBracket
+import { AIAgeBracket } from "../types";
 
 interface AnalysisScreenProps {
 	report: AnalysisReport | null;
@@ -141,6 +141,21 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 	</div>
 );
 
+const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
+	let personalityDisplay = "";
+	if (details.aiPersonalityTraits && details.aiPersonalityTraits.length > 0) {
+		personalityDisplay += details.aiPersonalityTraits.join(", ");
+	}
+	if (details.customAiPersonality) {
+		if (personalityDisplay.length > 0) personalityDisplay += " ";
+		personalityDisplay += `(${details.customAiPersonality.substring(0, 70)}${
+			details.customAiPersonality.length > 70 ? "..." : ""
+		})`;
+	}
+	if (!personalityDisplay) return "Default";
+	return personalityDisplay;
+};
+
 export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	report,
 	isLoadingReport,
@@ -262,11 +277,18 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 		);
 	}
 
-	const ageBracketText =
+	let ageText = "";
+	if (typeof scenarioDetails.customAiAge === "number") {
+		ageText = ` | Age: ${scenarioDetails.customAiAge}`;
+	} else if (
 		scenarioDetails.aiAgeBracket &&
-		scenarioDetails.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED
-			? ` | Age: ${scenarioDetails.aiAgeBracket}`
-			: "";
+		scenarioDetails.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED &&
+		scenarioDetails.aiAgeBracket !== AIAgeBracket.CUSTOM
+	) {
+		ageText = ` | Age Bracket: ${scenarioDetails.aiAgeBracket}`;
+	}
+
+	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
 
 	return (
 		<div className="w-full max-w-4xl p-6 bg-slate-800 rounded-xl shadow-2xl space-y-6">
@@ -276,8 +298,8 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 				</h1>
 				<p className="text-center text-gray-400 text-sm mb-6">
 					Scenario: {scenarioDetails.environment} | AI: {scenarioDetails.aiName}{" "}
-					({scenarioDetails.aiPersonality}, {scenarioDetails.aiGender}
-					{ageBracketText})
+					({personalityDisplayText}, {scenarioDetails.aiGender}
+					{ageText})
 					<br />
 					Dynamic: {scenarioDetails.powerDynamic}
 					{scenarioDetails.customContext && (

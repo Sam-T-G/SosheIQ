@@ -8,14 +8,33 @@ export enum SocialEnvironment {
   NEGOTIATION = "Negotiation or Debate",
 }
 
-export enum AIPersonality {
-  FRIENDLY_SUPPORTIVE = "Friendly & Supportive",
-  RESERVED_OBSERVANT = "Reserved & Observant",
-  ASSERTIVE_DIRECT = "Assertive & Direct",
-  SARCASTIC_WITTY = "Sarcastic & Witty",
-  ANALYTICAL_CURIOUS = "Analytical & Curious",
-  CHALLENGING_SKEPTICAL = "Challenging & Skeptical",
-  ENERGETIC_ENTHUSIASTIC = "Energetic & Enthusiastic",
+export enum AIPersonalityTrait {
+  FRIENDLY = "Friendly",
+  SUPPORTIVE = "Supportive",
+  RESERVED = "Reserved",
+  OBSERVANT = "Observant",
+  ASSERTIVE = "Assertive",
+  DIRECT = "Direct",
+  SARCASTIC = "Sarcastic",
+  WITTY = "Witty",
+  ANALYTICAL = "Analytical",
+  CURIOUS = "Curious",
+  CHALLENGING = "Challenging",
+  SKEPTICAL = "Skeptical",
+  ENERGETIC = "Energetic",
+  ENTHUSIASTIC = "Enthusiastic",
+  EMPATHETIC = "Empathetic",
+  CALM = "Calm",
+  PLAYFUL = "Playful",
+  SERIOUS = "Serious",
+  CREATIVE = "Creative",
+  LOGICAL = "Logical",
+  CONFIDENT = "Confident",
+  SHY = "Shy",
+  OPTIMISTIC = "Optimistic",
+  PESSIMISTIC = "Pessimistic",
+  FORMAL = "Formal",
+  INFORMAL = "Informal",
 }
 
 export enum PowerDynamic {
@@ -46,7 +65,8 @@ export enum AIAgeBracket {
 
 export interface ScenarioDetails {
   environment: SocialEnvironment;
-  aiPersonality: AIPersonality;
+  aiPersonalityTraits: AIPersonalityTrait[];
+  customAiPersonality?: string;
   powerDynamic: PowerDynamic;
   aiGender: AIGender;
   aiName: string;
@@ -89,7 +109,7 @@ export interface AnalysisReport {
   finalEngagementSnapshot: number;
   turnByTurnAnalysis: TurnByTurnAnalysisItem[];
   overallFeedback: string;
-  aiEvolvingThoughtsSummary?: string; // Renamed from aiReflectionOnThoughts
+  aiEvolvingThoughtsSummary?: string;
 }
 
 export enum GamePhase {

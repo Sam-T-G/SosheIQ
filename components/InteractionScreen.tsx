@@ -37,6 +37,21 @@ const getLastMeaningfulAiMessageWithBodyLanguage = (
 	return undefined;
 };
 
+const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
+	let personalityDisplay = "";
+	if (details.aiPersonalityTraits && details.aiPersonalityTraits.length > 0) {
+		personalityDisplay += details.aiPersonalityTraits.join(", ");
+	}
+	if (details.customAiPersonality) {
+		if (personalityDisplay.length > 0) personalityDisplay += " ";
+		personalityDisplay += `(${details.customAiPersonality.substring(0, 50)}${
+			details.customAiPersonality.length > 50 ? "..." : ""
+		})`;
+	}
+	if (!personalityDisplay) return "Default";
+	return personalityDisplay;
+};
+
 export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	scenarioDetails,
 	conversationHistory,
@@ -70,6 +85,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		};
 	}, [showChatOverlay]);
 
+	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
+
 	return (
 		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-transparent shadow-2xl rounded-xl relative">
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
@@ -82,8 +99,10 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					<h2 className="text-lg font-semibold text-sky-400">
 						{scenarioDetails.aiName}
 					</h2>
-					<p className="text-xs text-gray-400">
-						{scenarioDetails.aiPersonality}
+					<p
+						className="text-xs text-gray-400 truncate"
+						title={personalityDisplayText}>
+						{personalityDisplayText}
 					</p>
 					<p className="text-xs text-gray-400">
 						{scenarioDetails.environment} | {scenarioDetails.powerDynamic}

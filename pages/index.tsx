@@ -97,7 +97,15 @@ const HomePage: React.FC = () => {
 			}
 			setIsLoading(true);
 			setError(null);
-			setScenarioDetails(details);
+
+			// Ensure scenarioDetails includes the new personality structure
+			const fullDetails: ScenarioDetails = {
+				...details,
+				aiPersonalityTraits: details.aiPersonalityTraits || [],
+				customAiPersonality: details.customAiPersonality || undefined,
+			};
+			setScenarioDetails(fullDetails);
+
 			setConversationHistory([]);
 			setCurrentEngagement(INITIAL_ENGAGEMENT);
 			setZeroEngagementStreak(0);
@@ -111,7 +119,7 @@ const HomePage: React.FC = () => {
 					initialAiThoughts,
 					initialEngagementScore,
 					initialConversationMomentum,
-				} = await geminiService.current.startConversation(details);
+				} = await geminiService.current.startConversation(fullDetails);
 
 				const firstMessage: ChatMessage = {
 					id: uuidv4(),
@@ -128,13 +136,13 @@ const HomePage: React.FC = () => {
 				const { fullImagenPrompt, newEstablishedVisualSegment } =
 					await geminiService.current.generateImagePromptForBodyLanguage(
 						initialBodyLanguage,
-						details.aiGender,
-						details.aiName,
-						details.aiAgeBracket,
-						details.customAiAge,
-						details.aiEstablishedVisualPromptSegment
+						fullDetails.aiGender,
+						fullDetails.aiName,
+						fullDetails.aiAgeBracket,
+						fullDetails.customAiAge,
+						fullDetails.aiEstablishedVisualPromptSegment
 					);
-				if (newEstablishedVisualSegment && details) {
+				if (newEstablishedVisualSegment) {
 					setScenarioDetails((prev) =>
 						prev
 							? {

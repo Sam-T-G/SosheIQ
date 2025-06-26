@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { ScenarioDetails } from "../types";
 import {
 	SocialEnvironment,
-	AIPersonality,
+	AIPersonalityTrait,
 	PowerDynamic,
 	AIGender,
 	AIAgeBracket,
@@ -14,10 +14,14 @@ interface SetupScreenProps {
 
 type NameInputMode = "manual" | "automatic";
 type AgeConfigMode = "automatic" | "manual_select" | "manual_custom";
+const MAX_PERSONALITY_TRAITS = 3;
+const MAX_CUSTOM_PERSONALITY_LENGTH = 300;
 
-interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
+interface OptionButtonProps<
+	T extends string | NameInputMode | AgeConfigMode | AIPersonalityTrait
+> {
 	value: T;
-	selectedValue: T | AIAgeBracket; // Allow AIAgeBracket for age bracket buttons
+	isSelected: boolean;
 	onChange: (value: T) => void;
 	children: React.ReactNode;
 	className?: string;
@@ -25,9 +29,11 @@ interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
 	title?: string;
 }
 
-const OptionButton = <T extends string | NameInputMode | AgeConfigMode>({
+const OptionButton = <
+	T extends string | NameInputMode | AgeConfigMode | AIPersonalityTrait
+>({
 	value,
-	selectedValue,
+	isSelected,
 	onChange,
 	children,
 	className = "",
@@ -39,11 +45,12 @@ const OptionButton = <T extends string | NameInputMode | AgeConfigMode>({
 		onClick={() => !disabled && onChange(value)}
 		disabled={disabled}
 		title={title}
+		aria-pressed={isSelected}
 		className={`p-3 m-1 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75
                 ${
 									disabled
-										? "bg-slate-500 text-gray-400 cursor-not-allowed"
-										: selectedValue === value
+										? "bg-slate-500 text-gray-400 cursor-not-allowed opacity-70"
+										: isSelected
 										? "bg-teal-500 text-white shadow-lg scale-105 ring-2 ring-teal-300"
 										: "bg-slate-700 hover:bg-slate-600 text-gray-300 hover:shadow-md hover:scale-102"
 								} ${className}`}>
@@ -55,20 +62,33 @@ interface SectionProps {
 	title: string;
 	children: React.ReactNode;
 	animationDelay?: string;
+	error?: string | null;
+	id?: string;
 }
 
 const Section: React.FC<SectionProps> = ({
 	title,
 	children,
 	animationDelay,
+	error,
+	id,
 }) => (
 	<div
 		className="mb-8 p-6 bg-slate-700/50 rounded-lg shadow-inner opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
-		style={{ animationDelay }}>
-		<label className="block text-xl font-semibold mb-4 text-teal-300">
+		style={{ animationDelay }}
+		aria-labelledby={id ? `${id}-title` : undefined}
+		aria-describedby={error && id ? `${id}-error` : undefined}>
+		<label
+			id={id ? `${id}-title` : undefined}
+			className="block text-xl font-semibold mb-4 text-teal-300">
 			{title}:
 		</label>
 		{children}
+		{error && id && (
+			<p id={`${id}-error`} className="text-xs text-red-400 mt-2">
+				{error}
+			</p>
+		)}
 	</div>
 );
 
@@ -176,9 +196,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 	const [environment, setEnvironment] = useState<SocialEnvironment>(
 		SocialEnvironment.SOCIAL_GATHERING
 	);
-	const [aiPersonality, setAiPersonality] = useState<AIPersonality>(
-		AIPersonality.FRIENDLY_SUPPORTIVE
-	);
+	const [selectedPersonalityTraits, setSelectedPersonalityTraits] = useState<
+		AIPersonalityTrait[]
+	>([]);
+	const [customAiPersonality, setCustomAiPersonality] = useState<string>("");
 	const [powerDynamic, setPowerDynamic] = useState<PowerDynamic>(
 		PowerDynamic.PEERS_EQUAL_FOOTING
 	);
@@ -189,6 +210,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 	const [nameInputMode, setNameInputMode] =
 		useState<NameInputMode>("automatic");
 	const [nameError, setNameError] = useState<string | null>(null);
+	const [personalityError, setPersonalityError] = useState<string | null>(null);
 	const [customContext, setCustomContext] = useState<string>("");
 
 	const [ageConfigMode, setAgeConfigMode] =
@@ -198,6 +220,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 	);
 	const [customAiAgeString, setCustomAiAgeString] = useState<string>("");
 	const [customAgeError, setCustomAgeError] = useState<string | null>(null);
+
+	const nameInputRef = React.useRef<HTMLInputElement>(null);
+	const customPersonalityRef = React.useRef<HTMLTextAreaElement>(null);
+	const customAgeRef = React.useRef<HTMLInputElement>(null);
 
 	const handleSuggestName = () => {
 		if (nameInputMode === "manual") {
@@ -212,6 +238,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		if (mode === "automatic") {
 			setAiName("");
 			setNameError(null);
+		} else {
+			if (nameInputRef.current) {
+				nameInputRef.current.focus();
+			}
 		}
 	};
 
@@ -226,23 +256,24 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 				aiAgeBracket === AIAgeBracket.NOT_SPECIFIED ||
 				aiAgeBracket === AIAgeBracket.CUSTOM
 			) {
-				setAiAgeBracket(AIAgeBracket.ADULT_30_39); // Default to a common bracket
+				setAiAgeBracket(AIAgeBracket.ADULT_30_39);
 			}
 			setCustomAiAgeString("");
 			setCustomAgeError(null);
 		} else {
-			// manual_custom
-			setAiAgeBracket(AIAgeBracket.CUSTOM); // Mark as custom
-			// If custom age input was empty or invalid, clear it or keep the error
+			setAiAgeBracket(AIAgeBracket.CUSTOM);
 			if (customAiAgeString.trim() === "" || customAgeError) {
 				setCustomAiAgeString("");
+			}
+			if (customAgeRef.current) {
+				customAgeRef.current.focus();
 			}
 		}
 	};
 
 	const handleAgeBracketSelect = (bracket: AIAgeBracket) => {
 		setAiAgeBracket(bracket);
-		setCustomAiAgeString(""); // Clear custom age if a bracket is selected
+		setCustomAiAgeString("");
 		setCustomAgeError(null);
 	};
 
@@ -259,6 +290,29 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		} else {
 			setCustomAgeError(null);
 		}
+	};
+
+	const handlePersonalityTraitToggle = (trait: AIPersonalityTrait) => {
+		setSelectedPersonalityTraits((prev) => {
+			if (prev.includes(trait)) {
+				return prev.filter((t) => t !== trait);
+			}
+			if (prev.length < MAX_PERSONALITY_TRAITS) {
+				return [...prev, trait];
+			}
+			return prev; // Max reached, do not add
+		});
+		setPersonalityError(null); // Clear error on interaction
+	};
+
+	const handleCustomPersonalityChange = (
+		e: React.ChangeEvent<HTMLTextAreaElement>
+	) => {
+		const value = e.target.value;
+		if (value.length <= MAX_CUSTOM_PERSONALITY_LENGTH) {
+			setCustomAiPersonality(value);
+		}
+		setPersonalityError(null); // Clear error on interaction
 	};
 
 	const handleSubmit = (e: React.FormEvent) => {
@@ -281,6 +335,22 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		}
 		if (nameError) setNameError(null);
 
+		if (
+			selectedPersonalityTraits.length === 0 &&
+			customAiPersonality.trim() === ""
+		) {
+			setPersonalityError(
+				"Please select at least one personality trait or provide a custom personality description."
+			);
+			const personalitySection = document.getElementById(
+				"ai-personality-section"
+			);
+			if (personalitySection)
+				personalitySection.scrollIntoView({ behavior: "smooth" });
+			return;
+		}
+		if (personalityError) setPersonalityError(null);
+
 		let finalAiAgeBracket: AIAgeBracket | undefined = aiAgeBracket;
 		let finalCustomAiAge: number | undefined = undefined;
 
@@ -293,20 +363,20 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 						? "Custom age cannot be empty."
 						: "Please enter a valid age (13-100)."
 				);
+				if (customAgeRef.current) customAgeRef.current.focus();
 				return;
 			}
 			const ageNum = parseInt(customAiAgeString, 10);
 			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-				// Re-validate just in case
 				setCustomAgeError(
 					"Invalid custom age. Please enter between 13 and 100."
 				);
+				if (customAgeRef.current) customAgeRef.current.focus();
 				return;
 			}
 			finalCustomAiAge = ageNum;
 			finalAiAgeBracket = AIAgeBracket.CUSTOM;
 		} else {
-			// manual_select
 			if (
 				finalAiAgeBracket === AIAgeBracket.NOT_SPECIFIED ||
 				finalAiAgeBracket === AIAgeBracket.CUSTOM
@@ -320,7 +390,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 
 		onStart({
 			environment,
-			aiPersonality,
+			aiPersonalityTraits: selectedPersonalityTraits,
+			customAiPersonality: customAiPersonality.trim() || undefined,
 			powerDynamic,
 			aiGender,
 			aiName: finalAiName,
@@ -338,6 +409,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 	).filter(
 		(age) => age !== AIAgeBracket.NOT_SPECIFIED && age !== AIAgeBracket.CUSTOM
 	);
+
+	const allPersonalityTraits = Object.values(
+		AIPersonalityTrait
+	) as AIPersonalityTrait[];
 
 	return (
 		<div className="w-full max-w-3xl p-6 md:p-10 bg-slate-800 rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
@@ -359,7 +434,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 							<OptionButton<AIGender>
 								key={gender}
 								value={gender}
-								selectedValue={aiGender}
+								isSelected={aiGender === gender}
 								onChange={setAiGender}>
 								{gender}
 							</OptionButton>
@@ -369,17 +444,19 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 
 				<Section
 					title="AI Name"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 1}s`}>
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 1}s`}
+					error={nameError}
+					id="ai-name-section">
 					<div className="grid grid-cols-2 gap-3 mb-3">
 						<OptionButton<NameInputMode>
 							value="manual"
-							selectedValue={nameInputMode}
+							isSelected={nameInputMode === "manual"}
 							onChange={handleNameInputModeChange}>
 							Enter Name Manually
 						</OptionButton>
 						<OptionButton<NameInputMode>
 							value="automatic"
-							selectedValue={nameInputMode}
+							isSelected={nameInputMode === "automatic"}
 							onChange={handleNameInputModeChange}>
 							Generate Name on Start
 						</OptionButton>
@@ -387,6 +464,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 					<div className="flex items-start space-x-2">
 						<div className="flex-grow">
 							<input
+								ref={nameInputRef}
 								type="text"
 								value={aiName}
 								onChange={(e) => {
@@ -419,14 +497,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 								maxLength={51}
 								aria-describedby={
 									nameError && nameInputMode === "manual"
-										? "name-error"
+										? "name-error-desc"
 										: "name-helper"
 								}
 								aria-invalid={!!nameError && nameInputMode === "manual"}
 								disabled={nameInputMode === "automatic"}
 							/>
 							{nameError && nameInputMode === "manual" && (
-								<p id="name-error" className="text-xs text-red-400 mt-1">
+								<p id="name-error-desc" className="text-xs text-red-400 mt-1">
 									{nameError}
 								</p>
 							)}
@@ -457,25 +535,27 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 
 				<Section
 					title="AI Age"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 2}s`}>
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 2}s`}
+					error={customAgeError}
+					id="ai-age-section">
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
 						<OptionButton<AgeConfigMode>
 							value="automatic"
-							selectedValue={ageConfigMode}
+							isSelected={ageConfigMode === "automatic"}
 							onChange={handleAgeConfigModeChange}
 							title="AI age will be general adult or adapt to context.">
 							Auto-Select Age
 						</OptionButton>
 						<OptionButton<AgeConfigMode>
 							value="manual_select"
-							selectedValue={ageConfigMode}
+							isSelected={ageConfigMode === "manual_select"}
 							onChange={handleAgeConfigModeChange}
 							title="Choose from predefined age brackets.">
 							Select Bracket
 						</OptionButton>
 						<OptionButton<AgeConfigMode>
 							value="manual_custom"
-							selectedValue={ageConfigMode}
+							isSelected={ageConfigMode === "manual_custom"}
 							onChange={handleAgeConfigModeChange}
 							title="Enter a specific age for the AI.">
 							Enter Custom Age
@@ -489,7 +569,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 									<OptionButton<AIAgeBracket>
 										key={ageOpt}
 										value={ageOpt}
-										selectedValue={aiAgeBracket}
+										isSelected={aiAgeBracket === ageOpt}
 										onChange={() => handleAgeBracketSelect(ageOpt)}
 										disabled={ageConfigMode !== "manual_select"}>
 										{ageOpt}
@@ -506,6 +586,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 					{ageConfigMode === "manual_custom" && (
 						<div className="mt-2">
 							<input
+								ref={customAgeRef}
 								type="number"
 								value={customAiAgeString}
 								onChange={handleCustomAgeChange}
@@ -519,13 +600,15 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 								min="13"
 								max="100"
 								aria-describedby={
-									customAgeError ? "custom-age-error" : undefined
+									customAgeError ? "custom-age-error-desc" : undefined
 								}
 								aria-invalid={!!customAgeError}
 								disabled={ageConfigMode !== "manual_custom"}
 							/>
 							{customAgeError && (
-								<p id="custom-age-error" className="text-xs text-red-400 mt-1">
+								<p
+									id="custom-age-error-desc"
+									className="text-xs text-red-400 mt-1">
 									{customAgeError}
 								</p>
 							)}
@@ -545,36 +628,71 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 				</Section>
 
 				<Section
+					title={`AI Personality Traits (Selected ${selectedPersonalityTraits.length}/${MAX_PERSONALITY_TRAITS})`}
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 3}s`}
+					error={personalityError}
+					id="ai-personality-section">
+					<p className="text-sm text-gray-400 mb-3">
+						Choose up to {MAX_PERSONALITY_TRAITS} traits that best define the
+						AI's character. These will guide the AI's responses and demeanor.
+					</p>
+					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+						{allPersonalityTraits.map((trait) => (
+							<OptionButton<AIPersonalityTrait>
+								key={trait}
+								value={trait}
+								isSelected={selectedPersonalityTraits.includes(trait)}
+								onChange={handlePersonalityTraitToggle}
+								disabled={
+									!selectedPersonalityTraits.includes(trait) &&
+									selectedPersonalityTraits.length >= MAX_PERSONALITY_TRAITS
+								}
+								className="text-xs sm:text-sm py-2 px-2.5">
+								{trait}
+							</OptionButton>
+						))}
+					</div>
+					<div className="mt-6">
+						<label
+							htmlFor="customAiPersonality"
+							className="block text-md font-medium text-teal-300 mb-2">
+							Custom AI Personality (Optional)
+						</label>
+						<textarea
+							ref={customPersonalityRef}
+							id="customAiPersonality"
+							value={customAiPersonality}
+							onChange={handleCustomPersonalityChange}
+							placeholder="E.g., 'A grumpy old librarian who secretly loves cats', 'A nervous first-time public speaker who stutters a bit', 'An overly enthusiastic salesperson who uses a lot of exclamation marks!!!'"
+							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] text-sm"
+							rows={3}
+							maxLength={MAX_CUSTOM_PERSONALITY_LENGTH + 10} // Allow a bit over for typing then clamp
+							aria-label="Custom AI personality description"
+						/>
+						<p className="text-xs text-gray-400 mt-1">
+							Add specific nuances or a unique persona (max{" "}
+							{MAX_CUSTOM_PERSONALITY_LENGTH} chars). Traits and custom text
+							will be combined. ({customAiPersonality.length}/
+							{MAX_CUSTOM_PERSONALITY_LENGTH})
+						</p>
+					</div>
+				</Section>
+
+				<Section
 					title="Social Environment"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 3}s`}>
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}>
 					<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
 						{(Object.values(SocialEnvironment) as SocialEnvironment[]).map(
 							(env) => (
 								<OptionButton<SocialEnvironment>
 									key={env}
 									value={env}
-									selectedValue={environment}
+									isSelected={environment === env}
 									onChange={setEnvironment}>
 									{env}
 								</OptionButton>
 							)
 						)}
-					</div>
-				</Section>
-
-				<Section
-					title="AI Personality"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}>
-					<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-						{(Object.values(AIPersonality) as AIPersonality[]).map((pers) => (
-							<OptionButton<AIPersonality>
-								key={pers}
-								value={pers}
-								selectedValue={aiPersonality}
-								onChange={setAiPersonality}>
-								{pers}
-							</OptionButton>
-						))}
 					</div>
 				</Section>
 
@@ -586,7 +704,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 							<OptionButton<PowerDynamic>
 								key={dyn}
 								value={dyn}
-								selectedValue={powerDynamic}
+								isSelected={powerDynamic === dyn}
 								onChange={setPowerDynamic}>
 								{dyn}
 							</OptionButton>

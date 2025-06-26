@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, PowerDynamic, AIPersonality, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
+import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, PowerDynamic, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
 
 // Helper to construct a more informative error message from Google API errors
@@ -59,6 +59,22 @@ const getAgeVisualDescriptionForImagen = (ageBracket?: AIAgeBracket, customAge?:
     }
 };
 
+const getPersonalityPromptSegment = (traits: AIPersonalityTrait[], customPersonality?: string): string => {
+  let segment = "";
+  if (traits.length > 0) {
+    segment += `\n    - Selected AI Personality Traits: ${traits.join(', ')}.`;
+  }
+  if (customPersonality && customPersonality.trim() !== "") {
+    segment += `\n    - Custom AI Personality Description: "${customPersonality.trim()}".`;
+  }
+  if (segment === "") {
+    segment = "\n    - AI Personality: General, adaptable."; // Default if nothing specified
+  } else {
+    segment += "\n    Guidance: Synthesize these traits and custom description. If both are provided, the custom description can add nuance or specificity to the selected traits. If only custom is provided, use that. If only traits are provided, use them."
+  }
+  return segment;
+}
+
 export class GeminiService {
   private ai: GoogleGenAI;
 
@@ -92,16 +108,16 @@ export class GeminiService {
   async startConversation(scenario: ScenarioDetails): Promise<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }> {
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
     const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+    const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 
     const prompt = `You are an AI simulating a social interaction for training purposes.
     Your AI Name: ${scenario.aiName}
     Your AI Persona Details:
-    - Environment: ${scenario.environment}
-    - AI Personality: ${scenario.aiPersonality}
+    - Environment: ${scenario.environment}${personalityPromptSegment}
     - AI Gender: ${scenario.aiGender}${agePromptSegment}
     - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
 
-    As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona, name, gender, age (bracket or specific, if specified), and all provided scenario details.
+    As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona (synthesized from traits and custom description if provided), name, gender, age, and all scenario details.
     IMPORTANT: For this first message, your language MUST BE VERY CASUAL AND SIMPLE, universally approachable. Avoid jargon, complex idioms, or overly formal sentences. Aim for simple, direct speech as if talking to a new acquaintance in a relaxed setting.
     Describe your initial body language, appropriate for your persona, and the scenario. This 'initialBodyLanguage' field is mandatory.
     Provide your initial internal thoughts about this upcoming interaction (e.g., your expectations, how you feel about the scenario, initial assessment of the user if applicable). This should be a brief, candid first-person internal monologue reflecting your persona and age. This 'initialAiThoughts' field is a absolutely mandatory part of your response.
@@ -214,6 +230,7 @@ export class GeminiService {
   }> {
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
     const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+    const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 
     const historyForPrompt = conversationHistory
       .slice(-MAX_CONVERSATION_HISTORY_FOR_PROMPT)
@@ -229,8 +246,7 @@ export class GeminiService {
 
     const prompt = `You are ${scenario.aiName}, an AI in a social interaction simulation.
     Your Persona:
-    - Environment: ${scenario.environment}
-    - AI Personality: ${scenario.aiPersonality}
+    - Environment: ${scenario.environment}${personalityPromptSegment}
     - AI Gender: ${scenario.aiGender}${agePromptSegment}
     - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
 
@@ -241,10 +257,10 @@ export class GeminiService {
     - User's latest message to you: "${userInput}"
 
     Your Task:
-    Based on your persona (including specified age), the current engagement, the conversation history, and the user's latest message:
+    Based on your persona (synthesized from selected traits and custom description, including specified age), the current engagement, the conversation history, and the user's latest message:
     1.  Craft your next spoken dialogue as ${scenario.aiName} ("aiDialogue"). This should be natural, in character, and react appropriately to the user and engagement level. Avoid overly long responses.
     2.  Describe your current body language and facial expression ("aiBodyLanguage"). This should align with your dialogue and emotional state.
-    3.  Provide your internal thoughts as ${scenario.aiName} ("aiThoughts"). This is your candid, private reaction to the user's message and your plan for your response. These thoughts influence your dialogue and body language and should reflect your age.
+    3.  Provide your internal thoughts as ${scenario.aiName} ("aiThoughts"). This is your candid, private reaction to the user's message and your plan for your response. These thoughts influence your dialogue and body language and should reflect your age and persona.
     4.  Calculate a new engagement score ("newEngagement") from your perspective of how the user's last message affected your engagement with them. This score (0-100) should realistically change based on the user's input. For example, a positive, engaging message might increase it, a rude one decrease it.
     5.  Assess the current "conversationMomentum" (0-100). This reflects the energy and flow. Is it picking up, stalling, or negative?
     6.  Decide if you want to end the conversation ("isEndingConversation": true/false). You might end it if engagement is critically low, a natural conclusion is reached, or your persona dictates it.
@@ -334,14 +350,14 @@ export class GeminiService {
 
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
     const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+    const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 
 
     const prompt = `You are a sophisticated AI Social Skills Coach. Your task is to analyze the following conversation and provide a detailed performance report.
 
     Scenario Context:
     - Social Environment: ${scenario.environment}
-    - AI Interlocutor Name: ${scenario.aiName}
-    - AI Interlocutor Personality: ${scenario.aiPersonality}
+    - AI Interlocutor Name: ${scenario.aiName}${personalityPromptSegment}
     - AI Interlocutor Gender: ${scenario.aiGender}${agePromptSegment}
     - Power Dynamic: ${scenario.powerDynamic}${customContextPrompt}
     - The AI's final engagement score with the user was: ${finalEngagementSnapshot}%
@@ -350,13 +366,13 @@ export class GeminiService {
     ${historyForAnalysis}
 
     Analysis Task:
-    Based on the scenario (including AI's age if specified) and the conversation history, generate a comprehensive analysis report.
+    Based on the scenario (including AI's persona from traits/custom text and age if specified) and the conversation history, generate a comprehensive analysis report.
     The report MUST be a single, valid JSON object with the following structure and data types:
     {
       "overallCharismaScore": number, // (0-100) User's overall charisma and likability.
       "responseClarityScore": number, // (0-100) Clarity and coherence of the user's responses.
       "engagementMaintenanceScore": number, // (0-100) User's ability to keep the AI engaged.
-      "adaptabilityScore": number, // (0-100) User's skill in adapting to the AI's persona (including age) and conversation flow.
+      "adaptabilityScore": number, // (0-100) User's skill in adapting to the AI's persona (traits, custom description, age) and conversation flow.
       "overallAiEffectivenessScore": number, // (0-100, optional) Your assessment of how well the AI played its role based on its persona and the interaction. If unsure, you can omit or use a placeholder like 75.
       "finalEngagementSnapshot": ${finalEngagementSnapshot}, // User's final engagement score with the AI.
       "turnByTurnAnalysis": [
@@ -370,7 +386,7 @@ export class GeminiService {
           "analysis": "Your concise analysis of this specific exchange (user's part, AI's part, dynamics)."
         }
       ],
-      "overallFeedback": "Detailed overall feedback for the user. Include specific strengths, areas for improvement, and actionable tips. Be constructive and encouraging. Consider how user adapted to AI's age if specified.",
+      "overallFeedback": "Detailed overall feedback for the user. Include specific strengths, areas for improvement, and actionable tips. Be constructive and encouraging. Consider how user adapted to AI's persona (traits, custom text, age) if specified.",
       "aiEvolvingThoughtsSummary": "A brief summary of how the AI's internal thoughts (from 'AI Internal Thoughts' in history) seemed to evolve or react to the user throughout the conversation. If not enough data, state that."
     }
 
