@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ChatBubbleIcon } from "./Icons";
 
 interface AIVisualCueProps {
 	imageBase64: string | null;
@@ -46,23 +47,13 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	};
 
 	const showPlaceholder = isLoading && !displayedImage && !incomingImage;
-	// Simplified: directly use the prop. Parent component controls what's shown.
 	const currentBodyLanguageText = bodyLanguageDescription;
 
 	return (
-		// Root div now flex-grow to take available space in its parent flex column
 		<div className="w-full flex-grow min-h-0 flex flex-col items-center">
-			{/* 
-        Image container: 
-        - Changed from 'min-h-[40vh]' to 'h-[55vh]' for mobile to give more vertical space.
-        - 'md:h-auto' ensures desktop height is determined by flex layout and 'md:max-h-full'.
-        - 'flex-grow' allows it to take more space if parent provides it, beyond the h-[55vh].
-      */}
 			<div className="w-full h-[55vh] md:h-auto flex-grow md:min-h-0 md:max-h-full rounded-lg flex items-center justify-center overflow-hidden shadow-xl relative">
 				{showPlaceholder ? (
 					<div className="w-full h-full flex items-center justify-center text-slate-500">
-						{" "}
-						{/* Removed bg-slate-700 from here, placeholder is transparent to parent now */}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							className="h-1/3 w-1/3 opacity-50 animate-pulse"
@@ -108,9 +99,15 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 			</div>
 
 			{currentBodyLanguageText && (
-				<p className="w-full text-sm text-center md:text-left text-sky-300 italic px-2 py-1 whitespace-pre-wrap break-words flex-shrink-0">
-					{currentBodyLanguageText}
-				</p>
+				<div className="w-full mt-2 p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md flex-shrink-0">
+					<div className="flex items-center text-xs text-yellow-500 mb-1">
+						<ChatBubbleIcon className="h-4 w-4" />
+						<span className="ml-1.5 font-semibold">Body Language</span>
+					</div>
+					<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words">
+						{currentBodyLanguageText}
+					</p>
+				</div>
 			)}
 		</div>
 	);

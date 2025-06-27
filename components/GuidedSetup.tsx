@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import type { ScenarioDetails } from "../types";
 import {
 	SocialEnvironment,
@@ -7,6 +7,7 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
+import { PlayIcon, CogIcon, ArrowLeftIcon } from "./Icons";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -14,11 +15,36 @@ interface GuidedSetupProps {
 }
 
 const MAX_STEPS = 6;
+const MAX_PERSONALITY_TRAITS = 3;
 
 const generateRandomAiName = (gender: AIGender): string => {
-	const maleNames = ["David", "James", "Michael", "John", "Chris"];
-	const femaleNames = ["Sarah", "Jennifer", "Emily", "Jessica", "Linda"];
-	const neutralNames = ["Alex", "Jordan", "Taylor", "Casey", "Morgan"];
+	const maleNames = [
+		"David",
+		"James",
+		"Michael",
+		"John",
+		"Chris",
+		"Ryan",
+		"Daniel",
+	];
+	const femaleNames = [
+		"Sarah",
+		"Jennifer",
+		"Emily",
+		"Jessica",
+		"Linda",
+		"Ava",
+		"Grace",
+	];
+	const neutralNames = [
+		"Alex",
+		"Jordan",
+		"Taylor",
+		"Casey",
+		"Morgan",
+		"Riley",
+		"Kai",
+	];
 	let pool: string[];
 	switch (gender) {
 		case AIGender.MALE:
@@ -35,8 +61,8 @@ const generateRandomAiName = (gender: AIGender): string => {
 
 const initialScenario: ScenarioDetails = {
 	environment: SocialEnvironment.CASUAL,
-	powerDynamic: PowerDynamic.PEERS_EQUAL_FOOTING,
-	aiGender: AIGender.PREFER_NOT_TO_SPECIFY,
+	powerDynamic: PowerDynamic.BALANCED,
+	aiGender: AIGender.RANDOM,
 	aiName: "",
 	aiAgeBracket: AIAgeBracket.NOT_SPECIFIED,
 	aiPersonalityTraits: [],
@@ -47,17 +73,18 @@ const StepButton: React.FC<{
 	isSelected: boolean;
 	children: React.ReactNode;
 	title?: string;
-}> = ({ onClick, isSelected, children, title }) => (
+	className?: string;
+}> = ({ onClick, isSelected, children, title, className = "" }) => (
 	<button
 		type="button"
 		onClick={onClick}
 		title={title}
-		className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200
+		className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all duration-200 text-gray-200 text-sm md:text-base
       ${
 				isSelected
 					? "bg-teal-500/20 border-teal-400 shadow-lg scale-105"
 					: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
-			}`}>
+			} ${className}`}>
 		{children}
 	</button>
 );
@@ -69,9 +96,40 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	const [step, setStep] = useState(0);
 	const [scenario, setScenario] = useState<ScenarioDetails>(initialScenario);
 	const [exiting, setExiting] = useState(false);
-	const [isCustomEnv, setIsCustomEnv] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
 	const handleNext = () => {
+		setError(null);
+		// Validation logic
+		if (
+			step === 1 &&
+			scenario.environment === SocialEnvironment.CUSTOM &&
+			!scenario.customEnvironment?.trim()
+		) {
+			setError("Please describe the custom environment before continuing.");
+			return;
+		}
+		if (
+			step === 2 &&
+			scenario.aiAgeBracket === AIAgeBracket.CUSTOM &&
+			(!scenario.customAiAge ||
+				scenario.customAiAge < 13 ||
+				scenario.customAiAge > 100)
+		) {
+			setError("Please enter a valid age between 13 and 100.");
+			return;
+		}
+		if (
+			step === 3 &&
+			scenario.aiPersonalityTraits.length === 0 &&
+			!scenario.customAiPersonality?.trim()
+		) {
+			setError(
+				"Please select at least one personality trait or provide a custom description."
+			);
+			return;
+		}
+
 		if (step < MAX_STEPS) {
 			setExiting(true);
 			setTimeout(() => {
@@ -84,6 +142,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	const handleBack = () => {
 		if (step > 0) {
 			setExiting(true);
+			setError(null);
 			setTimeout(() => {
 				setStep(step - 1);
 				setExiting(false);
@@ -91,9 +150,39 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		}
 	};
 
+	const randomizeAndStart = () => {
+		const environments = Object.values(SocialEnvironment).filter(
+			(e) => e !== SocialEnvironment.CUSTOM
+		);
+		const powerDynamics = Object.values(PowerDynamic);
+		const genders = Object.values(AIGender);
+		const ageBrackets = Object.values(AIAgeBracket).filter(
+			(a) => a !== AIAgeBracket.CUSTOM && a !== AIAgeBracket.NOT_SPECIFIED
+		);
+		const personalityTraits = Object.values(AIPersonalityTrait);
+
+		const randomGender = genders[Math.floor(Math.random() * genders.length)];
+		const numTraits = Math.floor(Math.random() * 3) + 1; // 1 to 3 traits
+		const randomTraits = [...personalityTraits]
+			.sort(() => 0.5 - Math.random())
+			.slice(0, numTraits);
+
+		const randomScenario: ScenarioDetails = {
+			environment:
+				environments[Math.floor(Math.random() * environments.length)],
+			powerDynamic:
+				powerDynamics[Math.floor(Math.random() * powerDynamics.length)],
+			aiGender: randomGender,
+			aiName: generateRandomAiName(randomGender),
+			aiAgeBracket: ageBrackets[Math.floor(Math.random() * ageBrackets.length)],
+			aiPersonalityTraits: randomTraits,
+		};
+		onStart(randomScenario);
+	};
+
 	const handleStart = () => {
 		const finalScenario = { ...scenario };
-		if (!finalScenario.aiName) {
+		if (!finalScenario.aiName.trim()) {
 			finalScenario.aiName = generateRandomAiName(finalScenario.aiGender);
 		}
 		if (finalScenario.environment !== SocialEnvironment.CUSTOM) {
@@ -104,6 +193,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 
 	const updateScenario = (updates: Partial<ScenarioDetails>) => {
 		setScenario((prev) => ({ ...prev, ...updates }));
+		setError(null);
 	};
 
 	const renderStepContent = () => {
@@ -112,78 +202,85 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			: "animate-slideInFromRight";
 
 		switch (step) {
-			case 0: // Welcome
+			case 0:
 				return (
-					<div key={step} className={`${animationClass}`}>
+					<div key={step} className={`${animationClass} text-center`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-4">
 							Let's set up your practice session.
 						</h2>
-						<p className="text-lg text-gray-400">
-							We'll configure the AI's persona and the scenario step-by-step.
+						<p className="text-lg text-gray-400 mb-8">
+							Configure the AI step-by-step or jump right in.
 						</p>
+						<div className="flex flex-col gap-4 max-w-xs mx-auto sm:flex-row sm:max-w-full">
+							<button
+								onClick={handleNext}
+								className="w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg">
+								Start
+							</button>
+							<button
+								onClick={randomizeAndStart}
+								className="w-full px-6 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105">
+								Random Scenario
+							</button>
+						</div>
 					</div>
 				);
-
-			case 1: // Environment
+			case 1:
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
-							First, where is this conversation taking place?
+							Where is this conversation taking place?
 						</h2>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 							{Object.values(SocialEnvironment).map((env) => (
 								<StepButton
 									key={env}
 									onClick={() => {
 										updateScenario({ environment: env });
-										setIsCustomEnv(env === SocialEnvironment.CUSTOM);
 										if (env !== SocialEnvironment.CUSTOM) {
 											handleNext();
 										}
 									}}
 									isSelected={scenario.environment === env}>
-									<span className="font-bold text-lg">{env}</span>
+									<span className="font-bold">{env}</span>
 								</StepButton>
 							))}
 						</div>
-						{isCustomEnv &&
-							scenario.environment === SocialEnvironment.CUSTOM && (
-								<div className="mt-6 animate-fadeIn">
-									<textarea
-										value={scenario.customEnvironment || ""}
-										onChange={(e) =>
-											updateScenario({ customEnvironment: e.target.value })
-										}
-										placeholder="e.g., A quiet library, a noisy coffee shop during rush hour..."
-										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-									/>
-									<button
-										onClick={handleNext}
-										className="mt-4 px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500">
-										Confirm & Next
-									</button>
-								</div>
-							)}
+						{scenario.environment === SocialEnvironment.CUSTOM && (
+							<div className="mt-6 animate-fadeIn">
+								<textarea
+									value={scenario.customEnvironment || ""}
+									onChange={(e) =>
+										updateScenario({ customEnvironment: e.target.value })
+									}
+									placeholder="e.g., A quiet library, a noisy coffee shop during rush hour..."
+									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+								/>
+							</div>
+						)}
 					</div>
 				);
 
-			case 2: // AI Gender & Name
+			case 2:
+				const ageBrackets = Object.values(AIAgeBracket).filter(
+					(age) => age !== AIAgeBracket.CUSTOM
+				);
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
 							Who are you talking to?
 						</h2>
-						<div className="space-y-4">
+						<div className="space-y-6">
 							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-2">
-									AI's Gender:
+								<h3 className="text-lg font-medium text-gray-300 mb-3">
+									Gender:
 								</h3>
 								<div className="flex flex-wrap gap-2">
 									{Object.values(AIGender).map((g) => (
 										<button
 											key={g}
 											onClick={() => updateScenario({ aiGender: g })}
-											className={`px-4 py-2 rounded-lg ${
+											className={`px-4 py-2 rounded-lg text-sm ${
 												scenario.aiGender === g
 													? "bg-teal-500 text-white"
 													: "bg-slate-700 hover:bg-slate-600"
@@ -194,16 +291,64 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								</div>
 							</div>
 							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-2">
-									AI's Name (Optional):
+								<h3 className="text-lg font-medium text-gray-300 mb-3">
+									Age Bracket:
+								</h3>
+								<div className="flex flex-wrap gap-2">
+									{ageBrackets.map((age) => (
+										<button
+											key={age}
+											onClick={() =>
+												updateScenario({
+													aiAgeBracket: age,
+													customAiAge: undefined,
+												})
+											}
+											className={`px-4 py-2 rounded-lg text-sm ${
+												scenario.aiAgeBracket === age
+													? "bg-teal-500 text-white"
+													: "bg-slate-700 hover:bg-slate-600"
+											}`}>
+											{age}
+										</button>
+									))}
+									<button
+										onClick={() =>
+											updateScenario({ aiAgeBracket: AIAgeBracket.CUSTOM })
+										}
+										className={`px-4 py-2 rounded-lg text-sm ${
+											scenario.aiAgeBracket === AIAgeBracket.CUSTOM
+												? "bg-teal-500 text-white"
+												: "bg-slate-700 hover:bg-slate-600"
+										}`}>
+										Custom
+									</button>
+								</div>
+								{scenario.aiAgeBracket === AIAgeBracket.CUSTOM && (
+									<input
+										type="number"
+										value={scenario.customAiAge || ""}
+										onChange={(e) =>
+											updateScenario({
+												customAiAge: parseInt(e.target.value, 10) || undefined,
+											})
+										}
+										placeholder="Enter age (13-100)"
+										className="mt-3 w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+									/>
+								)}
+							</div>
+							<div>
+								<h3 className="text-lg font-medium text-gray-300 mb-3">
+									Culture/Race (Optional):
 								</h3>
 								<input
 									type="text"
-									value={scenario.aiName}
-									onChange={(e) => updateScenario({ aiName: e.target.value })}
-									placeholder={`e.g., ${generateRandomAiName(
-										scenario.aiGender
-									)} (or leave blank for random)`}
+									value={scenario.aiCulture || ""}
+									onChange={(e) =>
+										updateScenario({ aiCulture: e.target.value })
+									}
+									placeholder="e.g., Japanese salaryman, Italian grandmother"
 									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 								/>
 							</div>
@@ -211,15 +356,18 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					</div>
 				);
 
-			case 3: // AI Personality
+			case 3:
 				const selectedCount = scenario.aiPersonalityTraits.length;
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-2xl font-semibold text-sky-300 mb-2">
 							What's their personality like?
 						</h2>
-						<p className="text-gray-400 mb-4">Choose up to 3 traits.</p>
-						<div className="flex flex-wrap gap-2">
+						<p className="text-gray-400 mb-4">
+							Choose up to {MAX_PERSONALITY_TRAITS} traits, or describe them
+							yourself.
+						</p>
+						<div className="flex flex-wrap gap-2 mb-6">
 							{Object.values(AIPersonalityTrait).map((p) => {
 								const isSelected = scenario.aiPersonalityTraits.includes(p);
 								return (
@@ -233,7 +381,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 															(trait) => trait !== p
 														),
 												});
-											} else if (selectedCount < 3) {
+											} else if (selectedCount < MAX_PERSONALITY_TRAITS) {
 												updateScenario({
 													aiPersonalityTraits: [
 														...scenario.aiPersonalityTraits,
@@ -242,12 +390,12 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 												});
 											}
 										}}
-										className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+										className={`px-3 py-1.5 rounded-full text-xs font-medium ${
 											isSelected
 												? "bg-teal-500 text-white"
 												: "bg-slate-700 hover:bg-slate-600"
 										} ${
-											!isSelected && selectedCount >= 3
+											!isSelected && selectedCount >= MAX_PERSONALITY_TRAITS
 												? "opacity-50 cursor-not-allowed"
 												: ""
 										}`}>
@@ -256,37 +404,59 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								);
 							})}
 						</div>
+						<textarea
+							value={scenario.customAiPersonality || ""}
+							onChange={(e) =>
+								updateScenario({ customAiPersonality: e.target.value })
+							}
+							placeholder="You can also add unlisted traits or a detailed description here."
+							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+						/>
 					</div>
 				);
 
-			case 4: // AI Culture/Race & Goal
+			case 4:
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
-							Let's add some final details.
+							Set the power dynamic.
+						</h2>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+							{Object.values(PowerDynamic).map((pd) => (
+								<StepButton
+									key={pd}
+									onClick={() => updateScenario({ powerDynamic: pd })}
+									isSelected={scenario.powerDynamic === pd}
+									className="text-sm">
+									{pd}
+								</StepButton>
+							))}
+						</div>
+					</div>
+				);
+
+			case 5:
+				return (
+					<div key={step} className={`${animationClass}`}>
+						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
+							Set the final details.
 						</h2>
 						<div className="space-y-6">
 							<div>
 								<h3 className="text-lg font-medium text-gray-300 mb-2">
-									AI Culture/Race (Optional)
+									AI's Name (Optional):
 								</h3>
 								<input
 									type="text"
-									value={scenario.aiCulture || ""}
-									onChange={(e) =>
-										updateScenario({ aiCulture: e.target.value })
-									}
-									placeholder="e.g., French artist, Brazilian programmer"
+									value={scenario.aiName || ""}
+									onChange={(e) => updateScenario({ aiName: e.target.value })}
+									placeholder="Leave blank for a random name"
 									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 								/>
-								<p className="text-xs text-gray-400 mt-1">
-									Adds nuance to persona and appearance. Leave blank for
-									default.
-								</p>
 							</div>
 							<div>
 								<h3 className="text-lg font-medium text-gray-300 mb-2">
-									Conversation Goal (Optional)
+									Conversation Goal (Optional):
 								</h3>
 								<input
 									type="text"
@@ -294,18 +464,15 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									onChange={(e) =>
 										updateScenario({ conversationGoal: e.target.value })
 									}
-									placeholder="e.g., Ask for a date, negotiate a deal"
+									placeholder="e.g., Ask for a date, get a job"
 									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 								/>
-								<p className="text-xs text-gray-400 mt-1">
-									If set, your progress towards this goal will be tracked.
-								</p>
 							</div>
 						</div>
 					</div>
 				);
 
-			case 5: // Summary
+			case 6:
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-6">
@@ -320,16 +487,17 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									: ""}
 							</p>
 							<p>
-								<strong className="text-sky-400">AI Persona:</strong>{" "}
-								{scenario.aiName || `Random ${scenario.aiGender}`} who is{" "}
+								<strong className="text-sky-400">AI Persona:</strong> A{" "}
+								{scenario.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED
+									? (scenario.aiAgeBracket || "").toLowerCase()
+									: "person"}{" "}
+								{scenario.aiGender.toLowerCase()} who is{" "}
 								{scenario.aiPersonalityTraits.join(", ") || "neutral"}.
 							</p>
-							{scenario.aiCulture && (
-								<p>
-									<strong className="text-sky-400">Culture/Race:</strong>{" "}
-									{scenario.aiCulture}
-								</p>
-							)}
+							<p>
+								<strong className="text-sky-400">Dynamic:</strong>{" "}
+								{scenario.powerDynamic}
+							</p>
 							{scenario.conversationGoal && (
 								<p>
 									<strong className="text-sky-400">Your Goal:</strong>{" "}
@@ -338,14 +506,10 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							)}
 						</div>
 						<p className="text-sm text-gray-500 mt-4">
-							You can change these settings by going back, or start the
-							interaction now.
+							You can change these settings by going back.
 						</p>
 					</div>
 				);
-
-			case 6: // Hidden step for final button
-				return <div></div>;
 
 			default:
 				return <div>Setup complete.</div>;
@@ -353,46 +517,56 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	};
 
 	return (
-		<div className="w-full max-w-2xl p-6 md:p-10 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between min-h-[50vh]">
+		<div className="w-full max-w-2xl p-4 md:p-8 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between min-h-[70vh] md:min-h-[60vh]">
 			<div>
 				<div className="relative h-1 bg-slate-700 rounded-full mb-8">
 					<div
 						className="absolute top-0 left-0 h-1 bg-teal-400 rounded-full transition-all duration-500"
 						style={{ width: `${(step / MAX_STEPS) * 100}%` }}></div>
 				</div>
-				{renderStepContent()}
+				<div className="min-h-[280px] md:min-h-[300px]">
+					{renderStepContent()}
+				</div>
+				{error && (
+					<p className="text-red-400 text-sm mt-4 text-center animate-pulse">
+						{error}
+					</p>
+				)}
 			</div>
 
-			<div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-700">
-				<div>
-					{step > 0 && step < MAX_STEPS && (
+			<div className="flex flex-col sm:flex-row justify-between items-center mt-8 pt-4 border-t border-slate-700 gap-4">
+				<div className="w-full sm:w-auto">
+					{step > 0 && step <= MAX_STEPS && (
 						<button
 							onClick={handleBack}
-							className="px-6 py-2 bg-slate-600 text-white font-bold rounded-lg hover:bg-slate-500">
-							Back
+							className="w-full sm:w-auto px-6 py-3 bg-slate-600 text-white font-bold rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2">
+							<ArrowLeftIcon className="h-5 w-5" />
+							<span>Back</span>
 						</button>
 					)}
 				</div>
-				<div>
-					{step < MAX_STEPS - 1 && !(isCustomEnv && step === 1) && (
+				<div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
+					<button
+						onClick={onSwitchToAdvanced}
+						className="w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm shadow-md transition-all duration-200 flex items-center justify-center space-x-2">
+						<CogIcon />
+						<span>Advanced Setup</span>
+					</button>
+					{step > 0 && step < MAX_STEPS && (
 						<button
 							onClick={handleNext}
-							className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500">
+							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500">
 							Next
 						</button>
 					)}
-					{step === MAX_STEPS - 1 && (
+					{step === MAX_STEPS && (
 						<button
 							onClick={handleStart}
-							className="px-8 py-3 bg-green-600 text-white font-bold rounded-lg text-lg hover:bg-green-500 animate-pulse-glow">
-							Start Interaction
+							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg text-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center space-x-2">
+							<PlayIcon className="h-5 w-5" />
+							<span>Start</span>
 						</button>
 					)}
-					<button
-						onClick={onSwitchToAdvanced}
-						className="ml-4 text-sm text-sky-400 hover:underline">
-						Switch to Advanced Setup
-					</button>
 				</div>
 			</div>
 		</div>

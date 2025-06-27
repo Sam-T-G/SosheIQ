@@ -181,7 +181,7 @@ const generateRandomAiName = (gender: AIGender): string => {
 			firstNamePool = PREDEFINED_AI_FEMALE_FIRST_NAMES;
 			break;
 		case AIGender.NON_BINARY:
-		case AIGender.PREFER_NOT_TO_SPECIFY:
+		case AIGender.RANDOM:
 		default:
 			firstNamePool = PREDEFINED_AI_NEUTRAL_FIRST_NAMES;
 			break;
@@ -206,11 +206,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 	>([]);
 	const [customAiPersonality, setCustomAiPersonality] = useState<string>("");
 	const [powerDynamic, setPowerDynamic] = useState<PowerDynamic>(
-		PowerDynamic.PEERS_EQUAL_FOOTING
+		PowerDynamic.BALANCED
 	);
-	const [aiGender, setAiGender] = useState<AIGender>(
-		AIGender.PREFER_NOT_TO_SPECIFY
-	);
+	const [aiGender, setAiGender] = useState<AIGender>(AIGender.RANDOM);
 	const [aiName, setAiName] = useState<string>("");
 	const [nameInputMode, setNameInputMode] =
 		useState<NameInputMode>("automatic");
@@ -678,7 +676,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 						<label
 							htmlFor="customAiPersonality"
 							className="block text-md font-medium text-teal-300 mb-2">
-							Custom AI Personality (Optional)
+							Custom AI Personality (Optional, you may also add unlisted traits
+							here)
 						</label>
 						<textarea
 							ref={customPersonalityRef}

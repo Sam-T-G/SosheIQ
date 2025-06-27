@@ -5,7 +5,7 @@ import {
 	CheckCircleIcon,
 	PlayIcon,
 	QuestionMarkIcon,
-	ThoughtBubbleIcon,
+	StarIcon,
 	SendIcon,
 	StopCircleIcon,
 	InfoIcon, // Added for consistency, though not strictly needed for button replicas here
@@ -112,7 +112,7 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						(without Shift) and the AI will read and respond to your message.
 						<ReplicaButtonWrapper ariaLabel="Example Send button">
 							<div className="p-3 bg-sky-700/80 text-white/80 rounded-lg flex items-center justify-center space-x-2 min-w-[80px]">
-								<SendIcon />
+								<SendIcon className="h-5 w-5" />
 								<span>Send</span>
 							</div>
 						</ReplicaButtonWrapper>
@@ -124,13 +124,13 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						<div className="mt-2 flex flex-wrap gap-3 justify-start">
 							<ReplicaButtonWrapper ariaLabel="Example End button">
 								<div className="p-3 bg-red-700/80 text-white/80 rounded-lg flex items-center justify-center space-x-2 min-w-[80px]">
-									<StopCircleIcon />
+									<StopCircleIcon className="h-5 w-5" />
 									<span>End</span>
 								</div>
 							</ReplicaButtonWrapper>
 							<ReplicaButtonWrapper ariaLabel="Example Finish button">
 								<div className="p-3 bg-green-700/80 text-white/80 rounded-lg flex items-center justify-center space-x-2 min-w-[90px]">
-									<CheckCircleIcon />
+									<CheckCircleIcon className="h-5 w-5" />
 									<span>Finish</span>
 								</div>
 							</ReplicaButtonWrapper>
@@ -159,17 +159,17 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						{" "}
 						{/* Adjusted for alignment and spacing */}
 						<div className="flex items-start">
-							<ThoughtBubbleIcon className="mr-2 h-5 w-5 flex-shrink-0 mt-0.5 text-purple-400" />
+							<StarIcon className="mr-2 h-5 w-5 flex-shrink-0 mt-0.5 text-purple-400" />
 							<div>
 								<strong>AI Thoughts Button!</strong>
 								<p className="text-sm text-gray-400">
-									Click the thought bubble icon if you're stuck or want more
-									context on how the AI internally interpreted your previous
-									dialogue. This can be toggled on/off.
+									Click the star icon if you're stuck or want more context on
+									how the AI internally interpreted your previous dialogue. This
+									can be toggled on/off.
 								</p>
 								<ReplicaButtonWrapper ariaLabel="Example AI Thoughts button">
 									<div className="p-2 rounded-full bg-purple-700/70 text-purple-300/80 ring-1 ring-purple-500/70">
-										<ThoughtBubbleIcon className="h-5 w-5" />
+										<StarIcon className="h-5 w-5" />
 									</div>
 								</ReplicaButtonWrapper>
 							</div>
@@ -193,23 +193,23 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 				</p>
 			</section>
 
-			<div className="flex flex-col sm:flex-row gap-4 mt-10">
+			<div className="flex flex-row justify-center gap-4 mt-10">
 				<button
 					onClick={() => onNavigate(GamePhase.HERO)}
-					className="w-full sm:w-auto flex-grow px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-lg shadow-md
+					className="flex-1 px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg text-lg shadow-md
                      transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none
                      focus:ring-4 focus:ring-slate-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Back to Home">
-					<ArrowLeftIcon />
+					<ArrowLeftIcon className="h-5 w-5" />
 					<span>Back to Home</span>
 				</button>
 				<button
 					onClick={() => onNavigate(GamePhase.SETUP)}
-					className="w-full sm:w-auto flex-grow px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-lg shadow-lg
+					className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-lg shadow-lg
                      transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none
                      focus:ring-4 focus:ring-green-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Start Interaction Setup">
-					<PlayIcon />
+					<PlayIcon className="h-5 w-5" />
 					<span>Start Interaction Setup</span>
 				</button>
 			</div>

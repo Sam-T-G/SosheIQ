@@ -1,6 +1,6 @@
 import React from "react";
 import type { ChatMessage } from "../types";
-import { ThoughtBubbleIcon } from "./Icons";
+import { StarIcon } from "./Icons";
 
 interface ChatMessageViewAIThoughtBubbleProps {
 	message: ChatMessage;
@@ -25,7 +25,7 @@ export const ChatMessageViewAIThoughtBubble: React.FC<
 				role="log"
 				aria-live="polite">
 				<div className="flex items-start text-xs text-purple-400 mb-1.5">
-					<ThoughtBubbleIcon />
+					<StarIcon className="h-5 w-5" />
 					<span className="ml-1.5 font-semibold">AI's thoughts</span>
 				</div>
 				<p className="whitespace-pre-wrap italic text-sm break-words">

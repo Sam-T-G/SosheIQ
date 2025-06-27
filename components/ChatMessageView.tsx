@@ -3,7 +3,7 @@ import type { ChatMessage } from "../types";
 import { ChatMessageViewAI } from "./ChatMessageViewAI";
 import { ChatMessageViewAIThoughtBubble } from "./ChatMessageViewAIThoughtBubble";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
-import { StarIcon } from "./Icons";
+import { StarIcon, SparklesIcon, XCircleIcon } from "./Icons";
 
 interface ChatMessageViewProps {
 	message: ChatMessage;
@@ -12,19 +12,15 @@ interface ChatMessageViewProps {
 }
 
 const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
-	const isPositive = delta > 0;
+	const isPositive = delta >= 0;
 	const colorClasses = isPositive
-		? "bg-green-500/20 text-green-300 ring-green-500/30"
-		: "bg-red-500/20 text-red-300 ring-red-500/30";
-
+		? "bg-green-600 text-white ring-green-400"
+		: "bg-red-600 text-white ring-red-400";
 	const sign = isPositive ? "+" : "";
 
 	return (
 		<div
-			className={`
-				px-2 py-0.5 rounded-full text-xs font-bold ring-1
-				${colorClasses} animate-popIn
-			`}
+			className={`px-2 py-0.5 rounded-full text-xs font-bold ring-1 ring-inset ${colorClasses} animate-popInAndSettle`}
 			aria-label={`Engagement change: ${sign}${delta}%`}>
 			{sign}
 			{delta}%
@@ -35,20 +31,41 @@ const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
 const EffectivenessBadge: React.FC<{ score: number }> = ({ score }) => {
 	const colorClasses =
 		score >= 75
-			? "bg-sky-500/20 text-sky-300 ring-sky-500/30"
+			? "bg-sky-600 text-white ring-sky-400"
 			: score >= 40
-			? "bg-yellow-500/20 text-yellow-300 ring-yellow-500/30"
-			: "bg-red-500/20 text-red-300 ring-red-500/30";
+			? "bg-yellow-600 text-white ring-yellow-400"
+			: "bg-red-600 text-white ring-red-400";
 
 	return (
 		<div
-			className={`
-				px-2 py-1 rounded-full text-xs font-bold ring-1
-				flex items-center space-x-1 ${colorClasses} animate-zoomIn
-			`}
+			className={`px-2 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1 ${colorClasses} animate-popInAndSettle`}
 			aria-label={`Effectiveness score: ${score}%`}>
 			<StarIcon className="h-3 w-3" />
 			<span>{score}%</span>
+		</div>
+	);
+};
+
+const TraitContributionBadge: React.FC<{ trait: string }> = ({ trait }) => {
+	return (
+		<div
+			className={`px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1.5 bg-purple-600 text-white ring-purple-400 animate-popInAndSettle`}
+			aria-label={`Positive Trait: ${trait}`}>
+			<SparklesIcon className="h-3.5 w-3.5" />
+			<span>{trait} +</span>
+		</div>
+	);
+};
+
+const NegativeTraitContributionBadge: React.FC<{ trait: string }> = ({
+	trait,
+}) => {
+	return (
+		<div
+			className={`px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1.5 bg-red-600 text-white ring-red-400 animate-popInAndSettle`}
+			aria-label={`Negative Trait: ${trait}`}>
+			<XCircleIcon className="h-3.5 w-3.5" />
+			<span>{trait} -</span>
 		</div>
 	);
 };
@@ -73,7 +90,17 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 							})}
 						</p>
 					</div>
-					<div className="absolute -top-3 -right-2 flex flex-col items-end gap-y-1.5">
+					<div className="absolute -top-4 right-0 flex flex-row-reverse items-center gap-x-2 w-auto">
+						{message.positiveTraitContribution && (
+							<TraitContributionBadge
+								trait={message.positiveTraitContribution}
+							/>
+						)}
+						{message.negativeTraitContribution && (
+							<NegativeTraitContributionBadge
+								trait={message.negativeTraitContribution}
+							/>
+						)}
 						{typeof message.userTurnEffectivenessScore === "number" && (
 							<EffectivenessBadge score={message.userTurnEffectivenessScore} />
 						)}

@@ -10,11 +10,17 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
 	DownloadIcon,
-	ThoughtBubbleIcon,
+	StarIcon,
 	ChatBubbleIcon,
 	EyeIcon,
 	EyeSlashIcon,
 	TrendingUpIcon,
+	SparklesIcon,
+	ThumbsUpIcon,
+	ThumbsDownIcon,
+	LightbulbIcon,
+	ProhibitIcon,
+	XCircleIcon,
 } from "./Icons";
 import { AIAgeBracket } from "../types";
 
@@ -54,10 +60,66 @@ const DeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
 
 	return (
 		<span
-			className={`px-2 py-0.5 rounded-full text-xs font-bold ${colorClasses}`}>
+			className={`px-2 py-0.5 rounded-full text-xs font-bold ${colorClasses} animate-popInAndSettle`}>
 			{sign}
 			{delta}%
 		</span>
+	);
+};
+
+const TraitBadge: React.FC<{
+	trait: string;
+	isPositive: boolean;
+}> = ({ trait, isPositive }) => {
+	if (isPositive) {
+		return (
+			<div className="p-1.5 bg-purple-800/40 border border-purple-600/50 rounded-md flex items-center justify-between animate-popInAndSettle">
+				<span className="font-semibold text-purple-300">Positive Trait</span>
+				<span className="flex items-center gap-1 font-bold text-purple-200">
+					<SparklesIcon className="h-3 w-3" />
+					{trait}
+				</span>
+			</div>
+		);
+	}
+	return (
+		<div className="p-1.5 bg-red-800/40 border border-red-600/50 rounded-md flex items-center justify-between animate-popInAndSettle">
+			<span className="font-semibold text-red-300">Negative Trait</span>
+			<span className="flex items-center gap-1 font-bold text-red-200">
+				<XCircleIcon className="h-3 w-3" />
+				{trait}
+			</span>
+		</div>
+	);
+};
+
+interface FeedbackSectionProps {
+	title: string;
+	content?: string;
+	IconComponent: React.FC<any>;
+	colorClass: string;
+}
+
+const FeedbackSection: React.FC<FeedbackSectionProps> = ({
+	title,
+	content,
+	IconComponent,
+	colorClass,
+}) => {
+	if (!content || content.trim() === "") return null;
+
+	return (
+		<div className="bg-slate-700 p-4 rounded-lg shadow">
+			<h3
+				className={`text-xl font-semibold mb-3 flex items-center gap-3 ${colorClass}`}>
+				<IconComponent className="h-6 w-6 flex-shrink-0" />
+				{title}
+			</h3>
+			<div
+				className="text-gray-200 whitespace-pre-wrap text-sm leading-relaxed"
+				dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, "<br />") }}
+			/>
+		</div>
 	);
 };
 
@@ -92,7 +154,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 			{item.aiBodyLanguage && (
 				<div className="mt-2 p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md">
 					<div className="flex items-center text-xs text-yellow-500 mb-1">
-						<ChatBubbleIcon />
+						<ChatBubbleIcon className="h-4 w-4" />
 						<span className="ml-1.5 font-semibold">
 							{aiName}'s Body Language:
 						</span>
@@ -105,7 +167,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 			{item.aiThoughts && (
 				<div className="mt-2 p-2.5 bg-purple-800/50 border border-purple-700/60 rounded-md">
 					<div className="flex items-center text-xs text-purple-400 mb-1">
-						<ThoughtBubbleIcon />
+						<StarIcon className="h-4 w-4" />
 						<span className="ml-1.5 font-semibold">
 							{aiName}'s Internal Thoughts:
 						</span>
@@ -118,7 +180,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 			{showPerTurnScores && typeof item.conversationMomentum === "number" && (
 				<div className="mt-2 p-1.5 bg-green-800/40 border border-green-700/50 rounded-md">
 					<div className="flex items-center text-xs text-green-400">
-						<TrendingUpIcon />
+						<TrendingUpIcon className="h-4 w-4" />
 						<span className="ml-1.5 font-semibold">
 							Conversation Momentum (after AI turn):
 						</span>
@@ -138,7 +200,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 					<strong>You:</strong> "{item.userInput}"
 				</p>
 				{showPerTurnScores && (
-					<div className="grid grid-cols-2 gap-2 mt-2 mb-2 text-xs">
+					<div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 mb-2 text-xs">
 						{typeof item.userTurnEffectivenessScore === "number" && (
 							<div className="p-1.5 bg-cyan-800/40 border border-cyan-700/50 rounded-md">
 								<div className="flex justify-between items-center text-cyan-400">
@@ -151,14 +213,21 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 							</div>
 						)}
 						{typeof item.engagementDelta === "number" && (
-							<div className="p-1.5 bg-slate-800/40 border border-slate-600/50 rounded-md">
-								<div className="flex justify-between items-center">
-									<span className="font-semibold text-gray-300">
-										Engagement Impact
-									</span>
-									<DeltaBadge delta={item.engagementDelta} />
-								</div>
+							<div className="p-1.5 bg-slate-800/40 border border-slate-600/50 rounded-md flex items-center justify-between">
+								<span className="font-semibold text-gray-300">
+									Engagement Impact
+								</span>
+								<DeltaBadge delta={item.engagementDelta} />
 							</div>
+						)}
+						{item.positiveTraitContribution && (
+							<TraitBadge trait={item.positiveTraitContribution} isPositive />
+						)}
+						{item.negativeTraitContribution && (
+							<TraitBadge
+								trait={item.negativeTraitContribution}
+								isPositive={false}
+							/>
 						)}
 					</div>
 				)}
@@ -403,13 +472,31 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					</div>
 				)}
 
-				<div className="bg-slate-700 p-4 rounded-lg shadow mt-6">
-					<h3 className="text-xl font-semibold text-sky-400 mb-3">
-						Overall Feedback & Tips
-					</h3>
-					<p className="text-gray-200 whitespace-pre-wrap">
-						{report.overallFeedback}
-					</p>
+				<div className="space-y-4 mt-6">
+					<FeedbackSection
+						title="Strengths"
+						content={report.strengths}
+						IconComponent={ThumbsUpIcon}
+						colorClass="text-green-400"
+					/>
+					<FeedbackSection
+						title="Areas for Improvement"
+						content={report.areasForImprovement}
+						IconComponent={ThumbsDownIcon}
+						colorClass="text-yellow-400"
+					/>
+					<FeedbackSection
+						title="Actionable Tips"
+						content={report.actionableTips}
+						IconComponent={LightbulbIcon}
+						colorClass="text-cyan-400"
+					/>
+					<FeedbackSection
+						title="Things to Avoid"
+						content={report.thingsToAvoid}
+						IconComponent={ProhibitIcon}
+						colorClass="text-red-400"
+					/>
 				</div>
 
 				{report.aiEvolvingThoughtsSummary && (
@@ -437,7 +524,11 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 									? "Hide Turn Scores"
 									: "Show Turn Scores (User Effectiveness & Momentum)"
 							}>
-							{showPerTurnScores ? <EyeSlashIcon /> : <EyeIcon />}
+							{showPerTurnScores ? (
+								<EyeSlashIcon className="h-4 w-4" />
+							) : (
+								<EyeIcon className="h-4 w-4" />
+							)}
 							<span>{showPerTurnScores ? "Hide" : "Show"} Turn Scores</span>
 						</button>
 					</div>
@@ -467,7 +558,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					onClick={handleExportToPdf}
 					className="w-full sm:w-auto bg-sky-600 hover:bg-sky-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg transition-transform duration-150 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sky-500 focus:ring-opacity-50 flex items-center justify-center gap-2"
 					title="Download analysis as PDF">
-					<DownloadIcon /> Export to PDF
+					<DownloadIcon className="h-6 w-6" /> Export to PDF
 				</button>
 			</div>
 		</div>

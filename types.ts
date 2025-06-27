@@ -1,13 +1,12 @@
 
-
 export enum SocialEnvironment {
   CASUAL = "Casual Chat",
   DATING = "Dating",
   WORK = "Work Environment",
-  SOCIAL_GATHERING = "Social Gathering (e.g., party, networking event)",
+  SOCIAL_GATHERING = "Social Gathering",
   FAMILY = "Family Interaction",
-  CUSTOMER_SERVICE = "Customer Service Scenario",
-  NEGOTIATION = "Negotiation or Debate",
+  CUSTOMER_SERVICE = "Customer Service",
+  NEGOTIATION = "Negotiation",
   CUSTOM = "Custom...",
 }
 
@@ -41,18 +40,18 @@ export enum AIPersonalityTrait {
 }
 
 export enum PowerDynamic {
-  AI_IS_AUTHORITY = "AI is Authority (e.g., boss, interviewer, expert)",
-  USER_IS_AUTHORITY = "User is Authority (e.g., you're the boss, interviewer)",
-  PEERS_EQUAL_FOOTING = "Peers / Equal Footing",
-  USER_SEEKS_FAVOR = "User Seeks Favor (e.g., asking for help, making a request)",
-  AI_SEEKS_FAVOR = "AI Seeks Favor (e.g., AI needs your help or input)",
+  BALANCED = "Balanced / Peers",
+  AI_IS_AUTHORITY = "AI is Authority",
+  USER_IS_AUTHORITY = "User is Authority",
+  USER_SEEKS_FAVOR = "User Seeks Favor",
+  AI_SEEKS_FAVOR = "AI Seeks Favor",
 }
 
 export enum AIGender {
+  RANDOM = "Random",
   MALE = "Male",
   FEMALE = "Female",
   NON_BINARY = "Non-binary",
-  PREFER_NOT_TO_SPECIFY = "Prefer Not to Specify / Neutral",
 }
 
 export enum AIAgeBracket {
@@ -63,7 +62,7 @@ export enum AIAgeBracket {
   ADULT_30_39 = "Adult (30-39)",
   ADULT_40_50 = "Adult (40-50)",
   SENIOR_51_PLUS = "Senior (51+)",
-  CUSTOM = "Custom Age", // For internal use when custom age is entered
+  CUSTOM = "Custom Age",
 }
 
 export interface ScenarioDetails {
@@ -76,7 +75,7 @@ export interface ScenarioDetails {
   aiGender: AIGender;
   aiName: string;
   aiAgeBracket?: AIAgeBracket;
-  customAiAge?: number; // To store validated custom age
+  customAiAge?: number;
   customContext?: string;
   conversationGoal?: string;
   aiEstablishedVisualPromptSegment?: string;
@@ -91,11 +90,13 @@ export interface ChatMessage {
   conversationMomentum?: number;
   userTurnEffectivenessScore?: number;
   engagementDelta?: number;
+  positiveTraitContribution?: string;
+  negativeTraitContribution?: string;
   imagePrompt?: string;
   imageUrl?: string; // base64
   timestamp: Date;
   isThoughtBubble?: boolean;
-  isThinkingBubble?: boolean; // Used for the AI "..." thinking animation
+  isThinkingBubble?: boolean;
 }
 
 export interface TurnByTurnAnalysisItem {
@@ -103,13 +104,15 @@ export interface TurnByTurnAnalysisItem {
   aiResponse?: string;
   aiBodyLanguage?: string;
   aiThoughts?: string;
-  conversationMomentum?: number; // Momentum after AI's turn
+  conversationMomentum?: number;
 
-  // User's part of the exchange (optional, if user responded)
+  // User's part of the exchange
   userInput?: string;
-  userTurnEffectivenessScore?: number; // Score for user's input
+  userTurnEffectivenessScore?: number;
   engagementDelta?: number;
-  analysis?: string; // Analysis *of the userInput*, if present. Will be omitted or empty if no userInput.
+  positiveTraitContribution?: string;
+  negativeTraitContribution?: string;
+  analysis?: string;
 }
 
 export interface AnalysisReport {
@@ -117,12 +120,15 @@ export interface AnalysisReport {
   responseClarityScore: number;
   engagementMaintenanceScore: number;
   adaptabilityScore: number;
-  goalAchievementScore?: number; // Optional score for the new goal feature
+  goalAchievementScore?: number;
   overallAiEffectivenessScore?: number;
   finalEngagementSnapshot: number;
   turnByTurnAnalysis: TurnByTurnAnalysisItem[];
-  overallFeedback: string;
-  goalAchievementFeedback?: string; // Optional feedback for the new goal feature
+  strengths: string;
+  areasForImprovement: string;
+  actionableTips: string;
+  thingsToAvoid: string;
+  goalAchievementFeedback?: string;
   aiEvolvingThoughtsSummary?: string;
 }
 

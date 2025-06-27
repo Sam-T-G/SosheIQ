@@ -9,7 +9,7 @@ import {
 	CloseIcon,
 	InfoIcon,
 	QuestionMarkIcon,
-	ThoughtBubbleIcon,
+	StarIcon,
 	TargetIcon,
 } from "./Icons";
 
@@ -58,6 +58,7 @@ interface InputAreaProps {
 	handleEndOrFinish: () => void;
 	isLoadingAI: boolean;
 	isMaxEngagement: boolean;
+	isOverlay: boolean;
 }
 
 const InputArea: React.FC<InputAreaProps> = ({
@@ -67,6 +68,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 	handleEndOrFinish,
 	isLoadingAI,
 	isMaxEngagement,
+	isOverlay,
 }) => {
 	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -75,8 +77,16 @@ const InputArea: React.FC<InputAreaProps> = ({
 		}
 	};
 
+	const wrapperClasses = isOverlay
+		? "flex-shrink-0 p-3 border-t border-slate-700/40 bg-slate-900/80 backdrop-blur-sm shadow-lg z-10"
+		: "flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700"; // Desktop specific styling - changed bg
+
+	const textareaClasses = isOverlay
+		? `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-700/60 placeholder-gray-300`
+		: `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`; // Desktop specific styling - changed bg
+
 	return (
-		<div className="flex-shrink-0 p-3 border-t border-slate-700/40 bg-slate-900/80 backdrop-blur-sm shadow-lg z-10">
+		<div className={wrapperClasses}>
 			{isMaxEngagement && (
 				<div className="pointer-events-none">
 					<p className="text-center text-green-400 font-semibold mb-2 animate-slowPulseOnce">
@@ -90,7 +100,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 					onChange={(e) => setUserInput(e.target.value)}
 					onKeyPress={handleKeyPress}
 					placeholder="Type your response..."
-					className={`flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-700/60 placeholder-gray-300`}
+					className={textareaClasses}
 					rows={
 						userInput.split("\n").length > 2
 							? 3
@@ -107,7 +117,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 						disabled={!userInput.trim() || isLoadingAI}
 						className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-grow sm:flex-grow-0 min-h-[48px] sm:min-h-0"
 						aria-label="Send message">
-						<SendIcon />
+						<SendIcon className="h-5 w-5" />
 						<span className="hidden sm:inline">Send</span>
 					</button>
 					<button
@@ -122,7 +132,11 @@ const InputArea: React.FC<InputAreaProps> = ({
 						aria-label={
 							isMaxEngagement ? "Finish conversation" : "End conversation"
 						}>
-						{isMaxEngagement ? <CheckCircleIcon /> : <StopCircleIcon />}
+						{isMaxEngagement ? (
+							<CheckCircleIcon className="h-5 w-5" />
+						) : (
+							<StopCircleIcon className="h-5 w-5" />
+						)}
 						<span className="hidden sm:inline">
 							{isMaxEngagement ? "Finish" : "End"}
 						</span>
@@ -167,8 +181,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 				!currentMsg.isThoughtBubble
 			) {
 				newProcessedMessages.push({
+					...currentMsg, // Inherit all properties
 					id: `${currentMsg.id}-thoughts`,
-					sender: "ai",
 					text: currentMsg.aiThoughts,
 					timestamp: new Date(currentMsg.timestamp.getTime() - 1),
 					isThoughtBubble: true,
@@ -227,21 +241,21 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 							? "Hide AI's internal thoughts"
 							: "Show AI's internal thoughts"
 					}>
-					<ThoughtBubbleIcon />
+					<StarIcon className="h-5 w-5" />
 				</button>
 				<button
 					onClick={onToggleQuickTipsOverlay}
 					className="p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm bg-slate-700/70 hover:bg-slate-600"
 					aria-label="View Quick Tips"
 					title="Quick Tips">
-					<InfoIcon />
+					<InfoIcon className="h-5 w-5" />
 				</button>
 				<button
 					onClick={onToggleHelpOverlay}
 					className="p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm bg-slate-700/70 hover:bg-slate-600"
 					aria-label="Show help for chat interface"
 					title="Help">
-					<QuestionMarkIcon />
+					<QuestionMarkIcon className="h-5 w-5" />
 				</button>
 				{isOverlay && onCloseOverlay && (
 					<button
@@ -249,7 +263,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						className="p-2 text-gray-400 hover:text-gray-200 bg-slate-700/70 hover:bg-slate-600 rounded-full transition-colors"
 						aria-label="Close chat"
 						title="Close Chat">
-						<CloseIcon />
+						<CloseIcon className="h-6 w-6" />
 					</button>
 				)}
 			</div>
@@ -275,6 +289,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		handleEndOrFinish,
 		isLoadingAI,
 		isMaxEngagement,
+		isOverlay,
 	};
 
 	if (isOverlay) {
@@ -349,9 +364,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 				</div>
 			</div>
 
-			<div className="flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700">
-				<InputArea {...inputAreaProps} />
-			</div>
+			<InputArea {...inputAreaProps} />
 		</div>
 	);
 };

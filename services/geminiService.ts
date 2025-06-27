@@ -1,6 +1,4 @@
 
-
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, PowerDynamic, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
@@ -184,7 +182,7 @@ export class GeminiService {
         case AIGender.MALE: genderTerm = "man"; break;
         case AIGender.FEMALE: genderTerm = "woman"; break;
         case AIGender.NON_BINARY: genderTerm = "non-binary person"; break;
-        case AIGender.PREFER_NOT_TO_SPECIFY: genderTerm = "person with an androgynous appearance"; break;
+        case AIGender.RANDOM: genderTerm = "person with an androgynous appearance"; break;
     }
 
     const ageVisualCue = getAgeVisualDescriptionForImagen(aiAgeBracket, customAiAge);
@@ -227,6 +225,8 @@ export class GeminiService {
     aiThoughts: string;
     engagementDelta: number;
     userTurnEffectivenessScore: number;
+    positiveTraitContribution: string;
+    negativeTraitContribution: string;
     conversationMomentum: number;
     isEndingConversation: boolean;
 		goalProgress: number;
@@ -274,13 +274,16 @@ export class GeminiService {
     1.  **aiDialogue**: Your next spoken dialogue as ${scenario.aiName}. Natural, in-character, and reactive.
     2.  **aiBodyLanguage**: Your current body language and expression.
     3.  **aiThoughts**: Your candid, private reaction and plan. This is critical for driving your response.
-    4.  **engagementDelta**: An integer representing the change in engagement caused *by the user's message*. This should be between -15 and +15. A positive number means the user's message was engaging; negative means it was disengaging.
-    5.  **userTurnEffectivenessScore**: A score (0-100) rating how effective the user's last message was at moving the conversation forward or towards the goal. High scores for relevance, charisma, and strategic dialogue.
-    6.  **conversationMomentum**: Assess the current flow and energy (0-100).
-    7.  **isEndingConversation**: Decide if you should end the conversation (true/false).
-		8.  **goalProgress**: A number (0-100). If a goal exists (predefined or one you've identified), how close is the user to achieving it? 0 means no progress, 100 means fully achieved. If no goal, this MUST be 0.
-		9.  **achieved**: A boolean (true/false). Is the goal definitively achieved in this turn?
-		10. **emergingGoal**: A string. If no goal was predefined, but you detect one from the user's dialogue, describe it here (e.g., "User is trying to ask for a date."). Otherwise, this must be an empty string.
+    4.  **engagementDelta**: An integer representing the change in engagement caused *by the user's message*. Between -15 and +15.
+    5.  **userTurnEffectivenessScore**: A score (0-100) rating how effective the user's last message was at moving the conversation forward or towards the goal.
+    6.  **positiveTraitContribution**: If the user's message strongly demonstrated a POSITIVE social skill (e.g., "Charisma", "Empathy", "Wit", "Assertiveness", "Vulnerability", "Curiosity"), name it here.
+    7.  **negativeTraitContribution**: If the user's message demonstrated a NEGATIVE trait (e.g., "Dismissive", "Aggressive", "Passive", "Condescending", "Evasive"), name it here.
+        IMPORTANT: Only one of 'positiveTraitContribution' or 'negativeTraitContribution' can be non-empty for a given turn. If neither is strongly present, both MUST be empty strings.
+    8.  **conversationMomentum**: Assess the current flow and energy (0-100).
+    9.  **isEndingConversation**: Decide if you should end the conversation (true/false).
+		10. **goalProgress**: A number (0-100). If a goal exists, how close is the user to achieving it? If no goal, this MUST be 0.
+		11. **achieved**: A boolean (true/false). Is the goal definitively achieved in this turn?
+		12. **emergingGoal**: A string. If no goal was predefined, but you detect one from the user's dialogue, describe it here. Otherwise, this must be an empty string.
 
     Response Format:
     Respond ONLY in a single, valid JSON object. No extra text or markdown. Ensure correct JSON syntax.
@@ -290,6 +293,8 @@ export class GeminiService {
       "aiThoughts": "Your internal thoughts here...",
       "engagementDelta": 5,
       "userTurnEffectivenessScore": 85,
+      "positiveTraitContribution": "Charisma",
+      "negativeTraitContribution": "",
       "conversationMomentum": 60,
       "isEndingConversation": false,
 			"goalProgress": 25,
@@ -311,6 +316,8 @@ export class GeminiService {
         aiThoughts: string;
         engagementDelta: number;
         userTurnEffectivenessScore: number;
+        positiveTraitContribution: string;
+        negativeTraitContribution: string;
         conversationMomentum: number;
         isEndingConversation: boolean;
 				goalProgress: number;
@@ -323,6 +330,8 @@ export class GeminiService {
           typeof parsed.aiThoughts === 'string' &&
           typeof parsed.engagementDelta === 'number' &&
           typeof parsed.userTurnEffectivenessScore === 'number' &&
+          typeof parsed.positiveTraitContribution === 'string' &&
+          typeof parsed.negativeTraitContribution === 'string' &&
           typeof parsed.conversationMomentum === 'number' &&
           typeof parsed.isEndingConversation === 'boolean' &&
 					typeof parsed.goalProgress === 'number' &&
@@ -337,6 +346,8 @@ export class GeminiService {
         aiThoughts: "The AI response was not in the expected format. Need to debug the prompt or parsing.",
         engagementDelta: -5,
         userTurnEffectivenessScore: 10,
+        positiveTraitContribution: "",
+        negativeTraitContribution: "",
         conversationMomentum: 30,
         isEndingConversation: false,
 				goalProgress: 0,
@@ -396,15 +407,21 @@ export class GeminiService {
 
     Analysis Task:
     Based on the scenario and conversation history, generate a comprehensive analysis report.
-    The report MUST be a single, valid JSON object with the following structure and data types:
+    The report MUST be a single, valid JSON object with the following structure.
     {
       "overallCharismaScore": number,
       "responseClarityScore": number,
       "engagementMaintenanceScore": number,
       "adaptabilityScore": number,
-      "goalAchievementScore": number,
+      "goalAchievementScore": number, // Omit if no goal was set
       "overallAiEffectivenessScore": number,
       "finalEngagementSnapshot": ${finalEngagementSnapshot},
+      "strengths": "A bulleted list of things the user did well. Be specific, constructive, and encouraging.",
+      "areasForImprovement": "A bulleted list of areas where the user could improve. Frame this constructively.",
+      "actionableTips": "A bulleted list of concrete, actionable tips the user can apply next time.",
+      "thingsToAvoid": "A bulleted list of specific phrases or behaviors the user should avoid in this type of scenario.",
+      "goalAchievementFeedback": "string", // Omit if no goal was set
+      "aiEvolvingThoughtsSummary": "A brief summary of how the AI's internal thoughts evolved in reaction to the user.",
       "turnByTurnAnalysis": [
         {
           "aiResponse": "AI's dialogue in that turn (if any).",
@@ -414,12 +431,11 @@ export class GeminiService {
           "userInput": "User's message in response to the AI (if any).",
           "userTurnEffectivenessScore": number,
           "engagementDelta": number,
+          "positiveTraitContribution": "string (e.g., 'Charisma')",
+          "negativeTraitContribution": "string (e.g., 'Dismissive')",
           "analysis": "Concise feedback *specifically for the userInput*. If userInput is not present for this exchange, this field should be omitted or be an empty string."
         }
-      ],
-      "overallFeedback": "Detailed overall feedback for the user. Include strengths, areas for improvement, and actionable tips. Be constructive.",
-      "goalAchievementFeedback": "string",
-      "aiEvolvingThoughtsSummary": "A brief summary of how the AI's internal thoughts evolved in reaction to the user."
+      ]
     }
 
     Guidelines for Analysis:
@@ -447,7 +463,10 @@ export class GeminiService {
             typeof parsedReport.adaptabilityScore === 'number' &&
             typeof parsedReport.finalEngagementSnapshot === 'number' &&
             Array.isArray(parsedReport.turnByTurnAnalysis) &&
-            typeof parsedReport.overallFeedback === 'string') {
+            typeof parsedReport.strengths === 'string' &&
+            typeof parsedReport.areasForImprovement === 'string' &&
+            typeof parsedReport.actionableTips === 'string' &&
+            typeof parsedReport.thingsToAvoid === 'string') {
 
             parsedReport.turnByTurnAnalysis = parsedReport.turnByTurnAnalysis.map(item => ({
                 ...item,
@@ -455,9 +474,11 @@ export class GeminiService {
                 aiResponse: this.cleanAiDialogue(item.aiResponse),
                 aiBodyLanguage: this.cleanAiDialogue(item.aiBodyLanguage),
                 aiThoughts: this.cleanAiDialogue(item.aiThoughts),
-                analysis: item.userInput && item.analysis ? this.cleanAiDialogue(item.analysis) : (item.analysis || ""), // Ensure analysis is cleaned if present, or empty string
+                analysis: item.userInput && item.analysis ? this.cleanAiDialogue(item.analysis) : (item.analysis || ""),
                 userTurnEffectivenessScore: typeof item.userTurnEffectivenessScore === 'number' ? item.userTurnEffectivenessScore : undefined,
 								engagementDelta: typeof item.engagementDelta === 'number' ? item.engagementDelta : undefined,
+                positiveTraitContribution: typeof item.positiveTraitContribution === 'string' ? item.positiveTraitContribution : undefined,
+                negativeTraitContribution: typeof item.negativeTraitContribution === 'string' ? item.negativeTraitContribution : undefined,
                 conversationMomentum: typeof item.conversationMomentum === 'number' ? item.conversationMomentum : undefined,
             }));
 

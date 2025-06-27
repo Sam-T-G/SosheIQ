@@ -226,9 +226,12 @@ const HomePage: React.FC = () => {
 					scenarioDetails
 				);
 
-				const engagementDelta = aiResponse.engagementDelta || 0;
-				const userTurnEffectivenessScore =
-					aiResponse.userTurnEffectivenessScore;
+				const {
+					engagementDelta = 0,
+					userTurnEffectivenessScore,
+					positiveTraitContribution,
+					negativeTraitContribution,
+				} = aiResponse;
 
 				const aiMessage: ChatMessage = {
 					id: uuidv4(),
@@ -247,7 +250,13 @@ const HomePage: React.FC = () => {
 					);
 					const updatedHistory = historyWithoutThinking.map((m) =>
 						m.id === userMessage.id
-							? { ...m, engagementDelta, userTurnEffectivenessScore }
+							? {
+									...m,
+									engagementDelta,
+									userTurnEffectivenessScore,
+									positiveTraitContribution,
+									negativeTraitContribution,
+							  }
 							: m
 					);
 					return [...updatedHistory, aiMessage];
@@ -480,6 +489,7 @@ const HomePage: React.FC = () => {
 							setSetupMode("advanced");
 							handleNavigate(GamePhase.SETUP);
 						}}
+						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
 					/>
 				);
 			case GamePhase.INSTRUCTIONS:
@@ -543,6 +553,7 @@ const HomePage: React.FC = () => {
 							setSetupMode("advanced");
 							handleNavigate(GamePhase.SETUP);
 						}}
+						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
 					/>
 				);
 		}

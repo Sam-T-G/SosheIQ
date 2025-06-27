@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -15,7 +16,6 @@ body {
 
 html {
   min-height: 100vh; /* Ensure html also supports full height */
-  /* Alternatively, html { height: 100%; } can work if body has min-height: 100vh; */
 }
 
 /* #__next is the main container for the app's flex layout */
@@ -56,13 +56,12 @@ html {
   }
 }
 
-/* Added from original index.html - START */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.6); /* emerald-500 equivalent with some opacity */
+    box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.6);
   }
   50% {
-    box-shadow: 0 0 16px 6px rgba(16, 185, 129, 0.9); /* More intense glow */
+    box-shadow: 0 0 16px 6px rgba(16, 185, 129, 0.9);
   }
 }
 .animate-pulse-glow {
@@ -84,21 +83,10 @@ html {
   opacity: 0; /* Initial state before animation starts */
 }
 
-/* Animations for cinematic AI response */
-@keyframes ai-visual-fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0px); }
-}
-.animate-ai-visual-fade-in {
-  animation: ai-visual-fade-in 0.7s ease-out forwards;
-}
-
-/* CRUCIAL: Letter animation styles */
 @keyframes letter-fade-in {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
-/* Applied to the whole text block now */
 .animate-letter-fade-in {
   opacity: 0;
   animation: letter-fade-in 0.3s ease-out forwards;
@@ -119,25 +107,28 @@ html {
   animation: slideDown 0.5s ease-out forwards;
 }
 
-/* --- NEW & UPDATED ANIMATIONS --- */
-
-/* Engagement Delta Badge Animation (persistent) */
-@keyframes popIn {
-  0% { opacity: 0; transform: translateY(5px) scale(0.9); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+/* Persistent Feedback Badge Animation */
+@keyframes popInAndSettle {
+  0% { opacity: 0; transform: scale(0.5) translateX(-10px); }
+  70% { opacity: 1; transform: scale(1.1) translateX(0); }
+  100% { transform: scale(1) translateX(0); }
 }
-.animate-popIn {
-  animation: popIn 0.3s ease-out forwards;
+.animate-popInAndSettle {
+  animation: popInAndSettle 0.4s ease-out forwards;
 }
 
-/* Effectiveness Score Badge Animation (persistent) */
-@keyframes zoomIn {
+/* Fading Trait Badge Animation */
+@keyframes popInSettleFadeOut {
   0% { opacity: 0; transform: scale(0.5); }
-  100% { opacity: 1; transform: scale(1); }
+  20% { opacity: 1; transform: scale(1.1); }
+  40% { transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.9); }
 }
-.animate-zoomIn {
-  animation: zoomIn 0.3s ease-out forwards;
+.animate-popInSettleFadeOut {
+  animation: popInSettleFadeOut 3s ease-in-out forwards;
 }
+
 
 /* Notification Single Pulse Animation */
 @keyframes slowPulseOnce {
@@ -210,9 +201,3 @@ html {
 .thinking-dot:nth-child(1) { animation-delay: 0s; }
 .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
-
-/* Gradient mask for fading top content */
-.gradient-mask-top-fade {
-  mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 100%);
-}
