@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { HeroScreen } from "../components/HeroScreen";
 import { InstructionsScreen } from "../components/InstructionsScreen";
 import { SetupScreen } from "../components/SetupScreen";
-import { GuidedSetup } from "../components/GuidedSetup";
+import { GuidedSetup } from "@/components/GuidedSetup";
 import { InteractionScreen } from "../components/InteractionScreen";
 import { AnalysisScreen } from "../components/AnalysisScreen";
 import { LoadingIndicator } from "../components/LoadingIndicator";

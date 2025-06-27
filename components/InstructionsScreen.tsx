@@ -75,10 +75,6 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 						(e.g., Friendly, Skeptical).
 					</li>
 					<li>
-						<strong>Power Dynamic:</strong> Set the relationship hierarchy
-						(e.g., AI is boss, peers).
-					</li>
-					<li>
 						<strong>Custom Details (Optional):</strong> Add specific background
 						or context to make the scenario unique.
 					</li>

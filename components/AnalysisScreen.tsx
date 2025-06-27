@@ -200,7 +200,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 					<strong>You:</strong> "{item.userInput}"
 				</p>
 				{showPerTurnScores && (
-					<div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 mb-2 text-xs">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 mb-2 text-xs">
 						{typeof item.userTurnEffectivenessScore === "number" && (
 							<div className="p-1.5 bg-cyan-800/40 border border-cyan-700/50 rounded-md">
 								<div className="flex justify-between items-center text-cyan-400">
@@ -213,7 +213,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 							</div>
 						)}
 						{typeof item.engagementDelta === "number" && (
-							<div className="p-1.5 bg-slate-800/40 border border-slate-600/50 rounded-md flex items-center justify-between">
+							<div className="p-1.5 bg-slate-800/40 border border-slate-600/50 rounded-md flex flex-col items-start gap-1">
 								<span className="font-semibold text-gray-300">
 									Engagement Impact
 								</span>
@@ -408,26 +408,44 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	return (
 		<div className="w-full max-w-4xl p-6 bg-slate-800 rounded-xl shadow-2xl space-y-6">
 			<div ref={reportContentRef} className="p-4 bg-slate-800 text-gray-100">
-				<h1 className="text-4xl font-bold text-center text-sky-400 mb-2">
+				<h1 className="text-4xl font-bold text-center text-sky-400 mb-4">
 					Interaction Analysis
 				</h1>
-				<p className="text-center text-gray-400 text-sm mb-6">
-					Scenario: {scenarioDetails.environment} | AI: {scenarioDetails.aiName}{" "}
-					({personalityDisplayText}, {scenarioDetails.aiGender}
-					{ageText})
-					<br />
-					Dynamic: {scenarioDetails.powerDynamic}
-					{scenarioDetails.conversationGoal && (
-						<span className="block mt-1 font-semibold text-teal-300">
-							Goal: {scenarioDetails.conversationGoal}
-						</span>
-					)}
-					{scenarioDetails.customContext && (
-						<span className="block mt-1 text-xs italic">
-							Custom Context: {scenarioDetails.customContext}
-						</span>
-					)}
-				</p>
+
+				<div className="text-center mb-6 bg-slate-700/50 p-4 rounded-lg border border-slate-600">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-300">
+						<div className="text-left">
+							<strong className="text-sky-400 font-semibold">Scenario:</strong>{" "}
+							{scenarioDetails.environment}
+						</div>
+						<div className="text-left">
+							<strong className="text-sky-400 font-semibold">AI Name:</strong>{" "}
+							{scenarioDetails.aiName}
+						</div>
+						<div className="text-left md:col-span-2">
+							<strong className="text-sky-400 font-semibold">
+								AI Persona:
+							</strong>{" "}
+							{personalityDisplayText} ({scenarioDetails.aiGender}
+							{ageText})
+						</div>
+
+						{scenarioDetails.conversationGoal && (
+							<div className="md:col-span-2 text-left">
+								<strong className="font-semibold text-teal-300">Goal:</strong>{" "}
+								{scenarioDetails.conversationGoal}
+							</div>
+						)}
+						{scenarioDetails.customContext && (
+							<div className="md:col-span-2 text-left mt-1 text-xs italic">
+								<strong className="font-semibold not-italic text-gray-400">
+									Custom Context:
+								</strong>{" "}
+								{scenarioDetails.customContext}
+							</div>
+						)}
+					</div>
+				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 					<ScoreDisplay

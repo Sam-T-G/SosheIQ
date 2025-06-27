@@ -40,7 +40,7 @@ const GoalBanner: React.FC<{ goal: { text: string; progress: number } }> = ({
 				<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
 					Conversation Goal
 				</p>
-				<p className="text-sm text-teal-100 truncate" title={goal.text}>
+				<p className="text-sm text-teal-100 break-words" title={goal.text}>
 					{goal.text}
 				</p>
 			</div>

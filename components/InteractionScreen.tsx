@@ -63,7 +63,7 @@ const GoalBanner: React.FC<{ goal: { text: string; progress: number } }> = ({
 				<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
 					Conversation Goal
 				</p>
-				<p className="text-sm text-teal-100 truncate" title={goal.text}>
+				<p className="text-sm text-teal-100 break-words" title={goal.text}>
 					{goal.text}
 				</p>
 			</div>
@@ -131,9 +131,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						title={personalityDisplayText}>
 						{personalityDisplayText}
 					</p>
-					<p className="text-xs text-gray-400">
-						{scenarioDetails.environment} | {scenarioDetails.powerDynamic}
-					</p>
+					<p className="text-xs text-gray-400">{scenarioDetails.environment}</p>
 				</div>
 
 				{/* Wrapper for AIVisualCue to allow it to grow */}

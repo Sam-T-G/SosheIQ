@@ -3,9 +3,9 @@ import type { ScenarioDetails } from "../types";
 import {
 	SocialEnvironment,
 	AIPersonalityTrait,
-	PowerDynamic,
 	AIGender,
 	AIAgeBracket,
+	PowerDynamic,
 } from "../types";
 import { PlayIcon, CogIcon, ArrowLeftIcon } from "./Icons";
 
@@ -61,11 +61,11 @@ const generateRandomAiName = (gender: AIGender): string => {
 
 const initialScenario: ScenarioDetails = {
 	environment: SocialEnvironment.CASUAL,
-	powerDynamic: PowerDynamic.BALANCED,
 	aiGender: AIGender.RANDOM,
 	aiName: "",
 	aiAgeBracket: AIAgeBracket.NOT_SPECIFIED,
 	aiPersonalityTraits: [],
+	powerDynamic: PowerDynamic.BALANCED,
 };
 
 const StepButton: React.FC<{
@@ -154,7 +154,6 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		const environments = Object.values(SocialEnvironment).filter(
 			(e) => e !== SocialEnvironment.CUSTOM
 		);
-		const powerDynamics = Object.values(PowerDynamic);
 		const genders = Object.values(AIGender);
 		const ageBrackets = Object.values(AIAgeBracket).filter(
 			(a) => a !== AIAgeBracket.CUSTOM && a !== AIAgeBracket.NOT_SPECIFIED
@@ -170,12 +169,11 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		const randomScenario: ScenarioDetails = {
 			environment:
 				environments[Math.floor(Math.random() * environments.length)],
-			powerDynamic:
-				powerDynamics[Math.floor(Math.random() * powerDynamics.length)],
 			aiGender: randomGender,
 			aiName: generateRandomAiName(randomGender),
 			aiAgeBracket: ageBrackets[Math.floor(Math.random() * ageBrackets.length)],
 			aiPersonalityTraits: randomTraits,
+			powerDynamic: PowerDynamic.BALANCED,
 		};
 		onStart(randomScenario);
 	};
@@ -414,27 +412,26 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						/>
 					</div>
 				);
-
 			case 4:
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
-							Set the power dynamic.
+							Any other specific context? (Optional)
 						</h2>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-							{Object.values(PowerDynamic).map((pd) => (
-								<StepButton
-									key={pd}
-									onClick={() => updateScenario({ powerDynamic: pd })}
-									isSelected={scenario.powerDynamic === pd}
-									className="text-sm">
-									{pd}
-								</StepButton>
-							))}
-						</div>
+						<p className="text-gray-400 mb-4">
+							Add details to make the scenario more specific. This will
+							influence the AI's behavior and dialogue.
+						</p>
+						<textarea
+							value={scenario.customContext || ""}
+							onChange={(e) =>
+								updateScenario({ customContext: e.target.value })
+							}
+							placeholder="e.g., You've just met at a friend's party. You both applied for the same job..."
+							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[120px]"
+						/>
 					</div>
 				);
-
 			case 5:
 				return (
 					<div key={step} className={`${animationClass}`}>
@@ -473,6 +470,12 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				);
 
 			case 6:
+				const ageBracket = scenario.aiAgeBracket ?? AIAgeBracket.NOT_SPECIFIED;
+				const ageBracketText =
+					ageBracket !== AIAgeBracket.NOT_SPECIFIED &&
+					ageBracket !== AIAgeBracket.CUSTOM
+						? ageBracket.toString()
+						: "person";
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-6">
@@ -488,20 +491,22 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							</p>
 							<p>
 								<strong className="text-sky-400">AI Persona:</strong> A{" "}
-								{scenario.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED
-									? (scenario.aiAgeBracket || "").toLowerCase()
-									: "person"}{" "}
+								{scenario.customAiAge
+									? `${scenario.customAiAge} year old`
+									: ageBracketText}{" "}
 								{scenario.aiGender.toLowerCase()} who is{" "}
 								{scenario.aiPersonalityTraits.join(", ") || "neutral"}.
-							</p>
-							<p>
-								<strong className="text-sky-400">Dynamic:</strong>{" "}
-								{scenario.powerDynamic}
 							</p>
 							{scenario.conversationGoal && (
 								<p>
 									<strong className="text-sky-400">Your Goal:</strong>{" "}
 									{scenario.conversationGoal}
+								</p>
+							)}
+							{scenario.customContext && (
+								<p className="text-sm italic">
+									<strong className="text-sky-400 not-italic">Context:</strong>{" "}
+									{scenario.customContext}
 								</p>
 							)}
 						</div>
@@ -517,8 +522,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	};
 
 	return (
-		<div className="w-full max-w-2xl p-4 md:p-8 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between min-h-[70vh] md:min-h-[60vh]">
-			<div>
+		<div className="w-full max-w-2xl p-4 md:p-8 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between h-[85vh] md:h-auto md:min-h-[70vh]">
+			<div className="flex-grow overflow-y-auto custom-scrollbar pr-2 -mr-2">
 				<div className="relative h-1 bg-slate-700 rounded-full mb-8">
 					<div
 						className="absolute top-0 left-0 h-1 bg-teal-400 rounded-full transition-all duration-500"
@@ -534,35 +539,41 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				)}
 			</div>
 
-			<div className="flex flex-col sm:flex-row justify-between items-center mt-8 pt-4 border-t border-slate-700 gap-4">
-				<div className="w-full sm:w-auto">
+			<div className="flex-shrink-0 flex justify-between items-center mt-auto pt-4 border-t border-slate-700 gap-2 md:gap-4">
+				<div className="flex-1 text-left">
 					{step > 0 && step <= MAX_STEPS && (
 						<button
 							onClick={handleBack}
-							className="w-full sm:w-auto px-6 py-3 bg-slate-600 text-white font-bold rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2">
+							className="w-full sm:w-auto px-6 py-3 bg-slate-600 text-white font-bold rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2 transition-colors">
 							<ArrowLeftIcon className="h-5 w-5" />
-							<span>Back</span>
+							<span className="hidden sm:inline">Back</span>
 						</button>
 					)}
 				</div>
-				<div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-4">
-					<button
-						onClick={onSwitchToAdvanced}
-						className="w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm shadow-md transition-all duration-200 flex items-center justify-center space-x-2">
-						<CogIcon />
-						<span>Advanced Setup</span>
-					</button>
+
+				<div className="flex-shrink-0">
+					{step > 0 && (
+						<button
+							onClick={onSwitchToAdvanced}
+							className="w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm shadow-md transition-all flex items-center justify-center space-x-2">
+							<CogIcon />
+							<span className="hidden sm:inline">Advanced</span>
+						</button>
+					)}
+				</div>
+
+				<div className="flex-1 text-right">
 					{step > 0 && step < MAX_STEPS && (
 						<button
 							onClick={handleNext}
-							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500">
+							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-colors">
 							Next
 						</button>
 					)}
 					{step === MAX_STEPS && (
 						<button
 							onClick={handleStart}
-							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg text-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center space-x-2">
+							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg text-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center space-x-2 transition-transform hover:scale-105">
 							<PlayIcon className="h-5 w-5" />
 							<span>Start</span>
 						</button>

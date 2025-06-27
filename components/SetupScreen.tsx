@@ -3,9 +3,9 @@ import type { ScenarioDetails } from "../types";
 import {
 	SocialEnvironment,
 	AIPersonalityTrait,
-	PowerDynamic,
 	AIGender,
 	AIAgeBracket,
+	PowerDynamic,
 } from "../types";
 
 interface SetupScreenProps {
@@ -205,9 +205,6 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		AIPersonalityTrait[]
 	>([]);
 	const [customAiPersonality, setCustomAiPersonality] = useState<string>("");
-	const [powerDynamic, setPowerDynamic] = useState<PowerDynamic>(
-		PowerDynamic.BALANCED
-	);
 	const [aiGender, setAiGender] = useState<AIGender>(AIGender.RANDOM);
 	const [aiName, setAiName] = useState<string>("");
 	const [nameInputMode, setNameInputMode] =
@@ -399,7 +396,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 			aiCulture: aiCulture.trim() || undefined,
 			aiPersonalityTraits: selectedPersonalityTraits,
 			customAiPersonality: customAiPersonality.trim() || undefined,
-			powerDynamic,
+			powerDynamic: PowerDynamic.BALANCED,
 			aiGender,
 			aiName: finalAiName,
 			aiAgeBracket: finalAiAgeBracket,
@@ -439,40 +436,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 			</p>
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<Section
-					title="Social Environment"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}>
-					<div className="flex flex-wrap -m-1">
-						{allSocialEnvironments.map((env) => (
-							<OptionButton<SocialEnvironment>
-								key={env}
-								value={env}
-								isSelected={environment === env}
-								onChange={setEnvironment}>
-								{env}
-							</OptionButton>
-						))}
-					</div>
-					{environment === SocialEnvironment.CUSTOM && (
-						<div className="mt-4">
-							<textarea
-								value={customEnvironment}
-								onChange={(e) => {
-									if (e.target.value.length <= MAX_CUSTOM_ENV_LENGTH)
-										setCustomEnvironment(e.target.value);
-								}}
-								placeholder="Describe the custom environment... e.g., 'A quiet library where speaking too loudly is discouraged.'"
-								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[70px] text-sm"
-								rows={2}
-								maxLength={MAX_CUSTOM_ENV_LENGTH}
-							/>
-							<p className="text-xs text-right text-gray-400 mt-1">
-								{customEnvironment.length}/{MAX_CUSTOM_ENV_LENGTH}
-							</p>
-						</div>
-					)}
-				</Section>
-
-				<Section title="AI Gender" animationDelay={`${sectionBaseDelay}s`}>
+					title="AI Gender"
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 0}s`}>
 					<div className="flex flex-wrap -m-1">
 						{(Object.values(AIGender) as AIGender[]).map((gender) => (
 							<OptionButton<AIGender>
@@ -652,8 +617,42 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 				</Section>
 
 				<Section
+					title="Social Environment"
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}>
+					<div className="flex flex-wrap -m-1">
+						{allSocialEnvironments.map((env) => (
+							<OptionButton<SocialEnvironment>
+								key={env}
+								value={env}
+								isSelected={environment === env}
+								onChange={setEnvironment}>
+								{env}
+							</OptionButton>
+						))}
+					</div>
+					{environment === SocialEnvironment.CUSTOM && (
+						<div className="mt-4">
+							<textarea
+								value={customEnvironment}
+								onChange={(e) => {
+									if (e.target.value.length <= MAX_CUSTOM_ENV_LENGTH)
+										setCustomEnvironment(e.target.value);
+								}}
+								placeholder="Describe the custom environment... e.g., 'A quiet library where speaking too loudly is discouraged.'"
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[70px] text-sm"
+								rows={2}
+								maxLength={MAX_CUSTOM_ENV_LENGTH}
+							/>
+							<p className="text-xs text-right text-gray-400 mt-1">
+								{customEnvironment.length}/{MAX_CUSTOM_ENV_LENGTH}
+							</p>
+						</div>
+					)}
+				</Section>
+
+				<Section
 					title={`AI Personality Traits (Selected ${selectedPersonalityTraits.length}/${MAX_PERSONALITY_TRAITS})`}
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}
+					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 5}s`}
 					error={personalityError}
 					id="ai-personality-section">
 					<div className="flex flex-wrap -m-1">
@@ -692,22 +691,6 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 						<p className="text-xs text-gray-400 mt-1">
 							({customAiPersonality.length}/{MAX_CUSTOM_PERSONALITY_LENGTH})
 						</p>
-					</div>
-				</Section>
-
-				<Section
-					title="Power Dynamic"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 5}s`}>
-					<div className="flex flex-wrap -m-1">
-						{(Object.values(PowerDynamic) as PowerDynamic[]).map((dyn) => (
-							<OptionButton<PowerDynamic>
-								key={dyn}
-								value={dyn}
-								isSelected={powerDynamic === dyn}
-								onChange={setPowerDynamic}>
-								{dyn}
-							</OptionButton>
-						))}
 					</div>
 				</Section>
 

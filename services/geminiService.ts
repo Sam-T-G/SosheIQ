@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, PowerDynamic, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
+import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, PowerDynamic } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
 
 // Helper to construct a more informative error message from Google API errors
@@ -75,6 +75,21 @@ const getPersonalityPromptSegment = (traits: AIPersonalityTrait[], customPersona
   return segment;
 }
 
+interface AiTurnResponse {
+    aiDialogue: string;
+    aiBodyLanguage: string;
+    aiThoughts: string;
+    engagementDelta: number;
+    userTurnEffectivenessScore: number;
+    conversationMomentum: number;
+    positiveTraitContribution?: string;
+    negativeTraitContribution?: string;
+    isEndingConversation: boolean;
+    emergingGoal?: string;
+    goalProgress: number;
+    achieved: boolean;
+}
+
 export class GeminiService {
   private ai: GoogleGenAI;
 
@@ -115,8 +130,7 @@ export class GeminiService {
     Your AI Name: ${scenario.aiName}
     Your AI Persona Details:
     - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}
-    - AI Gender: ${scenario.aiGender}${agePromptSegment}
-    - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
+    - AI Gender: ${scenario.aiGender}${agePromptSegment}${customContextPrompt}
 
     As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona, name, gender, age, and all scenario details.
     Describe your initial body language, appropriate for your persona, and the scenario. This 'initialBodyLanguage' field is mandatory.
@@ -219,278 +233,205 @@ export class GeminiService {
     userInput: string,
     currentEngagement: number,
     scenario: ScenarioDetails
-  ): Promise<{
-    aiDialogue: string;
-    aiBodyLanguage: string;
-    aiThoughts: string;
-    engagementDelta: number;
-    userTurnEffectivenessScore: number;
-    positiveTraitContribution: string;
-    negativeTraitContribution: string;
-    conversationMomentum: number;
-    isEndingConversation: boolean;
-		goalProgress: number;
-		achieved: boolean;
-		emergingGoal?: string;
-  }> {
-    const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
-    const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
-    const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
-		const customEnvPrompt = scenario.environment === SocialEnvironment.CUSTOM && scenario.customEnvironment ? `\n    - Custom Environment Details: ${scenario.customEnvironment}` : "";
-		const culturePrompt = scenario.aiCulture ? `\n    - AI Culture/Race Nuances: "${scenario.aiCulture}".` : "";
+  ): Promise<AiTurnResponse> {
+      const historyForPrompt = conversationHistory
+          .slice(-MAX_CONVERSATION_HISTORY_FOR_PROMPT)
+          .map(m => `  - ${m.sender === 'user' ? 'User' : scenario.aiName}: "${m.text}" ${m.sender === 'ai' && m.bodyLanguageDescription ? `(Body Language: ${m.bodyLanguageDescription})` : ''}`)
+          .join('\n');
 
-    const historyForPrompt = conversationHistory
-      .slice(-MAX_CONVERSATION_HISTORY_FOR_PROMPT)
-      .map(msg => {
-        const prefix = msg.sender === 'user' ? 'User' : scenario.aiName;
-        let content = `${prefix}: "${msg.text}"`;
-        if (msg.sender === 'ai' && msg.bodyLanguageDescription) {
-          content += ` (Body Language: ${msg.bodyLanguageDescription})`;
-        }
-        return content;
-      })
-      .join('\n');
-		
-		const goalPromptSegment = scenario.conversationGoal
-			? `\n- Predefined Conversation Goal: The user's explicit goal is to: "${scenario.conversationGoal}". You MUST track progress towards this goal. DO NOT identify a new 'emergingGoal'. The 'emergingGoal' field must be an empty string.`
-			: `\n- Predefined Conversation Goal: None. The environment is '${scenario.environment}'. If this is a casual chat, you should not invent a goal. However, if the user's dialogue strongly implies a clear objective (e.g., trying to ask for a date, negotiate something), you MUST define this in the 'emergingGoal' field. If no goal emerges, keep 'emergingGoal' as an empty string and 'goalProgress' as 0.`;
+      const customContextPrompt = scenario.customContext ? `\n- Custom Scenario Details: ${scenario.customContext}` : "";
+      const agePromptSegment = `\n- AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+      const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
+      const goalPrompt = scenario.conversationGoal ? `\n- Stated User Goal: "${scenario.conversationGoal}". You should react to how the user progresses towards this goal.` : `\n- Stated User Goal: None specified. Determine if a goal emerges from the conversation.`;
+			const customEnvPrompt = scenario.environment === SocialEnvironment.CUSTOM && scenario.customEnvironment ? `\n- Custom Environment Details: ${scenario.customEnvironment}` : "";
+			const culturePrompt = scenario.aiCulture ? `\n- AI Culture/Race Nuances: "${scenario.aiCulture}".` : "";
 
-    const prompt = `You are ${scenario.aiName}, an AI in a social interaction simulation.
-    Your Persona:
-    - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}
-    - AI Gender: ${scenario.aiGender}${agePromptSegment}
-    - Power Dynamic with User: ${scenario.powerDynamic}${customContextPrompt}
-    - Persona Development: To make your persona more believable, you MUST stay in character and are encouraged to invent consistent, plausible personal details (like a hometown, hobbies, or opinions) if the user asks or if it's natural in conversation. DO NOT reveal you are an AI.
+      const prompt = `You are role-playing as an AI named ${scenario.aiName}. Maintain your persona consistently.
+      
+      Your Persona & Scenario:
+      - AI Name: ${scenario.aiName}
+      - AI Gender: ${scenario.aiGender}
+      - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}${agePromptSegment}${customContextPrompt}${goalPrompt}
+      
+      Current State:
+      - Your current engagement level with the user is ${currentEngagement} out of 100.
+      
+      Recent Conversation History:
+      ${historyForPrompt}
+      
+      The user has just said: "${userInput}"
+      
+      Your Task:
+      Analyze the user's message and generate your response. Your entire output must be a single, valid JSON object.
+      1.  **Analyze User Input**: Based on your persona and the context, analyze the user's message for tone, relevance, and effectiveness.
+      2.  **Determine Your Reaction**: Decide how your character, ${scenario.aiName}, would react.
+      3.  **Generate Response**:
+          - \`aiDialogue\`: Write your response. It MUST be natural and in character. Do NOT break character or sound like a generic assistant.
+          - \`aiBodyLanguage\`: Describe your new body language.
+          - \`aiThoughts\`: Provide your internal monologue. What are you *really* thinking about the user's message and the conversation's direction? Be candid.
+      4.  **Calculate Metrics**:
+          - \`engagementDelta\`: How much did the user's message change your engagement? Provide an integer between -30 and +30. A boring or offensive message gets a negative delta. An engaging, insightful, or charismatic message gets a positive one.
+          - \`userTurnEffectivenessScore\`: Score the user's last message from 0-100 on how well it fit the social context, was engaging, and moved the conversation forward.
+          - \`conversationMomentum\`: A score (0-100) indicating the conversation's current energy. If the user's turn was good, it should increase from the last AI turn's momentum. If bad, it should decrease.
+          - \`positiveTraitContribution\` (optional): If the user displayed a clear positive social trait (e.g., "Empathetic", "Witty", "Curious"), name it.
+          - \`negativeTraitContribution\` (optional): If the user displayed a clear negative social trait (e.g., "Dismissive", "Awkward", "Arrogant"), name it.
+      5.  **Goal Tracking**:
+          - \`emergingGoal\` (optional): If no goal was stated initially, but one has clearly emerged from the conversation (e.g., user is trying to ask you out), describe it briefly.
+          - \`goalProgress\`: An integer (0-100) estimating the user's progress towards their stated or emerging goal.
+          - \`achieved\`: A boolean (true/false) indicating if the goal has been fully achieved.
+      6.  **End Condition**:
+          - \`isEndingConversation\`: Set to \`true\` only if your character has a strong reason to end the conversation (e.g., they are offended, bored, the interaction has reached a natural conclusion). Otherwise, \`false\`.
+          
+      Output ONLY a single, valid JSON object with the following structure. Do not add any text before or after the JSON.
+      {
+        "aiDialogue": "...",
+        "aiBodyLanguage": "...",
+        "aiThoughts": "...",
+        "engagementDelta": number,
+        "userTurnEffectivenessScore": number,
+        "conversationMomentum": number,
+        "positiveTraitContribution": "string",
+        "negativeTraitContribution": "string",
+        "isEndingConversation": boolean,
+        "emergingGoal": "string",
+        "goalProgress": number,
+        "achieved": boolean
+      }`;
 
-    Current Conversation Context:
-		${goalPromptSegment}
-    - Current Engagement Score with User: ${currentEngagement}% (0-100 scale).
-    - Recent Conversation History (last ${MAX_CONVERSATION_HISTORY_FOR_PROMPT} turns):
-    ${historyForPrompt}
-    - User's latest message to you: "${userInput}"
-
-    Your Task:
-    Based on your persona, the engagement, history, user's message, and any conversation goal, generate a response.
-    1.  **aiDialogue**: Your next spoken dialogue as ${scenario.aiName}. Natural, in-character, and reactive.
-    2.  **aiBodyLanguage**: Your current body language and expression.
-    3.  **aiThoughts**: Your candid, private reaction and plan. This is critical for driving your response.
-    4.  **engagementDelta**: An integer representing the change in engagement caused *by the user's message*. Between -15 and +15.
-    5.  **userTurnEffectivenessScore**: A score (0-100) rating how effective the user's last message was at moving the conversation forward or towards the goal.
-    6.  **positiveTraitContribution**: If the user's message strongly demonstrated a POSITIVE social skill (e.g., "Charisma", "Empathy", "Wit", "Assertiveness", "Vulnerability", "Curiosity"), name it here.
-    7.  **negativeTraitContribution**: If the user's message demonstrated a NEGATIVE trait (e.g., "Dismissive", "Aggressive", "Passive", "Condescending", "Evasive"), name it here.
-        IMPORTANT: Only one of 'positiveTraitContribution' or 'negativeTraitContribution' can be non-empty for a given turn. If neither is strongly present, both MUST be empty strings.
-    8.  **conversationMomentum**: Assess the current flow and energy (0-100).
-    9.  **isEndingConversation**: Decide if you should end the conversation (true/false).
-		10. **goalProgress**: A number (0-100). If a goal exists, how close is the user to achieving it? If no goal, this MUST be 0.
-		11. **achieved**: A boolean (true/false). Is the goal definitively achieved in this turn?
-		12. **emergingGoal**: A string. If no goal was predefined, but you detect one from the user's dialogue, describe it here. Otherwise, this must be an empty string.
-
-    Response Format:
-    Respond ONLY in a single, valid JSON object. No extra text or markdown. Ensure correct JSON syntax.
-    {
-      "aiDialogue": "Your response here...",
-      "aiBodyLanguage": "Your body language description...",
-      "aiThoughts": "Your internal thoughts here...",
-      "engagementDelta": 5,
-      "userTurnEffectivenessScore": 85,
-      "positiveTraitContribution": "Charisma",
-      "negativeTraitContribution": "",
-      "conversationMomentum": 60,
-      "isEndingConversation": false,
-			"goalProgress": 25,
-			"achieved": false,
-			"emergingGoal": ""
-    }
-    `;
-
-    try {
-      const response: GenerateContentResponse = await this.ai.models.generateContent({
-        model: GEMINI_TEXT_MODEL,
-        contents: [{role: "user", parts: [{text: prompt}]}],
-        config: { responseMimeType: "application/json" }
-      });
-
-      const parsed = this.parseJsonFromText<{
-        aiDialogue: string;
-        aiBodyLanguage: string;
-        aiThoughts: string;
-        engagementDelta: number;
-        userTurnEffectivenessScore: number;
-        positiveTraitContribution: string;
-        negativeTraitContribution: string;
-        conversationMomentum: number;
-        isEndingConversation: boolean;
-				goalProgress: number;
-				achieved: boolean;
-				emergingGoal?: string;
-      }>(response.text ?? '');
-
-      if (parsed && typeof parsed.aiDialogue === 'string' &&
-          typeof parsed.aiBodyLanguage === 'string' &&
-          typeof parsed.aiThoughts === 'string' &&
-          typeof parsed.engagementDelta === 'number' &&
-          typeof parsed.userTurnEffectivenessScore === 'number' &&
-          typeof parsed.positiveTraitContribution === 'string' &&
-          typeof parsed.negativeTraitContribution === 'string' &&
-          typeof parsed.conversationMomentum === 'number' &&
-          typeof parsed.isEndingConversation === 'boolean' &&
-					typeof parsed.goalProgress === 'number' &&
-					typeof parsed.achieved === 'boolean'
-					) {
-        return parsed;
+      try {
+          const response: GenerateContentResponse = await this.ai.models.generateContent({
+              model: GEMINI_TEXT_MODEL,
+              contents: [{role: "user", parts: [{text: prompt}]}],
+              config: { responseMimeType: "application/json" }
+          });
+          const parsed = this.parseJsonFromText<AiTurnResponse>(response.text ?? '{}');
+          if (parsed && typeof parsed.aiDialogue === 'string') {
+              return parsed;
+          }
+          console.error("Failed to parse AI turn data from Gemini, using fallback.", response.text);
+          return {
+              aiDialogue: "I'm not sure how to respond to that.",
+              aiBodyLanguage: "Looks confused.",
+              aiThoughts: "The model response failed to parse. I need to give a generic answer.",
+              engagementDelta: -5,
+              userTurnEffectivenessScore: 20,
+              conversationMomentum: currentEngagement - 5,
+              isEndingConversation: false,
+              goalProgress: 0,
+              achieved: false,
+          };
+      } catch (error) {
+          const errorMessage = getGoogleApiErrorMessage(error, "Failed to get AI response.");
+          console.error("Error getting next AI turn from Gemini:", errorMessage, error);
+          throw new Error(errorMessage);
       }
-      console.error("Failed to parse AI turn data from Gemini, using fallback.", response.text);
-      return {
-        aiDialogue: "I'm not sure how to respond to that. Could you try rephrasing?",
-        aiBodyLanguage: "Looks a bit confused.",
-        aiThoughts: "The AI response was not in the expected format. Need to debug the prompt or parsing.",
-        engagementDelta: -5,
-        userTurnEffectivenessScore: 10,
-        positiveTraitContribution: "",
-        negativeTraitContribution: "",
-        conversationMomentum: 30,
-        isEndingConversation: false,
-				goalProgress: 0,
-				achieved: false,
-				emergingGoal: ""
-      };
-    } catch (error) {
-      const errorMessage = getGoogleApiErrorMessage(error, "Failed to get next AI turn.");
-      console.error("Error in getNextAITurn:", errorMessage, error);
-      throw new Error(errorMessage);
-    }
   }
 
   async analyzeConversation(
-    fullConversationHistory: ChatMessage[],
+    conversationHistory: ChatMessage[],
     scenario: ScenarioDetails,
-    finalEngagementSnapshot: number
+    finalEngagement: number
   ): Promise<AnalysisReport> {
-    const historyForAnalysis = fullConversationHistory
-      .slice(-MAX_HISTORY_FOR_ANALYSIS)
-      .map(msg => {
-        let turn = "";
-        if (msg.sender === 'user') {
-          turn += `User: "${msg.text}"\n`;
-        } else {
-          turn += `${scenario.aiName}: "${msg.text}"\n`;
-          if (msg.bodyLanguageDescription) {
-            turn += `AI Body Language: ${msg.bodyLanguageDescription}\n`;
-          }
-          if (msg.aiThoughts) {
-            turn += `AI Internal Thoughts: ${msg.aiThoughts}\n`;
-          }
-          if (typeof msg.conversationMomentum === 'number') {
-            turn += `Conversation Momentum (AI perceived): ${msg.conversationMomentum}%\n`;
-          }
-        }
-        return turn.trim();
-      })
-      .join('\n\n---\n\n');
+      const historyForAnalysis = conversationHistory
+          .slice(-MAX_HISTORY_FOR_ANALYSIS)
+          .map(m => {
+              let entry = `{"sender": "${m.sender === 'user' ? 'User' : scenario.aiName}", "message": "${m.text}"`;
+              if (m.sender === 'ai') {
+                  if (m.bodyLanguageDescription) entry += `, "bodyLanguage": "${m.bodyLanguageDescription}"`;
+                  if (m.aiThoughts) entry += `, "internalThoughts": "${m.aiThoughts}"`;
+              } else {
+                  if (typeof m.userTurnEffectivenessScore === 'number') entry += `, "effectivenessScore": ${m.userTurnEffectivenessScore}`;
+                  if (typeof m.engagementDelta === 'number') entry += `, "engagementImpact": ${m.engagementDelta}`;
+              }
+              entry += '}';
+              return entry;
+          })
+          .join(',\n');
+      
+      const customContextPrompt = scenario.customContext ? `\n- Custom Scenario Details: ${scenario.customContext}` : "";
+      const agePromptSegment = `\n- AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
+      const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
+      const goalPrompt = scenario.conversationGoal ? `\n- Stated User Goal: "${scenario.conversationGoal}".` : "";
 
-    const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
-    const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
-    const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
-		const goalPromptSegment = scenario.conversationGoal ? `\n- Conversation Goal: The user's objective was to: "${scenario.conversationGoal}"` : "";
-
-    const prompt = `You are a sophisticated AI Social Skills Coach. Your task is to analyze the following conversation and provide a detailed performance report FOR THE USER.
-
-    Scenario Context:
-    - Social Environment: ${scenario.environment}
-    - AI Interlocutor Name: ${scenario.aiName}${personalityPromptSegment}
-    - AI Interlocutor Gender: ${scenario.aiGender}${agePromptSegment}
-    - Power Dynamic: ${scenario.powerDynamic}${customContextPrompt}${goalPromptSegment}
-    - The AI's final engagement score with the user was: ${finalEngagementSnapshot}%
-
-    Full Conversation History (or relevant excerpt):
-    ${historyForAnalysis}
-
-    Analysis Task:
-    Based on the scenario and conversation history, generate a comprehensive analysis report.
-    The report MUST be a single, valid JSON object with the following structure.
-    {
-      "overallCharismaScore": number,
-      "responseClarityScore": number,
-      "engagementMaintenanceScore": number,
-      "adaptabilityScore": number,
-      "goalAchievementScore": number, // Omit if no goal was set
-      "overallAiEffectivenessScore": number,
-      "finalEngagementSnapshot": ${finalEngagementSnapshot},
-      "strengths": "A bulleted list of things the user did well. Be specific, constructive, and encouraging.",
-      "areasForImprovement": "A bulleted list of areas where the user could improve. Frame this constructively.",
-      "actionableTips": "A bulleted list of concrete, actionable tips the user can apply next time.",
-      "thingsToAvoid": "A bulleted list of specific phrases or behaviors the user should avoid in this type of scenario.",
-      "goalAchievementFeedback": "string", // Omit if no goal was set
-      "aiEvolvingThoughtsSummary": "A brief summary of how the AI's internal thoughts evolved in reaction to the user.",
-      "turnByTurnAnalysis": [
-        {
-          "aiResponse": "AI's dialogue in that turn (if any).",
-          "aiBodyLanguage": "AI's body language at that turn (if any).",
-          "aiThoughts": "AI's internal thoughts at that turn (if any).",
-          "conversationMomentum": number,
-          "userInput": "User's message in response to the AI (if any).",
-          "userTurnEffectivenessScore": number,
-          "engagementDelta": number,
-          "positiveTraitContribution": "string (e.g., 'Charisma')",
-          "negativeTraitContribution": "string (e.g., 'Dismissive')",
-          "analysis": "Concise feedback *specifically for the userInput*. If userInput is not present for this exchange, this field should be omitted or be an empty string."
-        }
+      const prompt = `You are an expert social skills analyst. Your task is to provide a detailed performance report based on a simulated conversation.
+      
+      Scenario Details:
+      - Environment: ${scenario.environment}
+      - AI Persona: ${scenario.aiName}, a ${scenario.aiGender} character. ${personalityPromptSegment}${agePromptSegment}${customContextPrompt}${goalPrompt}
+      - Final Engagement Score: ${finalEngagement}/100
+      
+      Conversation History (JSON format):
+      [
+      ${historyForAnalysis}
       ]
-    }
+      
+      Task:
+      Analyze the entire conversation and generate a comprehensive report. Your response must be a single, valid JSON object.
+      
+      1.  **Overall Scores (0-100)**:
+          - \`overallCharismaScore\`: User's charm, confidence, and likability.
+          - \`responseClarityScore\`: How clear, concise, and easy to understand the user's messages were.
+          - \`engagementMaintenanceScore\`: User's ability to keep the conversation interesting and maintain the AI's engagement.
+          - \`adaptabilityScore\`: How well the user adapted to the AI's personality and the flow of conversation.
+          - \`goalAchievementScore\` (optional): If a goal was present, how well the user progressed towards and achieved it.
+      2.  **Qualitative Feedback**:
+          - \`strengths\`: A paragraph highlighting what the user did well (e.g., "You showed great empathy by..."). Be specific.
+          - \`areasForImprovement\`: A paragraph on what could be improved (e.g., "Your questions were often closed-ended...").
+          - \`actionableTips\`: Bullet points with concrete, actionable advice for future interactions.
+          - \`thingsToAvoid\`: Bullet points on specific behaviors or phrases the user should avoid.
+          - \`goalAchievementFeedback\` (optional): If a goal was present, provide specific feedback on their strategy and execution.
+      3.  **AI Perspective**:
+          - \`aiEvolvingThoughtsSummary\`: A summary of how the AI's internal thoughts and perception of the user changed over time.
+      4.  **Turn-by-Turn Breakdown**:
+          - \`turnByTurnAnalysis\`: An array of objects, one for each user+AI exchange. For each item, include the AI's response/thoughts and then the user's input and a brief analysis of that input.
+          
+      JSON Structure for your response:
+      {
+        "overallCharismaScore": number,
+        "responseClarityScore": number,
+        "engagementMaintenanceScore": number,
+        "adaptabilityScore": number,
+        "goalAchievementScore": number,
+        "finalEngagementSnapshot": ${finalEngagement},
+        "strengths": "string",
+        "areasForImprovement": "string",
+        "actionableTips": "string",
+        "thingsToAvoid": "string",
+        "goalAchievementFeedback": "string",
+        "aiEvolvingThoughtsSummary": "string",
+        "turnByTurnAnalysis": [
+          {
+            "aiResponse": "string",
+            "aiBodyLanguage": "string",
+            "aiThoughts": "string",
+            "conversationMomentum": number,
+            "userInput": "string",
+            "userTurnEffectivenessScore": number,
+            "engagementDelta": number,
+            "positiveTraitContribution": "string",
+            "negativeTraitContribution": "string",
+            "analysis": "Brief analysis of the user's turn."
+          }
+        ]
+      }`;
+      
+      try {
+          const response: GenerateContentResponse = await this.ai.models.generateContent({
+              model: GEMINI_TEXT_MODEL,
+              contents: [{role: "user", parts: [{text: prompt}]}],
+              config: { responseMimeType: "application/json" }
+          });
+          const parsed = this.parseJsonFromText<AnalysisReport>(response.text ?? '{}');
+          if (parsed && typeof parsed.overallCharismaScore === 'number') {
+              return parsed;
+          }
+          console.error("Failed to parse analysis report from Gemini.", response.text);
+          throw new Error("Could not parse the analysis report from the AI.");
 
-    Guidelines for Analysis:
-    - If the 'Conversation Goal' was not set, DO NOT include "goalAchievementScore" or "goalAchievementFeedback" in the JSON.
-    - Be objective and fair in user assessment, providing specific examples from the conversation.
-    - Ensure all numerical scores are within the 0-100 range.
-    - The 'engagementDelta' in the turn-by-turn analysis should reflect the direct impact of the user's message on the AI's engagement for that turn.
-
-    IMPORTANT: Respond ONLY with the single, valid JSON object requested. Your entire response must be the raw JSON, starting with \`{\` and ending with \`}\`. Do not include any explanatory text, comments, or markdown fences like \`\`\`json.
-    `;
-
-    try {
-        const response: GenerateContentResponse = await this.ai.models.generateContent({
-            model: GEMINI_TEXT_MODEL,
-            contents: [{role: "user", parts: [{text: prompt}]}],
-            config: { responseMimeType: "application/json" }
-        });
-
-        const parsedReport = this.parseJsonFromText<AnalysisReport>(response.text ?? '');
-
-        if (parsedReport &&
-            typeof parsedReport.overallCharismaScore === 'number' &&
-            typeof parsedReport.responseClarityScore === 'number' &&
-            typeof parsedReport.engagementMaintenanceScore === 'number' &&
-            typeof parsedReport.adaptabilityScore === 'number' &&
-            typeof parsedReport.finalEngagementSnapshot === 'number' &&
-            Array.isArray(parsedReport.turnByTurnAnalysis) &&
-            typeof parsedReport.strengths === 'string' &&
-            typeof parsedReport.areasForImprovement === 'string' &&
-            typeof parsedReport.actionableTips === 'string' &&
-            typeof parsedReport.thingsToAvoid === 'string') {
-
-            parsedReport.turnByTurnAnalysis = parsedReport.turnByTurnAnalysis.map(item => ({
-                ...item,
-                userInput: this.cleanAiDialogue(item.userInput),
-                aiResponse: this.cleanAiDialogue(item.aiResponse),
-                aiBodyLanguage: this.cleanAiDialogue(item.aiBodyLanguage),
-                aiThoughts: this.cleanAiDialogue(item.aiThoughts),
-                analysis: item.userInput && item.analysis ? this.cleanAiDialogue(item.analysis) : (item.analysis || ""),
-                userTurnEffectivenessScore: typeof item.userTurnEffectivenessScore === 'number' ? item.userTurnEffectivenessScore : undefined,
-								engagementDelta: typeof item.engagementDelta === 'number' ? item.engagementDelta : undefined,
-                positiveTraitContribution: typeof item.positiveTraitContribution === 'string' ? item.positiveTraitContribution : undefined,
-                negativeTraitContribution: typeof item.negativeTraitContribution === 'string' ? item.negativeTraitContribution : undefined,
-                conversationMomentum: typeof item.conversationMomentum === 'number' ? item.conversationMomentum : undefined,
-            }));
-
-            return parsedReport;
-        }
-        console.error("Failed to parse analysis report from Gemini, or structure is invalid.", response.text, parsedReport);
-        throw new Error("Failed to generate a valid analysis report. The AI's response was not in the expected format.");
-
-    } catch (error) {
-        const errorMessage = getGoogleApiErrorMessage(error, "Failed to analyze conversation.");
-        console.error("Error analyzing conversation with Gemini:", errorMessage, error);
-        throw new Error(errorMessage);
-    }
+      } catch (error) {
+          const errorMessage = getGoogleApiErrorMessage(error, "Failed to generate analysis report.");
+          console.error("Error analyzing conversation with Gemini:", errorMessage, error);
+          throw new Error(errorMessage);
+      }
   }
 }
