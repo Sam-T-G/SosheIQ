@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { ChatMessage } from "../types";
 import { AnimatedDialogue } from "./AnimatedDialogue";
 import { ChatBubbleIcon } from "./Icons";
@@ -16,27 +16,66 @@ interface VisibleChunk {
 
 export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	message,
+	isLastMessage,
 }) => {
 	const [visibleChunks, setVisibleChunks] = useState<VisibleChunk[]>([]);
 	const [isComplete, setIsComplete] = useState(false);
-	const [imageToDisplay, setImageToDisplay] = useState<string | null>(null);
-	const [imageFadeIn, setImageFadeIn] = useState(false);
+
+	// Image cross-fade state
+	const [displayedImage, setDisplayedImage] = useState<string | null>(null);
+	const [incomingImage, setIncomingImage] = useState<string | null>(null);
+	const [isFading, setIsFading] = useState(false);
+	const imageRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (message.imageUrl && message.imageUrl !== imageToDisplay) {
-			setImageToDisplay(message.imageUrl);
-			setImageFadeIn(true);
+		// Set initial image (don't animate)
+		if (!imageRef.current) {
+			setDisplayedImage(message.imageUrl ?? message.fallbackImageUrl ?? null);
 		}
-	}, [message.imageUrl, imageToDisplay]);
+
+		// When a new image URL arrives for this message via props
+		if (message.imageUrl && message.imageUrl !== imageRef.current) {
+			if (displayedImage && displayedImage !== message.imageUrl) {
+				// An image is already showing, so prepare to fade
+				setIncomingImage(message.imageUrl);
+				setIsFading(true);
+			} else {
+				// No image was showing, just set it directly without animation
+				setDisplayedImage(message.imageUrl);
+			}
+		}
+		// Keep track of the most recent image URL we've processed for this message instance
+		imageRef.current = message.imageUrl ?? displayedImage;
+	}, [message.imageUrl, message.fallbackImageUrl, displayedImage]);
+
+	const onAnimationEnd = () => {
+		if (incomingImage) {
+			setDisplayedImage(incomingImage);
+			setIncomingImage(null);
+			setIsFading(false);
+		}
+	};
 
 	useEffect(() => {
 		const chunks = message.dialogueChunks || [];
-		if (chunks.length === 0) {
-			setVisibleChunks([]);
+
+		// If not the last message, or if there are no chunks, show everything instantly.
+		if (!isLastMessage || chunks.length === 0) {
+			if (chunks.length === 0 && message.text) {
+				setVisibleChunks([{ text: message.text, key: `${message.id}-0` }]);
+			} else {
+				setVisibleChunks(
+					chunks.map((chunk, index) => ({
+						text: chunk.text,
+						key: `${message.id}-${index}`,
+					}))
+				);
+			}
 			setIsComplete(true);
 			return;
 		}
 
+		// Staged animation logic for the last/newest message
 		setVisibleChunks([]);
 		setIsComplete(false);
 		let delay = 50;
@@ -64,10 +103,13 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		return () => {
 			timeouts.forEach(clearTimeout);
 		};
-	}, [message.id, message.dialogueChunks]);
+	}, [message.id, message.dialogueChunks, message.text, isLastMessage]);
 
-	// Don't render anything if there's no text or chunks to display.
-	if (!message.text && !message.dialogueChunks?.length) {
+	const hasDialogue =
+		message.text ||
+		(message.dialogueChunks && message.dialogueChunks.length > 0);
+
+	if (!hasDialogue && !message.bodyLanguageDescription) {
 		return null;
 	}
 
@@ -75,17 +117,31 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		<div className="flex flex-col w-full">
 			{/* Top Row for Avatar and Body Language */}
 			<div className="flex items-start space-x-3 mb-2">
-				{/* Avatar Container - Larger on mobile, hidden on desktop */}
-				<div className="w-20 h-20 md:hidden flex-shrink-0 rounded-lg shadow-md bg-slate-700 overflow-hidden relative">
-					{imageToDisplay && (
+				{/* Avatar Container - Visible on mobile, hidden on desktop */}
+				<div className="md:hidden w-20 h-20 flex-shrink-0 rounded-lg shadow-md bg-slate-700 overflow-hidden relative">
+					{displayedImage && (
 						<img
-							src={`data:image/jpeg;base64,${imageToDisplay}`}
-							alt="AI visual cue for this turn"
-							className={`w-full h-full object-cover transition-opacity duration-500 ${
-								imageFadeIn ? "opacity-100" : "opacity-0"
-							}`}
-							onLoad={() => setImageFadeIn(true)}
+							key={`displayed-${displayedImage.substring(0, 20)}`}
+							src={`data:image/jpeg;base64,${displayedImage}`}
+							alt="AI's current visual cue"
+							className="absolute inset-0 w-full h-full object-cover"
+							style={{
+								opacity: isFading ? 0 : 1,
+								transition: isFading ? "opacity 0.75s ease-in-out" : "none",
+							}}
 						/>
+					)}
+					{incomingImage && isFading && (
+						<img
+							key={`incoming-${incomingImage.substring(0, 20)}`}
+							src={`data:image/jpeg;base64,${incomingImage}`}
+							alt="AI's new visual cue"
+							className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in"
+							onAnimationEnd={onAnimationEnd}
+						/>
+					)}
+					{!displayedImage && !incomingImage && (
+						<div className="w-full h-full bg-slate-700" />
 					)}
 				</div>
 				{/* Body Language Bubble */}
@@ -103,18 +159,20 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			</div>
 
 			{/* Dialogue Bubbles Container (no indent) */}
-			<div className="space-y-2">
-				{visibleChunks.map((chunk) => (
-					<div
-						key={chunk.key}
-						className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-						<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
-					</div>
-				))}
-			</div>
+			{hasDialogue && (
+				<div className="space-y-2">
+					{visibleChunks.map((chunk) => (
+						<div
+							key={chunk.key}
+							className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+							<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
+						</div>
+					))}
+				</div>
+			)}
 
 			{/* Timestamp */}
-			{isComplete && (
+			{isComplete && hasDialogue && (
 				<div className="text-xs text-gray-400 mt-1 text-right opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
 					{new Date(message.timestamp).toLocaleTimeString([], {
 						hour: "2-digit",

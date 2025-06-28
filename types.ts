@@ -1,4 +1,5 @@
 
+
 export enum SocialEnvironment {
   CASUAL = "Casual Encounter",
   DATING = "Dating",
@@ -117,6 +118,7 @@ export interface ChatMessage {
   negativeTraitContribution?: string;
   imagePrompt?: string;
   imageUrl?: string; // base64
+  fallbackImageUrl?: string; // base64 for previous turn's image
   timestamp: Date;
   isThoughtBubble?: boolean;
   isThinkingBubble?: boolean;

@@ -60,7 +60,7 @@ const GoalBanner: React.FC<{
 	isGlowing?: boolean;
 }> = ({ goal, isGlowing }) => (
 	<div
-		className={`bg-teal-900/80 backdrop-blur-sm border-b-2 border-teal-500/50 p-3 shadow-lg animate-slideDown rounded-md ${
+		className={`bg-teal-900/80 backdrop-blur-sm border-t-2 border-teal-500/50 p-3 shadow-lg animate-fadeIn rounded-md ${
 			isGlowing ? "animate-glow-pulse" : ""
 		}`}>
 		<div className="flex items-center gap-3 mb-1.5">
@@ -126,17 +126,10 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`
-          w-full md:w-2/5 flex flex-col p-4 bg-slate-800/80 
+          w-full md:w-2/5 flex flex-col flex-grow p-4 bg-slate-800/80 
           md:h-full md:border-r md:border-slate-700 md:overflow-y-auto
         `}>
-				{/* Desktop Goal Banner */}
-				<div className="hidden md:block">
-					{displayedGoal && (
-						<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
-					)}
-				</div>
-
-				<div className="text-center md:text-left w-full px-2 mt-2 mb-2 flex-shrink-0">
+				<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
 					<h2 className="text-lg font-semibold text-sky-400">
 						{scenarioDetails.aiName}
 					</h2>
@@ -148,17 +141,23 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					<p className="text-xs text-gray-400">{scenarioDetails.environment}</p>
 				</div>
 
-				{/* Wrapper for AIVisualCue to allow it to grow */}
-				<div className="flex-grow min-h-0 relative flex flex-col">
+				{/* Wrapper for AIVisualCue and GoalBanner to allow them to grow and be ordered */}
+				<div className="flex-grow min-h-0 flex flex-col gap-4">
 					<AIVisualCue
 						imageBase64={aiImageBase64}
 						bodyLanguageDescription={bodyLanguageForDisplay}
 						isLoading={isLoadingAI && !aiImageBase64} // Show placeholder only if loading AND no image yet
 					/>
+					{/* Desktop Goal Banner - Moved under the visual cue */}
+					<div className="hidden md:block">
+						{displayedGoal && (
+							<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
+						)}
+					</div>
 				</div>
 
 				{/* Progress bar for desktop, hidden on mobile where it's in the chat overlay */}
-				<div className="pt-4 w-full px-2 flex-shrink-0 hidden md:block">
+				<div className="pt-4 w-full px-2 flex-shrink-0 hidden md:block mt-auto">
 					<label
 						htmlFor="engagement"
 						className="block text-sm font-medium text-sky-300 mb-1 text-center md:text-left">

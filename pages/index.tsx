@@ -188,26 +188,33 @@ const HomePage: React.FC = () => {
 					setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
 				}
 
-				// Step 4: Add AI's first message to history if AI starts, now with image data included
+				// Step 4: Add AI's initial state as the first message, regardless of who starts.
+				const initialAiMessage: ChatMessage = {
+					id: uuidv4(),
+					sender: "ai",
+					text: "", // Start with empty text
+					dialogueChunks: [],
+					timestamp: new Date(),
+					bodyLanguageDescription: initialBodyLanguage,
+					aiThoughts: initialAiThoughts,
+					conversationMomentum: initialConversationMomentum,
+					imageUrl: imageBase64,
+					imagePrompt: fullImagenPrompt,
+				};
+
 				if (
 					conversationStarter === "ai" &&
 					initialDialogueChunks &&
 					initialDialogueChunks.length > 0
 				) {
-					const initialAiMessage: ChatMessage = {
-						id: uuidv4(),
-						sender: "ai",
-						text: initialDialogueChunks.map((c) => c.text).join("\n"),
-						dialogueChunks: initialDialogueChunks,
-						timestamp: new Date(),
-						bodyLanguageDescription: initialBodyLanguage,
-						aiThoughts: initialAiThoughts,
-						conversationMomentum: initialConversationMomentum,
-						imageUrl: imageBase64, // Image is now ready
-						imagePrompt: fullImagenPrompt,
-					};
-					setConversationHistory((prev) => [...prev, initialAiMessage]);
+					// If AI starts, populate text fields
+					initialAiMessage.text = initialDialogueChunks
+						.map((c) => c.text)
+						.join("\n");
+					initialAiMessage.dialogueChunks = initialDialogueChunks;
 				}
+
+				setConversationHistory([initialAiMessage]);
 
 				// Step 5: Transition to the interaction screen
 				setCurrentPhase(GamePhase.INTERACTION);

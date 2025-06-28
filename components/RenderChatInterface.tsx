@@ -181,28 +181,43 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		useState<ChatMessage[]>([]);
 
 	useEffect(() => {
-		const newProcessedMessages: ChatMessage[] = [];
-		for (let i = 0; i < conversationHistory.length; i++) {
-			const currentMsg = conversationHistory[i];
+		const finalMessages: ChatMessage[] = [];
+		let lastAiImageUrl: string | undefined;
 
+		conversationHistory.forEach((msg) => {
+			// Add thought bubble first if needed. It won't have an image.
 			if (
 				showGlobalAiThoughts &&
-				currentMsg.sender === "ai" &&
-				currentMsg.aiThoughts &&
-				currentMsg.aiThoughts.trim() !== "" &&
-				!currentMsg.isThoughtBubble
+				msg.sender === "ai" &&
+				msg.aiThoughts &&
+				!msg.isThoughtBubble &&
+				msg.aiThoughts.trim()
 			) {
-				newProcessedMessages.push({
-					...currentMsg, // Inherit all properties
-					id: `${currentMsg.id}-thoughts`,
-					text: currentMsg.aiThoughts,
-					timestamp: new Date(currentMsg.timestamp.getTime() - 1),
+				finalMessages.push({
+					id: `${msg.id}-thoughts`,
+					sender: "ai",
+					text: msg.aiThoughts,
+					timestamp: new Date(msg.timestamp.getTime() - 1),
 					isThoughtBubble: true,
 				});
 			}
-			newProcessedMessages.push(currentMsg);
-		}
-		setProcessedMessagesForDisplay(newProcessedMessages);
+
+			// Now process the actual message.
+			if (msg.sender === "ai" && !msg.isThinkingBubble) {
+				// This AI message gets the fallback from the *previous* AI turn.
+				const msgWithFallback = { ...msg, fallbackImageUrl: lastAiImageUrl };
+				finalMessages.push(msgWithFallback);
+
+				// If this message has an image, it becomes the next fallback.
+				if (msg.imageUrl) {
+					lastAiImageUrl = msg.imageUrl;
+				}
+			} else {
+				// User messages or thinking bubbles are pushed as-is.
+				finalMessages.push(msg);
+			}
+		});
+		setProcessedMessagesForDisplay(finalMessages);
 	}, [conversationHistory, showGlobalAiThoughts]);
 
 	useEffect(() => {
