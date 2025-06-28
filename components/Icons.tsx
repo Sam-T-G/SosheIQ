@@ -259,21 +259,9 @@ export const TargetIcon: React.FC<IconProps> = ({ className }) => (
 		viewBox="0 0 24 24"
 		stroke="currentColor"
 		strokeWidth={2}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M12 21a9 9 0 110-18 9 9 0 010 18z"
-		/>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M12 15a3 3 0 110-6 3 3 0 010 6z"
-		/>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M12 9V3m0 18v-6m6-3h6M3 12h6"
-		/>
+		<circle cx="12" cy="12" r="10" />
+		<circle cx="12" cy="12" r="6" />
+		<circle cx="12" cy="12" r="2" />
 	</svg>
 );
 
@@ -290,27 +278,25 @@ export const StarIcon: React.FC<IconProps> = ({ className }) => (
 export const SparklesIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		className={className || "h-5 w-5"}
-		viewBox="0 0 20 20"
-		fill="currentColor">
-		<path
-			fillRule="evenodd"
-			d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm6 2a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0V6h-1a1 1 0 110-2h1V3a1 1 0 011-1zM3 13a1 1 0 011-1h1v-1a1 1 0 112 0v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 01-1-1zm12-2a1 1 0 01.963.728l.646 2.583.5.2a1 1 0 01.364 1.364l-1.937 2.906a1 1 0 01-1.364.364l-.5-.2-.646-2.583a1 1 0 01.364-1.364l1.937-2.906A1 1 0 0115 11z"
-			clipRule="evenodd"
-		/>
+		viewBox="0 0 16 16"
+		fill="currentColor"
+		className={className || "h-5 w-5"}>
+		<path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162-.387A1.73 1.73 0 0 0 4.58 5.48l-.386 1.161a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 2.206 4.22l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31z" />
 	</svg>
 );
 
 export const CogIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		className={className || "h-5 w-5"}
-		viewBox="0 0 20 20"
-		fill="currentColor">
+		className={className || "h-6 w-6"}
+		fill="none"
+		viewBox="0 0 24 24"
+		stroke="currentColor"
+		strokeWidth={2.5}>
 		<path
-			fillRule="evenodd"
-			d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01-.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-			clipRule="evenodd"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M4 6h16M4 12h16M4 18h16"
 		/>
 	</svg>
 );
@@ -424,5 +410,15 @@ export const UserIcon: React.FC<IconProps> = ({ className }) => (
 			strokeLinejoin="round"
 			d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
 		/>
+	</svg>
+);
+
+export const HeartIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="currentColor"
+		className={className || "h-6 w-6"}>
+		<path d="M12,21.35L10.55,20.03C5.4,15.36,2,12.27,2,8.5C2,5.41,4.42,3,7.5,3C9.24,3,10.91,3.81,12,5.08C13.09,3.81,14.76,3,16.5,3C19.58,3,22,5.41,22,8.5C22,12.27,18.6,15.36,13.45,20.03L12,21.35Z" />
 	</svg>
 );

@@ -6,7 +6,7 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
-import { PlayIcon, CogIcon, ArrowLeftIcon } from "./Icons";
+import { PlayIcon, CogIcon, ArrowLeftIcon, TargetIcon } from "./Icons";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -89,6 +89,29 @@ const generateRandomAiName = (gender: AIGender): string => {
 		"Chris",
 		"Ryan",
 		"Daniel",
+		"Ethan",
+		"William",
+		"Matthew",
+		"Joseph",
+		"Anthony",
+		"Steven",
+		"Andrew",
+		"Mark",
+		"Paul",
+		"George",
+		"Kevin",
+		"Arthur",
+		"Robert",
+		"Liam",
+		"Noah",
+		"Brian",
+		"Thomas",
+		"Edward",
+		"Charles",
+		"Benjamin",
+		"Samuel",
+		"Henry",
+		"Jacob",
 	];
 	const femaleNames = [
 		"Sarah",
@@ -98,6 +121,28 @@ const generateRandomAiName = (gender: AIGender): string => {
 		"Linda",
 		"Ava",
 		"Grace",
+		"Chloe",
+		"Emma",
+		"Isabella",
+		"Olivia",
+		"Sophia",
+		"Mia",
+		"Amelia",
+		"Charlotte",
+		"Susan",
+		"Laura",
+		"Rebecca",
+		"Anna",
+		"Elizabeth",
+		"Mary",
+		"Ashley",
+		"Amanda",
+		"Michelle",
+		"Barbara",
+		"Patricia",
+		"Nancy",
+		"Sandra",
+		"Evelyn",
 	];
 	const neutralNames = [
 		"Alex",
@@ -107,6 +152,25 @@ const generateRandomAiName = (gender: AIGender): string => {
 		"Morgan",
 		"Riley",
 		"Kai",
+		"Skyler",
+		"Cameron",
+		"Drew",
+		"Phoenix",
+		"River",
+		"Sage",
+		"Blake",
+		"Rowan",
+		"Quinn",
+		"Jesse",
+		"Finley",
+		"Avery",
+		"Devin",
+		"Emerson",
+		"Parker",
+		"Dakota",
+		"Logan",
+		"Charlie",
+		"Hayden",
 	];
 	let pool: string[];
 	switch (gender) {
@@ -317,7 +381,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							))}
 						</div>
 						{scenario.environment === SocialEnvironment.CUSTOM && (
-							<div className="mt-6 animate-fadeIn">
+							<div className="mt-6 animate-fadeIn max-w-lg mx-auto">
 								<textarea
 									value={scenario.customEnvironment || ""}
 									onChange={(e) =>
@@ -395,17 +459,20 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									</button>
 								</div>
 								{scenario.aiAgeBracket === AIAgeBracket.CUSTOM && (
-									<input
-										type="number"
-										value={scenario.customAiAge || ""}
-										onChange={(e) =>
-											updateScenario({
-												customAiAge: parseInt(e.target.value, 10) || undefined,
-											})
-										}
-										placeholder="Enter age (13-100)"
-										className="mt-3 w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-									/>
+									<div className="mt-4 max-w-sm mx-auto">
+										<input
+											type="number"
+											value={scenario.customAiAge || ""}
+											onChange={(e) =>
+												updateScenario({
+													customAiAge:
+														parseInt(e.target.value, 10) || undefined,
+												})
+											}
+											placeholder="Enter age (13-100)"
+											className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+										/>
+									</div>
 								)}
 							</div>
 							<div>
@@ -418,7 +485,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									onChange={(e) =>
 										updateScenario({ aiCulture: e.target.value })
 									}
-									placeholder="e.g., Japanese salaryman, Italian grandmother"
+									placeholder="e.g., Korean pop star, Italian grandmother"
 									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 								/>
 							</div>
@@ -498,30 +565,43 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 4:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
+						<h2 className="text-2xl font-semibold text-sky-300 mb-4 text-center">
 							Any other specific context? (Optional)
 						</h2>
-						<p className="text-gray-400 mb-4">
+						<p className="text-gray-400 mb-4 text-center">
 							Add details to make the scenario more specific. This will
 							influence the AI's behavior and dialogue.
 						</p>
-						<textarea
-							value={scenario.customContext || ""}
-							onChange={(e) =>
-								updateScenario({ customContext: e.target.value })
-							}
-							placeholder="e.g., You've just met at a friend's party. You both applied for the same job..."
-							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[120px]"
-						/>
+						<div className="max-w-lg mx-auto">
+							<textarea
+								value={scenario.customContext || ""}
+								onChange={(e) =>
+									updateScenario({ customContext: e.target.value })
+								}
+								placeholder="Provide background information here..."
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[120px]"
+							/>
+							<p className="text-xs text-gray-500 mt-2 text-left">
+								<strong>Examples:</strong>
+								<br />
+								- "You've just met at a friend's party and find them
+								attractive."
+								<br />
+								- "You need to ask your boss, who is known to be strict, for an
+								extension on a deadline."
+								<br />- "You're returning a faulty product to a customer service
+								representative."
+							</p>
+						</div>
 					</div>
 				);
 			case 5:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
+						<h2 className="text-2xl font-semibold text-sky-300 mb-6 text-center">
 							Set the final details.
 						</h2>
-						<div className="space-y-6">
+						<div className="space-y-6 max-w-lg mx-auto">
 							<div>
 								<h3 className="text-lg font-medium text-gray-300 mb-2">
 									AI's Name (Optional):
@@ -538,15 +618,37 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								<h3 className="text-lg font-medium text-gray-300 mb-2">
 									Conversation Goal (Optional):
 								</h3>
+								<div className="mb-4 bg-teal-900/60 p-3 shadow-md border border-teal-800/50 rounded-md">
+									<div className="flex items-start gap-3">
+										<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0 mt-0.5" />
+										<div>
+											<h4 className="text-sm font-semibold text-teal-300">
+												Dynamic Goals
+											</h4>
+											<p className="text-xs text-teal-200">
+												If you leave this blank, the AI will try to figure out a
+												goal based on how the conversation goes.
+											</p>
+										</div>
+									</div>
+								</div>
 								<input
 									type="text"
 									value={scenario.conversationGoal || ""}
 									onChange={(e) =>
 										updateScenario({ conversationGoal: e.target.value })
 									}
-									placeholder="e.g., Ask for a date, get a job"
+									placeholder="What do you want to achieve?"
 									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 								/>
+								<p className="text-xs text-gray-500 mt-2 text-left">
+									<strong>Examples:</strong>
+									<br />
+									- "Successfully ask for their phone number."
+									<br />
+									- "Convince my boss to give me a two-day extension."
+									<br />- "Get a full refund for a faulty product."
+								</p>
 							</div>
 						</div>
 					</div>
@@ -627,14 +729,14 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				)}
 			</div>
 
-			<div className="flex-shrink-0 flex justify-between items-center mt-auto pt-4 border-t border-slate-700 gap-2 md:gap-4">
+			<div className="flex-shrink-0 flex justify-between items-stretch mt-auto pt-4 border-t border-slate-700 gap-2 md:gap-4">
 				<div className="flex-1 text-left">
 					{step > 0 && step <= MAX_STEPS && (
 						<button
 							onClick={handleBack}
-							className="w-full sm:w-auto px-6 py-3 bg-slate-600 text-white font-bold rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2 transition-colors">
+							className="w-full sm:w-auto px-6 py-4 bg-slate-600 text-white font-semibold text-base rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2 transition-colors">
 							<ArrowLeftIcon className="h-5 w-5" />
-							<span className="hidden sm:inline">Back</span>
+							<span>Back</span>
 						</button>
 					)}
 				</div>
@@ -643,8 +745,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					{step > 0 && (
 						<button
 							onClick={onSwitchToAdvanced}
-							className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm shadow-md transition-all flex items-center justify-center space-x-2">
-							<CogIcon />
+							className="p-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-base rounded-lg shadow-md transition-all flex items-center justify-center space-x-2">
+							<CogIcon className="h-6 w-6" />
 							<span className="hidden sm:inline">Advanced</span>
 						</button>
 					)}
@@ -654,14 +756,14 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					{step > 0 && step < MAX_STEPS && (
 						<button
 							onClick={handleNext}
-							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-colors">
+							className="w-full sm:w-auto px-8 py-4 bg-green-600 text-white font-bold text-base rounded-lg hover:bg-green-500 transition-colors">
 							Next
 						</button>
 					)}
 					{step === MAX_STEPS && (
 						<button
 							onClick={handleStart}
-							className="w-full sm:w-auto px-8 py-3 bg-green-600 text-white font-bold rounded-lg text-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center space-x-2 transition-transform hover:scale-105">
+							className="w-full sm:w-auto px-8 py-4 bg-green-600 text-white font-bold text-base rounded-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center space-x-2 transition-transform hover:scale-105">
 							<PlayIcon className="h-5 w-5" />
 							<span>Start</span>
 						</button>

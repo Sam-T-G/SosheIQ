@@ -11,6 +11,8 @@ import {
 	QuestionMarkIcon,
 	StarIcon,
 	TargetIcon,
+	ChevronDownIcon,
+	ChevronUpIcon,
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 
@@ -79,6 +81,9 @@ const InputArea: React.FC<InputAreaProps> = ({
 	isOverlay,
 	isUserStart,
 }) => {
+	const [isMaxEngagementBannerOpen, setIsMaxEngagementBannerOpen] =
+		useState(true);
+
 	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
@@ -101,10 +106,43 @@ const InputArea: React.FC<InputAreaProps> = ({
 	return (
 		<div className={wrapperClasses}>
 			{isMaxEngagement && (
-				<div className="pointer-events-none">
-					<p className="text-center text-green-400 font-semibold mb-2 animate-slowPulseOnce">
-						Max Engagement Reached! Click 'Finish' to review your performance.
-					</p>
+				<div
+					role="button"
+					tabIndex={0}
+					onClick={() => setIsMaxEngagementBannerOpen((prev) => !prev)}
+					onKeyPress={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							setIsMaxEngagementBannerOpen((prev) => !prev);
+						}
+					}}
+					className="mb-2 bg-green-800/30 border border-green-700/40 rounded-lg cursor-pointer hover:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+					aria-expanded={isMaxEngagementBannerOpen}
+					aria-controls="max-engagement-content"
+					aria-label={
+						isMaxEngagementBannerOpen
+							? "Collapse max engagement message"
+							: "Expand max engagement message"
+					}>
+					<div
+						id="max-engagement-content"
+						className={`overflow-hidden transition-all duration-300 ease-in-out ${
+							isMaxEngagementBannerOpen ? "max-h-24" : "max-h-0"
+						}`}>
+						<p className="p-3 text-center text-green-300 font-semibold text-sm">
+							Max Engagement Reached! You can 'Finish' for your analysis, or
+							keep practicing.
+						</p>
+					</div>
+					<div
+						className="w-full flex justify-center items-center py-0.5 bg-green-900/50 rounded-b-lg"
+						aria-hidden="true">
+						{isMaxEngagementBannerOpen ? (
+							<ChevronUpIcon className="h-5 w-5 text-green-400" />
+						) : (
+							<ChevronDownIcon className="h-5 w-5 text-green-400" />
+						)}
+					</div>
 				</div>
 			)}
 			<div className="flex items-start sm:items-center space-x-2">
@@ -181,8 +219,11 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const chatEndRef = useRef<HTMLDivElement>(null);
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
+
 	const prevHistoryLengthRef = useRef(conversationHistory.length);
 	const prevIsLoadingAIRef = useRef(isLoadingAI);
+	const isScrollingMutedRef = useRef(false);
+	const prevShowGlobalAiThoughtsRef = useRef(showGlobalAiThoughts);
 
 	const scrollToBottom = useCallback((options: { force?: boolean } = {}) => {
 		const { force = false } = options;
@@ -203,12 +244,14 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		const finalMessages: ChatMessage[] = [];
 		let lastAiImageUrl: string | undefined;
 
-		const forceScroll =
-			conversationHistory.length > prevHistoryLengthRef.current;
-		prevHistoryLengthRef.current = conversationHistory.length;
+		const thoughtsToggled =
+			showGlobalAiThoughts !== prevShowGlobalAiThoughtsRef.current;
+
+		if (thoughtsToggled) {
+			isScrollingMutedRef.current = true;
+		}
 
 		conversationHistory.forEach((msg) => {
-			// Add thought bubble first if needed. It won't have an image.
 			if (
 				showGlobalAiThoughts &&
 				msg.sender === "ai" &&
@@ -224,50 +267,58 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					isThoughtBubble: true,
 				});
 			}
-
-			// Now process the actual message.
 			if (msg.sender === "ai") {
-				// This AI message gets the fallback from the *previous* AI turn.
 				const msgWithFallback = { ...msg, fallbackImageUrl: lastAiImageUrl };
 				finalMessages.push(msgWithFallback);
-
-				// If this message has an image, it becomes the next fallback.
 				if (msg.imageUrl) {
 					lastAiImageUrl = msg.imageUrl;
 				}
 			} else {
-				// User messages or thinking bubbles are pushed as-is.
 				finalMessages.push(msg);
 			}
 		});
-		setProcessedMessagesForDisplay(finalMessages);
-		scrollToBottom({ force: forceScroll });
-	}, [conversationHistory, showGlobalAiThoughts, scrollToBottom]);
 
+		setProcessedMessagesForDisplay(finalMessages);
+
+		prevShowGlobalAiThoughtsRef.current = showGlobalAiThoughts;
+
+		// Un-mute scrolling after the render cycle completes
+		if (thoughtsToggled) {
+			setTimeout(() => {
+				isScrollingMutedRef.current = false;
+			}, 100);
+		}
+	}, [conversationHistory, showGlobalAiThoughts]);
+
+	// Scroll to bottom when history length changes
 	useEffect(() => {
-		// When isLoadingAI transitions from true to false, it means the AI has finished responding.
-		// We force a scroll to the bottom to make sure the user sees the final message,
-		// even if they had scrolled up.
+		if (conversationHistory.length > prevHistoryLengthRef.current) {
+			scrollToBottom({ force: true });
+		}
+		prevHistoryLengthRef.current = conversationHistory.length;
+	}, [conversationHistory.length, scrollToBottom]);
+
+	// Scroll to bottom when AI finishes speaking
+	useEffect(() => {
 		if (prevIsLoadingAIRef.current && !isLoadingAI) {
 			scrollToBottom({ force: true });
 		}
-		// Update the ref to the current value for the next render.
 		prevIsLoadingAIRef.current = isLoadingAI;
 	}, [isLoadingAI, scrollToBottom]);
 
+	// Scroll on other DOM mutations (like image load), but respect the mute flag
 	useEffect(() => {
 		const container = chatContainerRef.current;
 		if (!container) return;
 
 		const observer = new MutationObserver(() => {
-			// Any change to the children should trigger a scroll, but not forcibly.
-			// This handles dialogue chunks appearing one-by-one.
-			scrollToBottom({ force: false });
+			if (isScrollingMutedRef.current) return;
+			scrollToBottom({ force: false }); // Don't force scroll, only if user is already at the bottom
 		});
 
 		observer.observe(container, {
-			childList: true, // Watch for additions/removals of children
-			subtree: true, // Watch all descendants
+			childList: true,
+			subtree: true,
 		});
 
 		return () => observer.disconnect();

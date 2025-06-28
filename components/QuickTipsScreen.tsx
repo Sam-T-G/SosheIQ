@@ -7,7 +7,7 @@ import {
 	UserIcon,
 	SparklesIcon,
 	ThumbsUpIcon,
-	ThoughtBubbleIcon,
+	HeartIcon,
 } from "./Icons";
 
 interface QuickTipsScreenProps {
@@ -55,7 +55,7 @@ const tips = [
 		title: "Practice Empathy",
 		description:
 			"Try to understand and share the feelings of others. Acknowledging their emotions can strengthen connection and trust.",
-		icon: ThoughtBubbleIcon,
+		icon: HeartIcon,
 	},
 ];
 

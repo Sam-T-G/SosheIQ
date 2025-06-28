@@ -92,7 +92,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 							})}
 						</p>
 					</div>
-					<div className="absolute -top-4 right-0 flex flex-row-reverse items-center gap-x-2 w-auto">
+					<div className="absolute -top-4 right-0 flex flex-row-reverse items-center gap-x-2 w-auto whitespace-nowrap">
 						{message.positiveTraitContribution && (
 							<TraitContributionBadge
 								trait={message.positiveTraitContribution}
