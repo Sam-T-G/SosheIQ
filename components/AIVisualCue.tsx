@@ -52,7 +52,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	return (
 		<div className="w-full flex-grow min-h-0 flex flex-col items-stretch gap-4">
 			{/* Image Container */}
-			<div className="relative w-full aspect-square max-w-sm mx-auto md:max-w-none flex-shrink-0 rounded-lg shadow-xl overflow-hidden">
+			<div className="relative w-full aspect-square max-w-md mx-auto md:max-w-none flex-shrink-0 rounded-lg shadow-xl overflow-hidden">
 				{showPlaceholder ? (
 					<div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-800/50">
 						<svg

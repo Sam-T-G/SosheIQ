@@ -79,7 +79,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 
 	if (isUser) {
 		return (
-			<div className="flex justify-end">
+			<div className="flex justify-end pl-10 sm:pl-20">
 				<div className="relative">
 					<div className="max-w-xl px-4 py-3 rounded-xl shadow-md bg-sky-600 text-white rounded-br-none">
 						<p className="whitespace-pre-wrap break-words">{message.text}</p>
@@ -120,7 +120,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 
 	if (message.isThoughtBubble) {
 		return (
-			<div className="flex justify-start">
+			<div className="flex justify-start pr-10 sm:pr-20">
 				<ChatMessageViewAIThoughtBubble message={message} />
 			</div>
 		);
@@ -128,7 +128,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 
 	// Standard AI message (handles its own internal layout for avatar + bubble)
 	return (
-		<div className="flex justify-start">
+		<div className="flex justify-start pr-10 sm:pr-20">
 			{" "}
 			{/* This ensures the whole AI group (bubble) aligns left */}
 			<ChatMessageViewAI

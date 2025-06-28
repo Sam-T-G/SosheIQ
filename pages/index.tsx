@@ -152,52 +152,43 @@ const HomePage: React.FC = () => {
 					conversationStarter,
 				} = await geminiService.current.startConversation(fullDetails);
 
-				// Step 2: Set all non-image state and move to interaction screen immediately
+				// Step 2: Generate the initial image SYNCHRONOUSLY before showing the screen
+				const { fullImagenPrompt, newEstablishedVisualSegment } =
+					await geminiService.current.generateImagePromptForBodyLanguage(
+						initialBodyLanguage,
+						fullDetails.aiGender,
+						fullDetails.aiName,
+						fullDetails.aiAgeBracket,
+						fullDetails.customAiAge,
+						fullDetails.aiEstablishedVisualPromptSegment,
+						fullDetails.aiCulture
+					);
+
+				// Use a functional update to avoid stale state issues, especially important here
+				if (newEstablishedVisualSegment) {
+					setScenarioDetails((prev) =>
+						prev
+							? {
+									...prev,
+									aiEstablishedVisualPromptSegment: newEstablishedVisualSegment,
+							  }
+							: null
+					);
+				}
+
+				const imageBase64 = await imagenService.current.generateImage(
+					fullImagenPrompt
+				);
+				setCurrentAIImage(imageBase64);
+
+				// Step 3: Set all other state based on initial data
 				setInitialAiBodyLanguage(initialBodyLanguage);
 				setCurrentEngagement(initialEngagementScore);
 				if (fullDetails.conversationGoal) {
 					setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
 				}
 
-				setCurrentPhase(GamePhase.INTERACTION);
-				setIsLoading(false);
-
-				// Step 3: Generate image in the background
-				const generateInitialImage = async () => {
-					if (!geminiService.current || !imagenService.current) return;
-
-					const { fullImagenPrompt, newEstablishedVisualSegment } =
-						await geminiService.current.generateImagePromptForBodyLanguage(
-							initialBodyLanguage,
-							fullDetails.aiGender,
-							fullDetails.aiName,
-							fullDetails.aiAgeBracket,
-							fullDetails.customAiAge,
-							fullDetails.aiEstablishedVisualPromptSegment,
-							fullDetails.aiCulture
-						);
-
-					if (newEstablishedVisualSegment) {
-						setScenarioDetails((prev) =>
-							prev
-								? {
-										...prev,
-										aiEstablishedVisualPromptSegment:
-											newEstablishedVisualSegment,
-								  }
-								: null
-						);
-					}
-
-					const imageBase64 = await imagenService.current.generateImage(
-						fullImagenPrompt
-					);
-					setCurrentAIImage(imageBase64);
-					return { imageBase64, fullImagenPrompt };
-				};
-				const imagePromise = generateInitialImage();
-
-				// Step 4: Render initial AI dialogue if AI starts
+				// Step 4: Add AI's first message to history if AI starts, now with image data included
 				if (
 					conversationStarter === "ai" &&
 					initialDialogueChunks &&
@@ -212,33 +203,20 @@ const HomePage: React.FC = () => {
 						bodyLanguageDescription: initialBodyLanguage,
 						aiThoughts: initialAiThoughts,
 						conversationMomentum: initialConversationMomentum,
+						imageUrl: imageBase64, // Image is now ready
+						imagePrompt: fullImagenPrompt,
 					};
 					setConversationHistory((prev) => [...prev, initialAiMessage]);
-
-					// Update the message with the image once it's loaded
-					imagePromise.then((result) => {
-						if (result) {
-							const { imageBase64, fullImagenPrompt } = result;
-							setConversationHistory((prev) =>
-								prev.map((m) =>
-									m.id === initialAiMessage.id
-										? {
-												...m,
-												imageUrl: imageBase64,
-												imagePrompt: fullImagenPrompt,
-										  }
-										: m
-								)
-							);
-						}
-					});
 				}
+
+				// Step 5: Transition to the interaction screen
+				setCurrentPhase(GamePhase.INTERACTION);
 			} catch (e: any) {
 				console.error("Error starting interaction:", e);
 				setError(`Failed to start interaction: ${e.message}`);
 				setCurrentPhase(GamePhase.SETUP); // Revert to setup on failure
 			} finally {
-				setIsLoading(false); // Ensure loading is off even on error
+				setIsLoading(false); // Turn off loading indicator after everything is done
 			}
 		},
 		[]

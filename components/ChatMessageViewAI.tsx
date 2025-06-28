@@ -72,26 +72,25 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	}
 
 	return (
-		<div className="flex items-start space-x-3 w-full">
-			{/* Avatar Container */}
-			<div className="w-14 h-14 flex-shrink-0 rounded-lg shadow-md bg-slate-700 overflow-hidden relative">
-				{imageToDisplay && (
-					<img
-						src={`data:image/jpeg;base64,${imageToDisplay}`}
-						alt="AI visual cue for this turn"
-						className={`w-full h-full object-cover transition-opacity duration-500 ${
-							imageFadeIn ? "opacity-100" : "opacity-0"
-						}`}
-						onLoad={() => setImageFadeIn(true)}
-					/>
-				)}
-			</div>
-
-			{/* Bubbles Container */}
-			<div className="flex-grow min-w-0">
+		<div className="flex flex-col w-full">
+			{/* Top Row for Avatar and Body Language */}
+			<div className="flex items-start space-x-3 mb-2">
+				{/* Avatar Container - Larger on mobile, hidden on desktop */}
+				<div className="w-20 h-20 md:hidden flex-shrink-0 rounded-lg shadow-md bg-slate-700 overflow-hidden relative">
+					{imageToDisplay && (
+						<img
+							src={`data:image/jpeg;base64,${imageToDisplay}`}
+							alt="AI visual cue for this turn"
+							className={`w-full h-full object-cover transition-opacity duration-500 ${
+								imageFadeIn ? "opacity-100" : "opacity-0"
+							}`}
+							onLoad={() => setImageFadeIn(true)}
+						/>
+					)}
+				</div>
 				{/* Body Language Bubble */}
 				{message.bodyLanguageDescription && (
-					<div className="p-3 mb-2 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md animate-fadeIn">
+					<div className="flex-grow p-3 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md animate-fadeIn">
 						<div className="flex items-center text-xs text-yellow-500 mb-1">
 							<ChatBubbleIcon className="h-4 w-4" />
 							<span className="ml-1.5 font-semibold">Body Language</span>
@@ -101,28 +100,28 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 						</p>
 					</div>
 				)}
-
-				{/* Text Bubbles */}
-				<div className="space-y-2">
-					{visibleChunks.map((chunk) => (
-						<div
-							key={chunk.key}
-							className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-							<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
-						</div>
-					))}
-				</div>
-
-				{/* Timestamp */}
-				{isComplete && (
-					<div className="text-xs text-gray-400 mt-2 text-right opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-						{new Date(message.timestamp).toLocaleTimeString([], {
-							hour: "2-digit",
-							minute: "2-digit",
-						})}
-					</div>
-				)}
 			</div>
+
+			{/* Dialogue Bubbles Container (no indent) */}
+			<div className="space-y-2">
+				{visibleChunks.map((chunk) => (
+					<div
+						key={chunk.key}
+						className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+						<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
+					</div>
+				))}
+			</div>
+
+			{/* Timestamp */}
+			{isComplete && (
+				<div className="text-xs text-gray-400 mt-1 text-right opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+					{new Date(message.timestamp).toLocaleTimeString([], {
+						hour: "2-digit",
+						minute: "2-digit",
+					})}
+				</div>
+			)}
 		</div>
 	);
 };
