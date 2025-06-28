@@ -21,6 +21,7 @@ import {
 	LightbulbIcon,
 	ProhibitIcon,
 	XCircleIcon,
+	TargetIcon,
 } from "./Icons";
 import { AIAgeBracket } from "../types";
 
@@ -115,10 +116,39 @@ const FeedbackSection: React.FC<FeedbackSectionProps> = ({
 				<IconComponent className="h-6 w-6 flex-shrink-0" />
 				{title}
 			</h3>
-			<div
-				className="text-gray-200 whitespace-pre-wrap text-sm leading-relaxed"
-				dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, "<br />") }}
-			/>
+			<p className="text-gray-200 whitespace-pre-wrap text-sm leading-relaxed">
+				{content}
+			</p>
+		</div>
+	);
+};
+
+const GoalChangeNotification: React.FC<{
+	change: NonNullable<TurnByTurnAnalysisItem["goalChange"]>;
+}> = ({ change }) => {
+	let text = "";
+	let iconColor = "text-teal-400";
+	let bgColor = "bg-teal-800/40 border-teal-700/50";
+
+	switch (change.type) {
+		case "established":
+			text = `A new conversation goal was established: "${change.to}"`;
+			break;
+		case "changed":
+			text = `The conversation goal changed to: "${change.to}"`;
+			break;
+		case "removed":
+			text = `The conversation goal ("${change.from}") was removed.`;
+			iconColor = "text-yellow-400";
+			bgColor = "bg-yellow-800/20 border-yellow-700/40";
+			break;
+	}
+
+	return (
+		<div
+			className={`mt-2 p-2.5 rounded-md flex items-center gap-3 animate-fadeIn ${bgColor}`}>
+			<TargetIcon className={`h-5 w-5 flex-shrink-0 ${iconColor}`} />
+			<p className={`text-sm italic ${iconColor}`}>{text}</p>
 		</div>
 	);
 };
@@ -164,6 +194,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 					</p>
 				</div>
 			)}
+			{item.goalChange && <GoalChangeNotification change={item.goalChange} />}
 			{item.aiThoughts && (
 				<div className="mt-2 p-2.5 bg-purple-800/50 border border-purple-700/60 rounded-md">
 					<div className="flex items-center text-xs text-purple-400 mb-1">
@@ -268,7 +299,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 }) => {
 	const reportContentRef = useRef<HTMLDivElement>(null);
 	const turnByTurnAnalysisContainerRef = useRef<HTMLDivElement>(null);
-	const [showPerTurnScores, setShowPerTurnScores] = useState(false);
+	const [showPerTurnScores, setShowPerTurnScores] = useState(true);
 
 	const handleExportToPdf = async () => {
 		const contentToPrint = reportContentRef.current;

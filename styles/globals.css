@@ -201,3 +201,22 @@ html {
 .thinking-dot:nth-child(1) { animation-delay: 0s; }
 .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
 .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Goal Banner Glow Animation */
+@keyframes glow-pulse {
+  0% {
+    box-shadow: 0 0 0px 0px rgba(20, 184, 166, 0.0);
+    border-color: rgba(45, 212, 191, 0.5); /* teal-400 */
+  }
+  50% {
+    box-shadow: 0 0 14px 4px rgba(20, 184, 166, 0.5); /* teal-500 with glow */
+    border-color: rgba(94, 234, 212, 1); /* teal-300 */
+  }
+  100% {
+    box-shadow: 0 0 0px 0px rgba(20, 184, 166, 0.0);
+    border-color: rgba(45, 212, 191, 0.5);
+  }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 2.5s ease-out;
+}

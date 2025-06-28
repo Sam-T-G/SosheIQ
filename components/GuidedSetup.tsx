@@ -5,7 +5,6 @@ import {
 	AIPersonalityTrait,
 	AIGender,
 	AIAgeBracket,
-	PowerDynamic,
 } from "../types";
 import { PlayIcon, CogIcon, ArrowLeftIcon } from "./Icons";
 
@@ -15,7 +14,71 @@ interface GuidedSetupProps {
 }
 
 const MAX_STEPS = 6;
-const MAX_PERSONALITY_TRAITS = 3;
+const MAX_PERSONALITY_TRAITS = 5;
+
+// Expanded list of categorized personality traits
+const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
+	"Social Style": [
+		AIPersonalityTrait.INTROVERTED,
+		AIPersonalityTrait.OUTGOING,
+		AIPersonalityTrait.RESERVED,
+		AIPersonalityTrait.SOCIABLE,
+		AIPersonalityTrait.FLIRTATIOUS,
+		AIPersonalityTrait.FORMAL,
+		AIPersonalityTrait.INFORMAL,
+		AIPersonalityTrait.GUARDED,
+	],
+	"Emotional Tone": [
+		AIPersonalityTrait.ANXIOUS,
+		AIPersonalityTrait.CYNICAL,
+		AIPersonalityTrait.HAPPY,
+		AIPersonalityTrait.SAD,
+		AIPersonalityTrait.IRRITABLE,
+		AIPersonalityTrait.EMPATHETIC,
+		AIPersonalityTrait.CALM,
+		AIPersonalityTrait.PLAYFUL,
+		AIPersonalityTrait.SERIOUS,
+		AIPersonalityTrait.ENTHUSIASTIC,
+	],
+	"Intellectual Style": [
+		AIPersonalityTrait.PHILOSOPHICAL,
+		AIPersonalityTrait.ACADEMIC,
+		AIPersonalityTrait.INQUISITIVE,
+		AIPersonalityTrait.NAIVE,
+		AIPersonalityTrait.EXPERIENCED,
+		AIPersonalityTrait.ANALYTICAL,
+		AIPersonalityTrait.CURIOUS,
+		AIPersonalityTrait.CREATIVE,
+		AIPersonalityTrait.LOGICAL,
+		AIPersonalityTrait.IMAGINATIVE,
+	],
+	"Core Traits": [
+		AIPersonalityTrait.CONFIDENT,
+		AIPersonalityTrait.SHY,
+		AIPersonalityTrait.AMBITIOUS,
+		AIPersonalityTrait.HUMBLE,
+		AIPersonalityTrait.UNCONVENTIONAL,
+		AIPersonalityTrait.UNEMOTIONAL,
+		AIPersonalityTrait.IMPULSIVE,
+		AIPersonalityTrait.SUPPORTIVE,
+		AIPersonalityTrait.ASSERTIVE,
+		AIPersonalityTrait.DIRECT,
+		AIPersonalityTrait.SARCASTIC,
+		AIPersonalityTrait.WITTY,
+		AIPersonalityTrait.CHALLENGING,
+		AIPersonalityTrait.SKEPTICAL,
+		AIPersonalityTrait.OPTIMISTIC,
+		AIPersonalityTrait.PESSIMISTIC,
+	],
+};
+
+// Define the desired display order for categories
+const orderedPersonalityCategories = [
+	"Social Style",
+	"Core Traits",
+	"Emotional Tone",
+	"Intellectual Style",
+];
 
 const generateRandomAiName = (gender: AIGender): string => {
 	const maleNames = [
@@ -59,13 +122,12 @@ const generateRandomAiName = (gender: AIGender): string => {
 	return pool[Math.floor(Math.random() * pool.length)];
 };
 
-const initialScenario: ScenarioDetails = {
+const initialScenario: Omit<ScenarioDetails, "aiName"> & { aiName: string } = {
 	environment: SocialEnvironment.CASUAL,
 	aiGender: AIGender.RANDOM,
 	aiName: "",
 	aiAgeBracket: AIAgeBracket.NOT_SPECIFIED,
 	aiPersonalityTraits: [],
-	powerDynamic: PowerDynamic.BALANCED,
 };
 
 const StepButton: React.FC<{
@@ -82,7 +144,7 @@ const StepButton: React.FC<{
 		className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all duration-200 text-gray-200 text-sm md:text-base
       ${
 				isSelected
-					? "bg-teal-500/20 border-teal-400 shadow-lg scale-105"
+					? "bg-teal-500/20 border-teal-400 shadow-lg"
 					: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
 			} ${className}`}>
 		{children}
@@ -94,7 +156,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	onSwitchToAdvanced,
 }) => {
 	const [step, setStep] = useState(0);
-	const [scenario, setScenario] = useState<ScenarioDetails>(initialScenario);
+	const [scenario, setScenario] =
+		useState<Partial<ScenarioDetails>>(initialScenario);
 	const [exiting, setExiting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
@@ -121,7 +184,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		}
 		if (
 			step === 3 &&
-			scenario.aiPersonalityTraits.length === 0 &&
+			(!scenario.aiPersonalityTraits ||
+				scenario.aiPersonalityTraits.length === 0) &&
 			!scenario.customAiPersonality?.trim()
 		) {
 			setError(
@@ -173,19 +237,32 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			aiName: generateRandomAiName(randomGender),
 			aiAgeBracket: ageBrackets[Math.floor(Math.random() * ageBrackets.length)],
 			aiPersonalityTraits: randomTraits,
-			powerDynamic: PowerDynamic.BALANCED,
 		};
 		onStart(randomScenario);
 	};
 
 	const handleStart = () => {
-		const finalScenario = { ...scenario };
-		if (!finalScenario.aiName.trim()) {
-			finalScenario.aiName = generateRandomAiName(finalScenario.aiGender);
-		}
+		const finalScenario: ScenarioDetails = {
+			environment: scenario.environment || SocialEnvironment.CASUAL,
+			aiGender: scenario.aiGender || AIGender.RANDOM,
+			aiName:
+				scenario.aiName?.trim() ||
+				generateRandomAiName(scenario.aiGender || AIGender.RANDOM),
+			aiPersonalityTraits: scenario.aiPersonalityTraits || [],
+			// carry over optional fields
+			customEnvironment: scenario.customEnvironment,
+			aiCulture: scenario.aiCulture,
+			customAiPersonality: scenario.customAiPersonality,
+			aiAgeBracket: scenario.aiAgeBracket,
+			customAiAge: scenario.customAiAge,
+			customContext: scenario.customContext,
+			conversationGoal: scenario.conversationGoal,
+		};
+
 		if (finalScenario.environment !== SocialEnvironment.CUSTOM) {
 			finalScenario.customEnvironment = undefined;
 		}
+
 		onStart(finalScenario);
 	};
 
@@ -233,12 +310,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							{Object.values(SocialEnvironment).map((env) => (
 								<StepButton
 									key={env}
-									onClick={() => {
-										updateScenario({ environment: env });
-										if (env !== SocialEnvironment.CUSTOM) {
-											handleNext();
-										}
-									}}
+									onClick={() => updateScenario({ environment: env })}
 									isSelected={scenario.environment === env}>
 									<span className="font-bold">{env}</span>
 								</StepButton>
@@ -273,14 +345,14 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								<h3 className="text-lg font-medium text-gray-300 mb-3">
 									Gender:
 								</h3>
-								<div className="flex flex-wrap gap-2">
+								<div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
 									{Object.values(AIGender).map((g) => (
 										<button
 											key={g}
 											onClick={() => updateScenario({ aiGender: g })}
-											className={`px-4 py-2 rounded-lg text-sm ${
+											className={`flex items-center justify-center text-center px-4 py-2 rounded-lg text-sm transition-colors ${
 												scenario.aiGender === g
-													? "bg-teal-500 text-white"
+													? "bg-teal-500 text-white shadow-md"
 													: "bg-slate-700 hover:bg-slate-600"
 											}`}>
 											{g}
@@ -292,7 +364,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								<h3 className="text-lg font-medium text-gray-300 mb-3">
 									Age Bracket:
 								</h3>
-								<div className="flex flex-wrap gap-2">
+								<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
 									{ageBrackets.map((age) => (
 										<button
 											key={age}
@@ -302,9 +374,9 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 													customAiAge: undefined,
 												})
 											}
-											className={`px-4 py-2 rounded-lg text-sm ${
+											className={`flex items-center justify-center text-center px-3 py-2 rounded-lg text-xs md:text-sm transition-colors ${
 												scenario.aiAgeBracket === age
-													? "bg-teal-500 text-white"
+													? "bg-teal-500 text-white shadow-md"
 													: "bg-slate-700 hover:bg-slate-600"
 											}`}>
 											{age}
@@ -314,9 +386,9 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 										onClick={() =>
 											updateScenario({ aiAgeBracket: AIAgeBracket.CUSTOM })
 										}
-										className={`px-4 py-2 rounded-lg text-sm ${
+										className={`flex items-center justify-center text-center px-3 py-2 rounded-lg text-xs md:text-sm transition-colors ${
 											scenario.aiAgeBracket === AIAgeBracket.CUSTOM
-												? "bg-teal-500 text-white"
+												? "bg-teal-500 text-white shadow-md"
 												: "bg-slate-700 hover:bg-slate-600"
 										}`}>
 										Custom
@@ -355,7 +427,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				);
 
 			case 3:
-				const selectedCount = scenario.aiPersonalityTraits.length;
+				const selectedCount = scenario.aiPersonalityTraits?.length || 0;
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-2xl font-semibold text-sky-300 mb-2">
@@ -365,50 +437,61 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							Choose up to {MAX_PERSONALITY_TRAITS} traits, or describe them
 							yourself.
 						</p>
-						<div className="flex flex-wrap gap-2 mb-6">
-							{Object.values(AIPersonalityTrait).map((p) => {
-								const isSelected = scenario.aiPersonalityTraits.includes(p);
-								return (
-									<button
-										key={p}
-										onClick={() => {
-											if (isSelected) {
-												updateScenario({
-													aiPersonalityTraits:
-														scenario.aiPersonalityTraits.filter(
-															(trait) => trait !== p
-														),
-												});
-											} else if (selectedCount < MAX_PERSONALITY_TRAITS) {
-												updateScenario({
-													aiPersonalityTraits: [
-														...scenario.aiPersonalityTraits,
-														p,
-													],
-												});
-											}
-										}}
-										className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-											isSelected
-												? "bg-teal-500 text-white"
-												: "bg-slate-700 hover:bg-slate-600"
-										} ${
-											!isSelected && selectedCount >= MAX_PERSONALITY_TRAITS
-												? "opacity-50 cursor-not-allowed"
-												: ""
-										}`}>
-										{p}
-									</button>
-								);
-							})}
+
+						<div className="space-y-4">
+							{orderedPersonalityCategories.map((category) => (
+								<div key={category}>
+									<h3 className="text-md font-semibold text-teal-300 mb-2 border-b border-slate-600 pb-1">
+										{category}
+									</h3>
+									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+										{personalityCategories[category].map((p) => {
+											const isSelected =
+												scenario.aiPersonalityTraits?.includes(p);
+											return (
+												<button
+													key={p}
+													onClick={() => {
+														const currentTraits =
+															scenario.aiPersonalityTraits || [];
+														if (isSelected) {
+															updateScenario({
+																aiPersonalityTraits: currentTraits.filter(
+																	(trait) => trait !== p
+																),
+															});
+														} else if (selectedCount < MAX_PERSONALITY_TRAITS) {
+															updateScenario({
+																aiPersonalityTraits: [...currentTraits, p],
+															});
+														}
+													}}
+													className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+														isSelected
+															? "bg-teal-500 text-white ring-2 ring-teal-300"
+															: "bg-slate-700 hover:bg-slate-600"
+													} ${
+														!isSelected &&
+														selectedCount >= MAX_PERSONALITY_TRAITS
+															? "opacity-50 cursor-not-allowed"
+															: ""
+													}`}>
+													{p}
+												</button>
+											);
+										})}
+									</div>
+								</div>
+							))}
 						</div>
+
 						<textarea
 							value={scenario.customAiPersonality || ""}
 							onChange={(e) =>
 								updateScenario({ customAiPersonality: e.target.value })
 							}
 							placeholder="You can also add unlisted traits or a detailed description here."
-							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mt-6"
 						/>
 					</div>
 				);
@@ -470,12 +553,20 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				);
 
 			case 6:
-				const ageBracket = scenario.aiAgeBracket ?? AIAgeBracket.NOT_SPECIFIED;
-				const ageBracketText =
-					ageBracket !== AIAgeBracket.NOT_SPECIFIED &&
-					ageBracket !== AIAgeBracket.CUSTOM
-						? ageBracket.toString()
-						: "person";
+				const { aiAgeBracket } = scenario;
+				let ageText: string;
+				if (scenario.customAiAge) {
+					ageText = `${scenario.customAiAge} year old`;
+				} else if (
+					aiAgeBracket &&
+					aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED &&
+					aiAgeBracket !== AIAgeBracket.CUSTOM
+				) {
+					ageText = aiAgeBracket.toLowerCase();
+				} else {
+					ageText = "person";
+				}
+
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-6">
@@ -491,22 +582,19 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							</p>
 							<p>
 								<strong className="text-sky-400">AI Persona:</strong> A{" "}
-								{scenario.customAiAge
-									? `${scenario.customAiAge} year old`
-									: ageBracketText}{" "}
-								{scenario.aiGender.toLowerCase()} who is{" "}
-								{scenario.aiPersonalityTraits.join(", ") || "neutral"}.
+								{ageText} {scenario.aiGender?.toLowerCase()} who is{" "}
+								{scenario.aiPersonalityTraits?.join(", ") || "neutral"}.
 							</p>
+							{scenario.customContext && (
+								<p>
+									<strong className="text-sky-400">Custom Context:</strong>{" "}
+									{scenario.customContext}
+								</p>
+							)}
 							{scenario.conversationGoal && (
 								<p>
 									<strong className="text-sky-400">Your Goal:</strong>{" "}
 									{scenario.conversationGoal}
-								</p>
-							)}
-							{scenario.customContext && (
-								<p className="text-sm italic">
-									<strong className="text-sky-400 not-italic">Context:</strong>{" "}
-									{scenario.customContext}
 								</p>
 							)}
 						</div>
@@ -529,7 +617,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						className="absolute top-0 left-0 h-1 bg-teal-400 rounded-full transition-all duration-500"
 						style={{ width: `${(step / MAX_STEPS) * 100}%` }}></div>
 				</div>
-				<div className="min-h-[280px] md:min-h-[300px]">
+				<div className="min-h-[280px] md:min-h-[300px] px-2">
 					{renderStepContent()}
 				</div>
 				{error && (
@@ -555,7 +643,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					{step > 0 && (
 						<button
 							onClick={onSwitchToAdvanced}
-							className="w-full sm:w-auto px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm shadow-md transition-all flex items-center justify-center space-x-2">
+							className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg text-sm shadow-md transition-all flex items-center justify-center space-x-2">
 							<CogIcon />
 							<span className="hidden sm:inline">Advanced</span>
 						</button>

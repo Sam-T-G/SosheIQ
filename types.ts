@@ -1,6 +1,6 @@
 
 export enum SocialEnvironment {
-  CASUAL = "Casual Chat",
+  CASUAL = "Casual Encounter",
   DATING = "Dating",
   WORK = "Work Environment",
   SOCIAL_GATHERING = "Social Gathering",
@@ -11,41 +11,59 @@ export enum SocialEnvironment {
 }
 
 export enum AIPersonalityTrait {
-  FRIENDLY = "Friendly",
-  SUPPORTIVE = "Supportive",
-  RESERVED = "Reserved",
-  OBSERVANT = "Observant",
-  ASSERTIVE = "Assertive",
-  DIRECT = "Direct",
-  SARCASTIC = "Sarcastic",
-  WITTY = "Witty",
-  ANALYTICAL = "Analytical",
-  CURIOUS = "Curious",
-  CHALLENGING = "Challenging",
-  SKEPTICAL = "Skeptical",
-  ENERGETIC = "Energetic",
-  ENTHUSIASTIC = "Enthusiastic",
+  // Social Style (8)
+  INTROVERTED = "Introverted",
+  OUTGOING = "Outgoing", // Replaced EXTROVERTED
+  RESERVED = "Reserved", // Replaced ALOOF
+  SOCIABLE = "Sociable", // Replaced GREGARIOUS
+  FLIRTATIOUS = "Flirtatious",
+  FORMAL = "Formal",
+  INFORMAL = "Informal",
+  GUARDED = "Guarded", // New
+
+  // Emotional Tone (10)
+  ANXIOUS = "Anxious",
+  CYNICAL = "Cynical", // Replaced JADED
+  HAPPY = "Happy", // Replaced CHEERFUL
+  SAD = "Sad", // Replaced MELANCHOLY
+  IRRITABLE = "Irritable",
   EMPATHETIC = "Empathetic",
   CALM = "Calm",
   PLAYFUL = "Playful",
   SERIOUS = "Serious",
+  ENTHUSIASTIC = "Enthusiastic", // New
+
+  // Intellectual Style (10)
+  PHILOSOPHICAL = "Philosophical",
+  ACADEMIC = "Academic", // Replaced PEDANTIC
+  INQUISITIVE = "Inquisitive",
+  NAIVE = "Naive",
+  EXPERIENCED = "Experienced", // Replaced WORLDLY
+  ANALYTICAL = "Analytical",
+  CURIOUS = "Curious",
   CREATIVE = "Creative",
   LOGICAL = "Logical",
+  IMAGINATIVE = "Imaginative", // New
+
+  // Core Traits (16)
   CONFIDENT = "Confident",
   SHY = "Shy",
+  AMBITIOUS = "Ambitious",
+  HUMBLE = "Humble",
+  UNCONVENTIONAL = "Unconventional", // Replaced ECCENTRIC
+  UNEMOTIONAL = "Unemotional", // Replaced STOIC
+  IMPULSIVE = "Impulsive",
+  SUPPORTIVE = "Supportive",
+  ASSERTIVE = "Assertive",
+  DIRECT = "Direct",
+  SARCASTIC = "Sarcastic",
+  WITTY = "Witty",
+  CHALLENGING = "Challenging",
+  SKEPTICAL = "Skeptical",
   OPTIMISTIC = "Optimistic",
   PESSIMISTIC = "Pessimistic",
-  FORMAL = "Formal",
-  INFORMAL = "Informal",
 }
 
-export enum PowerDynamic {
-  BALANCED = "Balanced / Peers",
-  AI_IS_AUTHORITY = "AI is Authority",
-  USER_IS_AUTHORITY = "User is Authority",
-  USER_SEEKS_FAVOR = "User Seeks Favor",
-  AI_SEEKS_FAVOR = "AI Seeks Favor",
-}
 
 export enum AIGender {
   RANDOM = "Random",
@@ -71,7 +89,6 @@ export interface ScenarioDetails {
   aiCulture?: string;
   aiPersonalityTraits: AIPersonalityTrait[];
   customAiPersonality?: string;
-  powerDynamic: PowerDynamic;
   aiGender: AIGender;
   aiName: string;
   aiAgeBracket?: AIAgeBracket;
@@ -81,10 +98,16 @@ export interface ScenarioDetails {
   aiEstablishedVisualPromptSegment?: string;
 }
 
+export interface DialogueChunk {
+  text: string;
+  delayAfter?: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
-  text: string;
+  text: string; // For user msgs, or full concatenated text for AI turns
+  dialogueChunks?: DialogueChunk[]; // For AI turns, to allow staged delivery in UI
   bodyLanguageDescription?: string;
   aiThoughts?: string;
   conversationMomentum?: number;
@@ -97,6 +120,11 @@ export interface ChatMessage {
   timestamp: Date;
   isThoughtBubble?: boolean;
   isThinkingBubble?: boolean;
+  goalChange?: {
+    type: 'established' | 'changed' | 'removed';
+    from?: string;
+    to?: string;
+  };
 }
 
 export interface TurnByTurnAnalysisItem {
@@ -105,6 +133,7 @@ export interface TurnByTurnAnalysisItem {
   aiBodyLanguage?: string;
   aiThoughts?: string;
   conversationMomentum?: number;
+  goalChange?: ChatMessage['goalChange'];
 
   // User's part of the exchange
   userInput?: string;

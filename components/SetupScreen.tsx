@@ -5,7 +5,6 @@ import {
 	AIPersonalityTrait,
 	AIGender,
 	AIAgeBracket,
-	PowerDynamic,
 } from "../types";
 
 interface SetupScreenProps {
@@ -20,9 +19,71 @@ const MAX_CONVERSATION_GOAL_LENGTH = 200;
 const MAX_CUSTOM_ENV_LENGTH = 200;
 const MAX_AI_CULTURE_LENGTH = 100;
 
-interface OptionButtonProps<
-	T extends string | NameInputMode | AgeConfigMode | AIPersonalityTrait
-> {
+// Expanded list of categorized personality traits
+const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
+	"Social Style": [
+		AIPersonalityTrait.INTROVERTED,
+		AIPersonalityTrait.OUTGOING,
+		AIPersonalityTrait.RESERVED,
+		AIPersonalityTrait.SOCIABLE,
+		AIPersonalityTrait.FLIRTATIOUS,
+		AIPersonalityTrait.FORMAL,
+		AIPersonalityTrait.INFORMAL,
+		AIPersonalityTrait.GUARDED,
+	],
+	"Emotional Tone": [
+		AIPersonalityTrait.ANXIOUS,
+		AIPersonalityTrait.CYNICAL,
+		AIPersonalityTrait.HAPPY,
+		AIPersonalityTrait.SAD,
+		AIPersonalityTrait.IRRITABLE,
+		AIPersonalityTrait.EMPATHETIC,
+		AIPersonalityTrait.CALM,
+		AIPersonalityTrait.PLAYFUL,
+		AIPersonalityTrait.SERIOUS,
+		AIPersonalityTrait.ENTHUSIASTIC,
+	],
+	"Intellectual Style": [
+		AIPersonalityTrait.PHILOSOPHICAL,
+		AIPersonalityTrait.ACADEMIC,
+		AIPersonalityTrait.INQUISITIVE,
+		AIPersonalityTrait.NAIVE,
+		AIPersonalityTrait.EXPERIENCED,
+		AIPersonalityTrait.ANALYTICAL,
+		AIPersonalityTrait.CURIOUS,
+		AIPersonalityTrait.CREATIVE,
+		AIPersonalityTrait.LOGICAL,
+		AIPersonalityTrait.IMAGINATIVE,
+	],
+	"Core Traits": [
+		AIPersonalityTrait.CONFIDENT,
+		AIPersonalityTrait.SHY,
+		AIPersonalityTrait.AMBITIOUS,
+		AIPersonalityTrait.HUMBLE,
+		AIPersonalityTrait.UNCONVENTIONAL,
+		AIPersonalityTrait.UNEMOTIONAL,
+		AIPersonalityTrait.IMPULSIVE,
+		AIPersonalityTrait.SUPPORTIVE,
+		AIPersonalityTrait.ASSERTIVE,
+		AIPersonalityTrait.DIRECT,
+		AIPersonalityTrait.SARCASTIC,
+		AIPersonalityTrait.WITTY,
+		AIPersonalityTrait.CHALLENGING,
+		AIPersonalityTrait.SKEPTICAL,
+		AIPersonalityTrait.OPTIMISTIC,
+		AIPersonalityTrait.PESSIMISTIC,
+	],
+};
+
+// Define the desired display order for categories
+const orderedPersonalityCategories = [
+	"Social Style",
+	"Core Traits",
+	"Emotional Tone",
+	"Intellectual Style",
+];
+
+interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
 	value: T;
 	isSelected: boolean;
 	onChange: (value: T) => void;
@@ -32,9 +93,7 @@ interface OptionButtonProps<
 	title?: string;
 }
 
-const OptionButton = <
-	T extends string | NameInputMode | AgeConfigMode | AIPersonalityTrait
->({
+const OptionButton = <T extends string | NameInputMode | AgeConfigMode>({
 	value,
 	isSelected,
 	onChange,
@@ -49,7 +108,7 @@ const OptionButton = <
 		disabled={disabled}
 		title={title}
 		aria-pressed={isSelected}
-		className={`p-3 m-1 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75
+		className={`flex items-center justify-center text-center p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75
                 ${
 									disabled
 										? "bg-slate-500 text-gray-400 cursor-not-allowed opacity-70"
@@ -396,7 +455,6 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 			aiCulture: aiCulture.trim() || undefined,
 			aiPersonalityTraits: selectedPersonalityTraits,
 			customAiPersonality: customAiPersonality.trim() || undefined,
-			powerDynamic: PowerDynamic.BALANCED,
 			aiGender,
 			aiName: finalAiName,
 			aiAgeBracket: finalAiAgeBracket,
@@ -415,9 +473,6 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 		(age) => age !== AIAgeBracket.NOT_SPECIFIED && age !== AIAgeBracket.CUSTOM
 	);
 
-	const allPersonalityTraits = Object.values(
-		AIPersonalityTrait
-	) as AIPersonalityTrait[];
 	const allSocialEnvironments = Object.values(
 		SocialEnvironment
 	) as SocialEnvironment[];
@@ -438,7 +493,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 				<Section
 					title="AI Gender"
 					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 0}s`}>
-					<div className="flex flex-wrap -m-1">
+					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 						{(Object.values(AIGender) as AIGender[]).map((gender) => (
 							<OptionButton<AIGender>
 								key={gender}
@@ -580,13 +635,16 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 						</OptionButton>
 					</div>
 					{ageConfigMode === "manual_select" && (
-						<div className="flex flex-wrap -m-1">
+						<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
 							{ageBracketOptions.map((ageOpt) => (
 								<OptionButton<AIAgeBracket>
 									key={ageOpt}
 									value={ageOpt}
 									isSelected={aiAgeBracket === ageOpt}
-									onChange={() => handleAgeBracketSelect(ageOpt)}
+									onChange={() =>
+										handleAgeBracketSelect(ageOpt as AIAgeBracket)
+									}
+									className="text-xs sm:text-sm py-2 px-2.5"
 									disabled={ageConfigMode !== "manual_select"}>
 									{ageOpt}
 								</OptionButton>
@@ -619,7 +677,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 				<Section
 					title="Social Environment"
 					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}>
-					<div className="flex flex-wrap -m-1">
+					<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
 						{allSocialEnvironments.map((env) => (
 							<OptionButton<SocialEnvironment>
 								key={env}
@@ -655,20 +713,46 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 5}s`}
 					error={personalityError}
 					id="ai-personality-section">
-					<div className="flex flex-wrap -m-1">
-						{allPersonalityTraits.map((trait) => (
-							<OptionButton<AIPersonalityTrait>
-								key={trait}
-								value={trait}
-								isSelected={selectedPersonalityTraits.includes(trait)}
-								onChange={handlePersonalityTraitToggle}
-								disabled={
-									!selectedPersonalityTraits.includes(trait) &&
-									selectedPersonalityTraits.length >= MAX_PERSONALITY_TRAITS
-								}
-								className="text-xs sm:text-sm py-2 px-2.5">
-								{trait}
-							</OptionButton>
+					<div className="space-y-4">
+						{orderedPersonalityCategories.map((category) => (
+							<div key={category}>
+								<h3 className="text-md font-semibold text-teal-300 mb-2 border-b border-slate-600 pb-1">
+									{category}
+								</h3>
+								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+									{personalityCategories[category].map((p) => {
+										const isSelected = selectedPersonalityTraits.includes(p);
+										return (
+											<button
+												key={p}
+												type="button"
+												onClick={() => {
+													if (isSelected) {
+														handlePersonalityTraitToggle(p);
+													} else if (
+														selectedPersonalityTraits.length <
+														MAX_PERSONALITY_TRAITS
+													) {
+														handlePersonalityTraitToggle(p);
+													}
+												}}
+												className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+													isSelected
+														? "bg-teal-500 text-white ring-2 ring-teal-300"
+														: "bg-slate-700 hover:bg-slate-600"
+												} ${
+													!isSelected &&
+													selectedPersonalityTraits.length >=
+														MAX_PERSONALITY_TRAITS
+														? "opacity-50 cursor-not-allowed"
+														: ""
+												}`}>
+												{p}
+											</button>
+										);
+									})}
+								</div>
+							</div>
 						))}
 					</div>
 					<div className="mt-6">

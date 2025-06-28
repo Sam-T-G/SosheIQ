@@ -11,7 +11,12 @@ import { LoadingIndicator } from "../components/LoadingIndicator";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { QuickTipsScreen } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
-import type { ScenarioDetails, ChatMessage, AnalysisReport } from "../types";
+import type {
+	ScenarioDetails,
+	ChatMessage,
+	AnalysisReport,
+	DialogueChunk,
+} from "../types";
 import { GamePhase } from "../types";
 import { GeminiService } from "../services/geminiService";
 import { ImagenService } from "../services/imagenService";
@@ -39,6 +44,7 @@ const HomePage: React.FC = () => {
 	const [currentEngagement, setCurrentEngagement] =
 		useState<number>(INITIAL_ENGAGEMENT);
 	const [displayedGoal, setDisplayedGoal] = useState<DisplayedGoal>(null);
+	const [goalJustChanged, setGoalJustChanged] = useState(false);
 
 	const [zeroEngagementStreak, setZeroEngagementStreak] = useState<number>(0);
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
@@ -48,6 +54,9 @@ const HomePage: React.FC = () => {
 		null
 	);
 	const [currentAIImage, setCurrentAIImage] = useState<string | null>(null);
+	const [initialAiBodyLanguage, setInitialAiBodyLanguage] = useState<
+		string | null
+	>(null);
 
 	const geminiService = useRef<GeminiService | null>(null);
 	const imagenService = useRef<ImagenService | null>(null);
@@ -82,6 +91,16 @@ const HomePage: React.FC = () => {
 		initServices();
 	}, []);
 
+	// Effect to handle the temporary glow state for the goal banner
+	useEffect(() => {
+		if (goalJustChanged) {
+			const timer = setTimeout(() => {
+				setGoalJustChanged(false);
+			}, 2500); // Glow for 2.5 seconds
+			return () => clearTimeout(timer);
+		}
+	}, [goalJustChanged]);
+
 	const resetStateForNewGame = () => {
 		setScenarioDetails(null);
 		setConversationHistory([]);
@@ -91,6 +110,8 @@ const HomePage: React.FC = () => {
 		setAnalysisReport(null);
 		setCurrentAIImage(null);
 		setShowGlobalAiThoughts(false);
+		setInitialAiBodyLanguage(null);
+		setGoalJustChanged(false);
 	};
 
 	const handleNavigate = useCallback((phase: GamePhase) => {
@@ -120,72 +141,104 @@ const HomePage: React.FC = () => {
 			};
 			setScenarioDetails(fullDetails);
 
-			if (fullDetails.conversationGoal) {
-				setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
-			}
-
 			try {
+				// Step 1: Get initial text-based data from AI
 				const {
-					initialDialogue,
+					initialDialogueChunks,
 					initialBodyLanguage,
 					initialAiThoughts,
 					initialEngagementScore,
 					initialConversationMomentum,
+					conversationStarter,
 				} = await geminiService.current.startConversation(fullDetails);
 
-				const firstMessage: ChatMessage = {
-					id: uuidv4(),
-					sender: "ai",
-					text: initialDialogue,
-					bodyLanguageDescription: initialBodyLanguage,
-					aiThoughts: initialAiThoughts,
-					timestamp: new Date(),
-					conversationMomentum: initialConversationMomentum,
-				};
-				setConversationHistory([firstMessage]);
+				// Step 2: Set all non-image state and move to interaction screen immediately
+				setInitialAiBodyLanguage(initialBodyLanguage);
 				setCurrentEngagement(initialEngagementScore);
-
-				const { fullImagenPrompt, newEstablishedVisualSegment } =
-					await geminiService.current.generateImagePromptForBodyLanguage(
-						initialBodyLanguage,
-						fullDetails.aiGender,
-						fullDetails.aiName,
-						fullDetails.aiAgeBracket,
-						fullDetails.customAiAge,
-						fullDetails.aiEstablishedVisualPromptSegment,
-						fullDetails.aiCulture
-					);
-				if (newEstablishedVisualSegment) {
-					setScenarioDetails((prev) =>
-						prev
-							? {
-									...prev,
-									aiEstablishedVisualPromptSegment: newEstablishedVisualSegment,
-							  }
-							: null
-					);
+				if (fullDetails.conversationGoal) {
+					setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
 				}
-				firstMessage.imagePrompt = fullImagenPrompt;
 
-				const imageBase64 = await imagenService.current.generateImage(
-					fullImagenPrompt
-				);
-				setCurrentAIImage(imageBase64);
-				firstMessage.imageUrl = imageBase64;
-
-				setConversationHistory((prev) =>
-					prev.map((m) =>
-						m.id === firstMessage.id
-							? { ...firstMessage, imageUrl: imageBase64 }
-							: m
-					)
-				);
 				setCurrentPhase(GamePhase.INTERACTION);
+				setIsLoading(false);
+
+				// Step 3: Generate image in the background
+				const generateInitialImage = async () => {
+					if (!geminiService.current || !imagenService.current) return;
+
+					const { fullImagenPrompt, newEstablishedVisualSegment } =
+						await geminiService.current.generateImagePromptForBodyLanguage(
+							initialBodyLanguage,
+							fullDetails.aiGender,
+							fullDetails.aiName,
+							fullDetails.aiAgeBracket,
+							fullDetails.customAiAge,
+							fullDetails.aiEstablishedVisualPromptSegment,
+							fullDetails.aiCulture
+						);
+
+					if (newEstablishedVisualSegment) {
+						setScenarioDetails((prev) =>
+							prev
+								? {
+										...prev,
+										aiEstablishedVisualPromptSegment:
+											newEstablishedVisualSegment,
+								  }
+								: null
+						);
+					}
+
+					const imageBase64 = await imagenService.current.generateImage(
+						fullImagenPrompt
+					);
+					setCurrentAIImage(imageBase64);
+					return { imageBase64, fullImagenPrompt };
+				};
+				const imagePromise = generateInitialImage();
+
+				// Step 4: Render initial AI dialogue if AI starts
+				if (
+					conversationStarter === "ai" &&
+					initialDialogueChunks &&
+					initialDialogueChunks.length > 0
+				) {
+					const initialAiMessage: ChatMessage = {
+						id: uuidv4(),
+						sender: "ai",
+						text: initialDialogueChunks.map((c) => c.text).join("\n"),
+						dialogueChunks: initialDialogueChunks,
+						timestamp: new Date(),
+						bodyLanguageDescription: initialBodyLanguage,
+						aiThoughts: initialAiThoughts,
+						conversationMomentum: initialConversationMomentum,
+					};
+					setConversationHistory((prev) => [...prev, initialAiMessage]);
+
+					// Update the message with the image once it's loaded
+					imagePromise.then((result) => {
+						if (result) {
+							const { imageBase64, fullImagenPrompt } = result;
+							setConversationHistory((prev) =>
+								prev.map((m) =>
+									m.id === initialAiMessage.id
+										? {
+												...m,
+												imageUrl: imageBase64,
+												imagePrompt: fullImagenPrompt,
+										  }
+										: m
+								)
+							);
+						}
+					});
+				}
 			} catch (e: any) {
 				console.error("Error starting interaction:", e);
 				setError(`Failed to start interaction: ${e.message}`);
+				setCurrentPhase(GamePhase.SETUP); // Revert to setup on failure
 			} finally {
-				setIsLoading(false);
+				setIsLoading(false); // Ensure loading is off even on error
 			}
 		},
 		[]
@@ -193,7 +246,12 @@ const HomePage: React.FC = () => {
 
 	const handleSendMessage = useCallback(
 		async (messageText: string) => {
-			if (!geminiService.current || !imagenService.current || !scenarioDetails)
+			if (
+				!geminiService.current ||
+				!imagenService.current ||
+				!scenarioDetails ||
+				isAiResponding
+			)
 				return;
 
 			const userMessage: ChatMessage = {
@@ -216,6 +274,7 @@ const HomePage: React.FC = () => {
 			setError(null);
 
 			try {
+				// Step 1: Get AI's text-based response and analysis of user's turn
 				const historyForAI = conversationHistory.filter(
 					(m) => !m.isThinkingBubble
 				);
@@ -226,29 +285,15 @@ const HomePage: React.FC = () => {
 					scenarioDetails
 				);
 
+				// Step 2: Update the user's message with the AI's feedback
 				const {
 					engagementDelta = 0,
 					userTurnEffectivenessScore,
 					positiveTraitContribution,
 					negativeTraitContribution,
 				} = aiResponse;
-
-				const aiMessage: ChatMessage = {
-					id: uuidv4(),
-					sender: "ai",
-					text: aiResponse.aiDialogue,
-					bodyLanguageDescription: aiResponse.aiBodyLanguage,
-					aiThoughts: aiResponse.aiThoughts,
-					timestamp: new Date(),
-					conversationMomentum: aiResponse.conversationMomentum,
-				};
-
-				// Update history: remove thinking bubble, add new AI message, and update user message with feedback
-				setConversationHistory((prev) => {
-					const historyWithoutThinking = prev.filter(
-						(m) => !m.isThinkingBubble
-					);
-					const updatedHistory = historyWithoutThinking.map((m) =>
+				setConversationHistory((prev) =>
+					prev.map((m) =>
 						m.id === userMessage.id
 							? {
 									...m,
@@ -258,10 +303,98 @@ const HomePage: React.FC = () => {
 									negativeTraitContribution,
 							  }
 							: m
-					);
-					return [...updatedHistory, aiMessage];
-				});
+					)
+				);
 
+				// Step 3: Remove thinking bubble and create the full AI turn message object
+				const dialogueChunks = aiResponse.dialogueChunks || [];
+
+				const goalChangeInfo: ChatMessage["goalChange"] | undefined = (() => {
+					const prevGoalText = displayedGoal?.text || null;
+					const newGoalText = aiResponse.emergingGoal?.trim() || null;
+					if (!scenarioDetails.conversationGoal) {
+						if (newGoalText && !prevGoalText)
+							return { type: "established", to: newGoalText };
+						if (prevGoalText && !newGoalText)
+							return { type: "removed", from: prevGoalText };
+						if (prevGoalText && newGoalText && prevGoalText !== newGoalText)
+							return { type: "changed", from: prevGoalText, to: newGoalText };
+					}
+					return undefined;
+				})();
+
+				const aiMessageTurn: ChatMessage = {
+					id: uuidv4(),
+					sender: "ai",
+					text: dialogueChunks.map((c) => c.text).join("\n"),
+					dialogueChunks: dialogueChunks,
+					timestamp: new Date(),
+					bodyLanguageDescription: aiResponse.aiBodyLanguage,
+					aiThoughts: aiResponse.aiThoughts,
+					conversationMomentum: aiResponse.conversationMomentum,
+					goalChange: goalChangeInfo,
+				};
+
+				// Add the text-based message to history immediately
+				setConversationHistory((prev) => [
+					...prev.filter((m) => !m.isThinkingBubble),
+					aiMessageTurn,
+				]);
+
+				// Step 4: Generate new image in the background. Don't await it.
+				(async () => {
+					if (
+						aiResponse.aiBodyLanguage &&
+						scenarioDetails &&
+						geminiService.current &&
+						imagenService.current
+					) {
+						try {
+							const { fullImagenPrompt, newEstablishedVisualSegment } =
+								await geminiService.current.generateImagePromptForBodyLanguage(
+									aiResponse.aiBodyLanguage,
+									scenarioDetails.aiGender,
+									scenarioDetails.aiName,
+									scenarioDetails.aiAgeBracket,
+									scenarioDetails.customAiAge,
+									scenarioDetails.aiEstablishedVisualPromptSegment,
+									scenarioDetails.aiCulture
+								);
+							if (newEstablishedVisualSegment) {
+								setScenarioDetails((prev) =>
+									prev
+										? {
+												...prev,
+												aiEstablishedVisualPromptSegment:
+													newEstablishedVisualSegment,
+										  }
+										: null
+								);
+							}
+							const imageBase64 = await imagenService.current.generateImage(
+								fullImagenPrompt
+							);
+							setCurrentAIImage(imageBase64);
+
+							// Update the message with the image once loaded
+							setConversationHistory((prev) =>
+								prev.map((m) =>
+									m.id === aiMessageTurn.id
+										? {
+												...m,
+												imageUrl: imageBase64,
+												imagePrompt: fullImagenPrompt,
+										  }
+										: m
+								)
+							);
+						} catch (imgError) {
+							console.error("Background image generation failed:", imgError);
+						}
+					}
+				})();
+
+				// Step 5: Update state based on AI's text response
 				const newEngagementValue = Math.max(
 					0,
 					Math.min(
@@ -271,23 +404,22 @@ const HomePage: React.FC = () => {
 				);
 				setCurrentEngagement(newEngagementValue);
 
-				// Update goal display
-				const currentGoalText =
-					displayedGoal?.text || scenarioDetails.conversationGoal;
-				if (aiResponse.emergingGoal && !currentGoalText) {
+				if (goalChangeInfo) {
+					setGoalJustChanged(true);
+				}
+
+				if (scenarioDetails.conversationGoal) {
 					setDisplayedGoal({
-						text: aiResponse.emergingGoal,
+						text: scenarioDetails.conversationGoal,
 						progress: aiResponse.goalProgress,
 					});
-					// Update scenario details in state with the new goal
-					setScenarioDetails((prev) =>
-						prev ? { ...prev, conversationGoal: aiResponse.emergingGoal } : null
-					);
-				} else if (currentGoalText) {
-					setDisplayedGoal({
-						text: currentGoalText,
-						progress: aiResponse.goalProgress,
-					});
+				} else {
+					aiResponse.emergingGoal?.trim()
+						? setDisplayedGoal({
+								text: aiResponse.emergingGoal,
+								progress: aiResponse.goalProgress,
+						  })
+						: setDisplayedGoal(null);
 				}
 
 				if (newEngagementValue <= 0) {
@@ -296,48 +428,8 @@ const HomePage: React.FC = () => {
 					setZeroEngagementStreak(0);
 				}
 
-				if (aiResponse.aiBodyLanguage && scenarioDetails) {
-					const { fullImagenPrompt, newEstablishedVisualSegment } =
-						await geminiService.current.generateImagePromptForBodyLanguage(
-							aiResponse.aiBodyLanguage,
-							scenarioDetails.aiGender,
-							scenarioDetails.aiName,
-							scenarioDetails.aiAgeBracket,
-							scenarioDetails.customAiAge,
-							scenarioDetails.aiEstablishedVisualPromptSegment,
-							scenarioDetails.aiCulture
-						);
-					if (newEstablishedVisualSegment) {
-						setScenarioDetails((prev) =>
-							prev
-								? {
-										...prev,
-										aiEstablishedVisualPromptSegment:
-											newEstablishedVisualSegment,
-								  }
-								: null
-						);
-					}
-
-					aiMessage.imagePrompt = fullImagenPrompt;
-					const imageBase64 = await imagenService.current.generateImage(
-						fullImagenPrompt
-					);
-					setCurrentAIImage(imageBase64);
-					aiMessage.imageUrl = imageBase64;
-
-					setConversationHistory((prev) =>
-						prev.map((m) =>
-							m.id === aiMessage.id
-								? { ...aiMessage, imageUrl: imageBase64 }
-								: m
-						)
-					);
-				}
-
 				const currentTurnZeroStreak =
 					newEngagementValue <= 0 ? zeroEngagementStreak + 1 : 0;
-
 				const goalIsActive = displayedGoal || scenarioDetails.conversationGoal;
 
 				if (
@@ -349,6 +441,7 @@ const HomePage: React.FC = () => {
 				) {
 					handleEndConversation(true);
 				}
+				setIsAiResponding(false);
 			} catch (e: any) {
 				console.error("Error sending message or getting AI response:", e);
 				setError(`Communication error: ${e.message}`);
@@ -359,11 +452,10 @@ const HomePage: React.FC = () => {
 					bodyLanguageDescription: "Looks concerned.",
 					timestamp: new Date(),
 				};
-				setConversationHistory((prev) => {
-					const newHistory = prev.filter((m) => !m.isThinkingBubble);
-					return [...newHistory, errorMessageContent];
-				});
-			} finally {
+				setConversationHistory((prev) => [
+					...prev.filter((m) => !m.isThinkingBubble),
+					errorMessageContent,
+				]);
 				setIsAiResponding(false);
 			}
 		},
@@ -373,6 +465,7 @@ const HomePage: React.FC = () => {
 			currentEngagement,
 			displayedGoal,
 			zeroEngagementStreak,
+			isAiResponding,
 		]
 	);
 
@@ -508,8 +601,6 @@ const HomePage: React.FC = () => {
 				if (!scenarioDetails)
 					return <LoadingIndicator message="Loading scenario..." />;
 
-				const isMaxEngagement = currentEngagement >= 100 && !displayedGoal;
-
 				return (
 					<InteractionScreen
 						scenarioDetails={scenarioDetails}
@@ -526,6 +617,8 @@ const HomePage: React.FC = () => {
 						onToggleGlobalAiThoughts={() =>
 							setShowGlobalAiThoughts((prev) => !prev)
 						}
+						initialAiBodyLanguage={initialAiBodyLanguage}
+						goalJustChanged={goalJustChanged}
 					/>
 				);
 			case GamePhase.ANALYSIS:

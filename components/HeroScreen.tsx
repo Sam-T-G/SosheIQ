@@ -1,5 +1,5 @@
 import React from "react";
-import { PlayIcon, CogIcon, QuestionMarkIcon } from "./Icons";
+import { PlayIcon, PaperIcon, QuestionMarkIcon } from "./Icons";
 import { SosheIQLogo } from "./SosheIQLogo";
 
 interface HeroScreenProps {
@@ -56,9 +56,9 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 									focus:ring-4 focus:ring-slate-500 focus:ring-opacity-50
 									opacity-0 animate-[heroButtonAppear_0.5s_ease-out_forwards] flex items-center justify-center space-x-2"
 					style={{ animationDelay: "0.8s" }}
-					aria-label="Advanced Setup">
-					<CogIcon />
-					<span>Advanced Setup</span>
+					aria-label="Custom Scenario">
+					<PaperIcon />
+					<span>Custom Scenario</span>
 				</button>
 			</div>
 		</div>

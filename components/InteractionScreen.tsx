@@ -18,6 +18,8 @@ interface InteractionScreenProps {
 	onToggleQuickTipsOverlay: () => void;
 	showGlobalAiThoughts: boolean;
 	onToggleGlobalAiThoughts: () => void;
+	initialAiBodyLanguage: string | null;
+	goalJustChanged: boolean;
 }
 
 // Helper function to get the last meaningful AI body language description
@@ -53,10 +55,14 @@ const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
 	return personalityDisplay;
 };
 
-const GoalBanner: React.FC<{ goal: { text: string; progress: number } }> = ({
-	goal,
-}) => (
-	<div className="bg-teal-900/80 backdrop-blur-sm border-b-2 border-teal-500/50 p-3 shadow-lg animate-slideDown">
+const GoalBanner: React.FC<{
+	goal: { text: string; progress: number };
+	isGlowing?: boolean;
+}> = ({ goal, isGlowing }) => (
+	<div
+		className={`bg-teal-900/80 backdrop-blur-sm border-b-2 border-teal-500/50 p-3 shadow-lg animate-slideDown rounded-md ${
+			isGlowing ? "animate-glow-pulse" : ""
+		}`}>
 		<div className="flex items-center gap-3 mb-1.5">
 			<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
 			<div className="flex-grow">
@@ -86,14 +92,20 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	onToggleQuickTipsOverlay,
 	showGlobalAiThoughts,
 	onToggleGlobalAiThoughts,
+	initialAiBodyLanguage,
+	goalJustChanged,
 }) => {
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	// Use helper function to get the body language description
 	const lastMeaningfulAiBodyLanguage =
 		getLastMeaningfulAiMessageWithBodyLanguage(conversationHistory);
+
 	const bodyLanguageForDisplay =
 		lastMeaningfulAiBodyLanguage ||
-		(conversationHistory.length === 0 ? "Initializing..." : "AI is present.");
+		(conversationHistory.length === 0
+			? initialAiBodyLanguage
+			: "AI is present.") ||
+		"AI is present.";
 
 	useEffect(() => {
 		const handleEsc = (event: KeyboardEvent) => {
@@ -119,7 +131,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
         `}>
 				{/* Desktop Goal Banner */}
 				<div className="hidden md:block">
-					{displayedGoal && <GoalBanner goal={displayedGoal} />}
+					{displayedGoal && (
+						<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
+					)}
 				</div>
 
 				<div className="text-center md:text-left w-full px-2 mt-2 mb-2 flex-shrink-0">
@@ -170,6 +184,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
 					onToggleHelpOverlay={onToggleHelpOverlay}
 					onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+					goalJustChanged={goalJustChanged}
 				/>
 			</div>
 
@@ -201,6 +216,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
 						onToggleHelpOverlay={onToggleHelpOverlay}
 						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+						goalJustChanged={goalJustChanged}
 					/>
 				</div>
 			)}

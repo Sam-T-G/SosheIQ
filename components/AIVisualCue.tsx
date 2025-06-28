@@ -50,10 +50,11 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	const currentBodyLanguageText = bodyLanguageDescription;
 
 	return (
-		<div className="w-full flex-grow min-h-0 flex flex-col items-center">
-			<div className="w-full h-[55vh] md:h-auto flex-grow md:min-h-0 md:max-h-full rounded-lg flex items-center justify-center overflow-hidden shadow-xl relative">
+		<div className="w-full flex-grow min-h-0 flex flex-col items-stretch gap-4">
+			{/* Image Container */}
+			<div className="relative w-full aspect-square max-w-sm mx-auto md:max-w-none flex-shrink-0 rounded-lg shadow-xl overflow-hidden">
 				{showPlaceholder ? (
-					<div className="w-full h-full flex items-center justify-center text-slate-500">
+					<div className="w-full h-full flex items-center justify-center text-slate-500 bg-slate-800/50">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							className="h-1/3 w-1/3 opacity-50 animate-pulse"
@@ -98,8 +99,9 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				)}
 			</div>
 
+			{/* Body Language Container */}
 			{currentBodyLanguageText && (
-				<div className="w-full mt-2 p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md flex-shrink-0">
+				<div className="w-full p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md flex-shrink-0">
 					<div className="flex items-center text-xs text-yellow-500 mb-1">
 						<ChatBubbleIcon className="h-4 w-4" />
 						<span className="ml-1.5 font-semibold">Body Language</span>

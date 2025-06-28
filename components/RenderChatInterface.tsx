@@ -28,12 +28,17 @@ interface RenderChatInterfaceProps {
 	onToggleGlobalAiThoughts: () => void;
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
+	goalJustChanged: boolean;
 }
 
-const GoalBanner: React.FC<{ goal: { text: string; progress: number } }> = ({
-	goal,
-}) => (
-	<div className="bg-teal-900/60 p-3 shadow-lg border-b border-teal-800/50">
+const GoalBanner: React.FC<{
+	goal: { text: string; progress: number };
+	isGlowing?: boolean;
+}> = ({ goal, isGlowing }) => (
+	<div
+		className={`bg-teal-900/60 p-3 shadow-lg border-b border-teal-800/50 rounded-b-md ${
+			isGlowing ? "animate-glow-pulse" : ""
+		}`}>
 		<div className="flex items-center gap-3 mb-1.5">
 			<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
 			<div className="flex-grow">
@@ -59,6 +64,7 @@ interface InputAreaProps {
 	isLoadingAI: boolean;
 	isMaxEngagement: boolean;
 	isOverlay: boolean;
+	isUserStart: boolean;
 }
 
 const InputArea: React.FC<InputAreaProps> = ({
@@ -69,6 +75,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 	isLoadingAI,
 	isMaxEngagement,
 	isOverlay,
+	isUserStart,
 }) => {
 	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -85,6 +92,10 @@ const InputArea: React.FC<InputAreaProps> = ({
 		? `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-700/60 placeholder-gray-300`
 		: `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`; // Desktop specific styling - changed bg
 
+	const placeholderText = isUserStart
+		? "The scene is set. What's your opening line?"
+		: "Type your response...";
+
 	return (
 		<div className={wrapperClasses}>
 			{isMaxEngagement && (
@@ -99,7 +110,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 					value={userInput}
 					onChange={(e) => setUserInput(e.target.value)}
 					onKeyPress={handleKeyPress}
-					placeholder="Type your response..."
+					placeholder={placeholderText}
 					className={textareaClasses}
 					rows={
 						userInput.split("\n").length > 2
@@ -162,6 +173,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	onToggleGlobalAiThoughts,
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
+	goalJustChanged,
 }) => {
 	const [userInput, setUserInput] = useState("");
 	const chatEndRef = useRef<HTMLDivElement>(null);
@@ -282,6 +294,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		</div>
 	);
 
+	const isUserStart = conversationHistory.length === 0;
+
 	const inputAreaProps = {
 		userInput,
 		setUserInput,
@@ -290,6 +304,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		isLoadingAI,
 		isMaxEngagement,
 		isOverlay,
+		isUserStart,
 	};
 
 	if (isOverlay) {
@@ -300,7 +315,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					<EngagementBar />
 					{displayedGoal && (
 						<div className="animate-slideDown">
-							<GoalBanner goal={displayedGoal} />
+							<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
 						</div>
 					)}
 				</div>

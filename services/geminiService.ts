@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, PowerDynamic } from '../types';
+import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
 
 // Helper to construct a more informative error message from Google API errors
@@ -75,8 +75,13 @@ const getPersonalityPromptSegment = (traits: AIPersonalityTrait[], customPersona
   return segment;
 }
 
+interface DialogueChunk {
+  text: string;
+  delayAfter?: boolean;
+}
+
 interface AiTurnResponse {
-    aiDialogue: string;
+    dialogueChunks: DialogueChunk[];
     aiBodyLanguage: string;
     aiThoughts: string;
     engagementDelta: number;
@@ -118,7 +123,7 @@ export class GeminiService {
     return text.trim();
   }
 
-  async startConversation(scenario: ScenarioDetails): Promise<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }> {
+  async startConversation(scenario: ScenarioDetails): Promise<{ initialDialogueChunks: DialogueChunk[]; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; conversationStarter: 'user' | 'ai' }> {
     const customContextPrompt = scenario.customContext ? `\n    - Custom Scenario Details: ${scenario.customContext}` : "";
     const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
     const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
@@ -132,19 +137,24 @@ export class GeminiService {
     - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}
     - AI Gender: ${scenario.aiGender}${agePromptSegment}${customContextPrompt}
 
-    As ${scenario.aiName}, start the conversation with an engaging opening line. This line must be consistent with your persona, name, gender, age, and all scenario details.
-    Describe your initial body language, appropriate for your persona, and the scenario. This 'initialBodyLanguage' field is mandatory.
-    Provide your initial internal thoughts about this upcoming interaction (e.g., your expectations, how you feel about the scenario). This should be a brief, candid first-person internal monologue reflecting your persona and age. This 'initialAiThoughts' field is a absolutely mandatory part of your response.
-    Set an initial engagement level for the user (a number between 0 and 100, let's start with ${INITIAL_ENGAGEMENT}). This 'initialEngagementScore' field is mandatory.
-    Set an initial conversation momentum score (0-100, start with a neutral 55). This 'initialConversationMomentum' field is mandatory.
+    Your first task is to determine who should logically start this conversation based on the scenario. For example, if the user's role implies they are approaching you (like on a date or as a customer), the user should start. If your role implies you are initiating (like a host at a party or a server), you should start.
+
+    Your second task is to define your initial state.
+    - Describe your initial body language, appropriate for your persona and the scenario.
+    - Provide your initial internal thoughts about this upcoming interaction.
+    - Set an initial engagement level for the user (a number between 0 and 100, start with ${INITIAL_ENGAGEMENT}).
+    - Set an initial conversation momentum score (0-100). This score should reflect the starting 'energy' of the interaction based on the context. A friendly 'Casual Encounter' might start around 60, a 'Dating' scenario around 55, and a tense 'Negotiation' might start lower, around 45. Use your judgment.
+
+    Your third task is to provide an opening line ONLY IF you determined that you should start the conversation. The opening line must be an array of objects in the 'initialDialogueChunks' field, where each object has the structure { "text": "string", "delayAfter": boolean (optional) }. Your goal with 'delayAfter' is to create a natural, spoken-like cadence. The user will see the first chunk of your dialogue instantly. Use this feature sparingly for effect. If the user should start, this MUST be an empty array.
 
     Respond ONLY in a single, valid JSON object. Do not include any text, comments, or markdown fences outside of this JSON object.
-    Ensure all string values are correctly quoted. Special characters within strings (e.g., double quotes, backslashes, newlines) must be properly escaped (e.g., \`\\"\`, \`\\\\\`, \`\\\\n\`).
+    Ensure all string values are correctly quoted and special characters are escaped.
     The JSON object must have the following structure:
     {
-      "initialDialogue": "Your opening line as ${scenario.aiName} here.",
+      "conversationStarter": "'user' or 'ai'",
+      "initialDialogueChunks": [ { "text": "An opening line.", "delayAfter": true }, { "text": "A follow-up sentence." } ],
       "initialBodyLanguage": "Description of your body language.",
-      "initialAiThoughts": "Your initial internal monologue about the interaction as ${scenario.aiName}.",
+      "initialAiThoughts": "Your initial internal monologue.",
       "initialEngagementScore": ${INITIAL_ENGAGEMENT},
       "initialConversationMomentum": 55
     }`;
@@ -156,18 +166,15 @@ export class GeminiService {
             config: { responseMimeType: "application/json" }
         });
 
-        const parsed = this.parseJsonFromText<{ initialDialogue: string; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; }>(response.text ?? ' ');
+        const parsed = this.parseJsonFromText<{ initialDialogueChunks: DialogueChunk[]; initialBodyLanguage: string; initialAiThoughts: string; initialEngagementScore: number; initialConversationMomentum: number; conversationStarter: 'user' | 'ai' }>(response.text ?? ' ');
 
-        if (parsed && typeof parsed.initialDialogue === 'string' &&
-            typeof parsed.initialBodyLanguage === 'string' &&
-            typeof parsed.initialAiThoughts === 'string' &&
-            typeof parsed.initialEngagementScore === 'number' &&
-            typeof parsed.initialConversationMomentum === 'number') {
+        if (parsed && typeof parsed.initialBodyLanguage === 'string' && typeof parsed.conversationStarter === 'string') {
             return parsed;
         }
         console.error("Failed to parse initial conversation data from Gemini, using defaults.", response.text);
         return {
-            initialDialogue: `Hello! I'm ${scenario.aiName}. Let's talk.`,
+            conversationStarter: 'ai',
+            initialDialogueChunks: [{ text: `Hello! I'm ${scenario.aiName}. Let's talk.`}],
             initialBodyLanguage: "Neutral and open.",
             initialAiThoughts: "I'm ready to see how this interaction goes. I hope the user is engaging.",
             initialEngagementScore: INITIAL_ENGAGEMENT,
@@ -242,16 +249,43 @@ export class GeminiService {
       const customContextPrompt = scenario.customContext ? `\n- Custom Scenario Details: ${scenario.customContext}` : "";
       const agePromptSegment = `\n- AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
       const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
-      const goalPrompt = scenario.conversationGoal ? `\n- Stated User Goal: "${scenario.conversationGoal}". You should react to how the user progresses towards this goal.` : `\n- Stated User Goal: None specified. Determine if a goal emerges from the conversation.`;
 			const customEnvPrompt = scenario.environment === SocialEnvironment.CUSTOM && scenario.customEnvironment ? `\n- Custom Environment Details: ${scenario.customEnvironment}` : "";
 			const culturePrompt = scenario.aiCulture ? `\n- AI Culture/Race Nuances: "${scenario.aiCulture}".` : "";
+
+      // New Goal Dynamics Logic
+      let goalDynamicsPrompt: string;
+      if (scenario.conversationGoal) {
+          goalDynamicsPrompt = `
+- **User-Defined Goal**: The user has set a specific goal: "${scenario.conversationGoal}".
+- **Your Task**: Your primary directive is to roleplay in a way that allows the user to work towards this goal. All your goal-related analysis must be based *only* on this stated goal.
+- **JSON Fields for Goal**:
+  - \`emergingGoal\`: Set this to the user's stated goal: "${scenario.conversationGoal}". DO NOT change it.
+  - \`goalProgress\`: An integer (0-100). You MUST calculate this with nuance based on the "Goal Progress Calculation" rubric in the main task list.
+  - \`achieved\`: A boolean (true/false). Set to \`true\` only if the user has fully and successfully achieved this goal.
+`;
+      } else {
+          goalDynamicsPrompt = `
+- **Emergent Goal**: The user has NOT set a specific goal. Your task is to identify if a goal emerges organically from the conversation, with full autonomy to change or clear it.
+- **Goal Identification Rules**:
+  1.  **No Early Inference**: For the first 2-3 conversation turns, DO NOT infer a goal. The conversation is just starting. Keep \`emergingGoal\` as an empty string.
+  2.  **Identify**: After a few turns, if the user's intent becomes clear (e.g., they are trying to ask for a favor, get information, or build a romantic connection), define this as the \`emergingGoal\`.
+  3.  **Update**: If the conversation's focus clearly and intentionally shifts to a new topic, you have the autonomy to UPDATE the \`emergingGoal\` to reflect the new purpose.
+  4.  **Clear**: If the conversation drifts away from a previously identified goal into aimless small talk, you have the autonomy to CLEAR the goal by setting \`emergingGoal\` back to an empty string.
+- **JSON Fields for Goal**:
+  - \`emergingGoal\`: A string describing the goal you have identified based on the rules above. This string MUST be empty if no goal is identified or if it has been cleared. Crucially, the goal should be phrased from the user's perspective, describing what they are trying to achieve with you, ${scenario.aiName}. For example: 'Get coffee with ${scenario.aiName}' or 'Ask ${scenario.aiName} for help'. Do NOT use the user's name in the goal description.
+  - \`goalProgress\`: An integer (0-100). If there is no goal, this MUST be 0. If a goal is active, you MUST calculate this with nuance based on the "Goal Progress Calculation" rubric in the main task list.
+  - \`achieved\`: A boolean (true/false) for when an emergent goal is completed.
+`;
+      }
 
       const prompt = `You are role-playing as an AI named ${scenario.aiName}. Maintain your persona consistently.
       
       Your Persona & Scenario:
       - AI Name: ${scenario.aiName}
       - AI Gender: ${scenario.aiGender}
-      - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}${agePromptSegment}${customContextPrompt}${goalPrompt}
+      - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}${agePromptSegment}${customContextPrompt}
+      
+      Goal Dynamics: ${goalDynamicsPrompt}
       
       Current State:
       - Your current engagement level with the user is ${currentEngagement} out of 100.
@@ -263,28 +297,36 @@ export class GeminiService {
       
       Your Task:
       Analyze the user's message and generate your response. Your entire output must be a single, valid JSON object.
+      
+      **History Interpretation Rule**: When reviewing the 'Recent Conversation History', if you see multiple consecutive messages from yourself (${scenario.aiName}), treat them as a single, paced thought. Your multi-part delivery is for conversational realism. Do NOT penalize the user (e.g., with a large negative \`engagementDelta\`) for 'not being engaging' simply because you delivered your last thought in multiple bubbles. Evaluate the user's input based on its own merit in response to the substance of your entire thought.
+
       1.  **Analyze User Input**: Based on your persona and the context, analyze the user's message for tone, relevance, and effectiveness.
       2.  **Determine Your Reaction**: Decide how your character, ${scenario.aiName}, would react.
       3.  **Generate Response**:
-          - \`aiDialogue\`: Write your response. It MUST be natural and in character. Do NOT break character or sound like a generic assistant.
-          - \`aiBodyLanguage\`: Describe your new body language.
-          - \`aiThoughts\`: Provide your internal monologue. What are you *really* thinking about the user's message and the conversation's direction? Be candid.
+          - \`dialogueChunks\`: An array of objects, each with the structure { "text": "string", "delayAfter": boolean (optional) }. The user's interface will display the first chunk immediately. Use \`delayAfter: true\` to add a natural, spoken-like pause *before the next chunk* is displayed. Use this deliberately for realistic pacing, not on every chunk.
+          - \`aiBodyLanguage\`: Describe your new body language. This applies to the *final* dialogue chunk.
+          - \`aiThoughts\`: Provide your internal monologue. This applies to the *final* dialogue chunk.
       4.  **Calculate Metrics**:
           - \`engagementDelta\`: How much did the user's message change your engagement? Provide an integer between -30 and +30. A boring or offensive message gets a negative delta. An engaging, insightful, or charismatic message gets a positive one.
           - \`userTurnEffectivenessScore\`: Score the user's last message from 0-100 on how well it fit the social context, was engaging, and moved the conversation forward.
-          - \`conversationMomentum\`: A score (0-100) indicating the conversation's current energy. If the user's turn was good, it should increase from the last AI turn's momentum. If bad, it should decrease.
+          - \`conversationMomentum\`: A score (0-100). **Instead of just adding/subtracting from the last score, you must re-evaluate the conversation's current energy and flow from scratch each turn.** This prevents the score from getting stuck. Use the following rubric to determine the score:
+            - **High Momentum (75-100):** The conversation is flowing excellently. Both participants are highly engaged, there's a strong back-and-forth, rapid-fire exchange of ideas, humor, or deep connection being built.
+            - **Medium Momentum (40-74):** The conversation is steady and pleasant. It's moving forward, but may have moments of slight hesitation or standard conversational lulls. This is a normal, healthy state for most conversations.
+            - **Low Momentum (0-39):** The conversation is stalling. There might be awkward pauses, short, closed-off answers, misunderstandings, or one person is carrying the entire conversation. The energy is low.
           - \`positiveTraitContribution\` (optional): If the user displayed a clear positive social trait (e.g., "Empathetic", "Witty", "Curious"), name it.
           - \`negativeTraitContribution\` (optional): If the user displayed a clear negative social trait (e.g., "Dismissive", "Awkward", "Arrogant"), name it.
-      5.  **Goal Tracking**:
-          - \`emergingGoal\` (optional): If no goal was stated initially, but one has clearly emerged from the conversation (e.g., user is trying to ask you out), describe it briefly.
-          - \`goalProgress\`: An integer (0-100) estimating the user's progress towards their stated or emerging goal.
-          - \`achieved\`: A boolean (true/false) indicating if the goal has been fully achieved.
+      5.  **Goal Analysis & Progress**: Follow the "Goal Dynamics" instructions precisely. For the \`goalProgress\` field, you MUST use the following rubric to ensure it is dynamic and receptive:
+          - **Skillful Advancement**: A skillful, direct move towards the goal gets a significant increase (e.g., +15-25 points).
+          - **Rapport Building**: Building rapport or laying groundwork that helps the goal gets a moderate increase (e.g., +5-10 points).
+          - **Stalling/Regressing**: An off-topic, awkward, or counter-productive message causes progress to stall (0 points) or even decrease (-5 points).
+          - **Persona-Based Reception**: Your AI persona is KEY. A "Shy" character might react poorly to a very direct approach, stalling progress, while a "Confident" one might reward it. Adjust progress based on how the user's approach lands with YOUR character.
+          - **Completion**: Progress only reaches 100 if the goal is fully achieved.
       6.  **End Condition**:
           - \`isEndingConversation\`: Set to \`true\` only if your character has a strong reason to end the conversation (e.g., they are offended, bored, the interaction has reached a natural conclusion). Otherwise, \`false\`.
           
-      Output ONLY a single, valid JSON object with the following structure. Do not add any text before or after the JSON.
+      Output ONLY a single, valid JSON object with the following structure. Do not add any text before or after the JSON. All strings MUST be correctly escaped (e.g., \\" for quotes, \\n for newlines).
       {
-        "aiDialogue": "...",
+        "dialogueChunks": [ { "text": "...", "delayAfter": true }, { "text": "..." } ],
         "aiBodyLanguage": "...",
         "aiThoughts": "...",
         "engagementDelta": number,
@@ -305,12 +347,12 @@ export class GeminiService {
               config: { responseMimeType: "application/json" }
           });
           const parsed = this.parseJsonFromText<AiTurnResponse>(response.text ?? '{}');
-          if (parsed && typeof parsed.aiDialogue === 'string') {
+          if (parsed && Array.isArray(parsed.dialogueChunks)) {
               return parsed;
           }
           console.error("Failed to parse AI turn data from Gemini, using fallback.", response.text);
           return {
-              aiDialogue: "I'm not sure how to respond to that.",
+              dialogueChunks: [{ text: "I'm not sure how to respond to that." }],
               aiBodyLanguage: "Looks confused.",
               aiThoughts: "The model response failed to parse. I need to give a generic answer.",
               engagementDelta: -5,
@@ -335,16 +377,21 @@ export class GeminiService {
       const historyForAnalysis = conversationHistory
           .slice(-MAX_HISTORY_FOR_ANALYSIS)
           .map(m => {
-              let entry = `{"sender": "${m.sender === 'user' ? 'User' : scenario.aiName}", "message": "${m.text}"`;
+              const entry: any = {
+                  sender: m.sender === 'user' ? 'User' : scenario.aiName,
+                  message: m.text,
+              };
               if (m.sender === 'ai') {
-                  if (m.bodyLanguageDescription) entry += `, "bodyLanguage": "${m.bodyLanguageDescription}"`;
-                  if (m.aiThoughts) entry += `, "internalThoughts": "${m.aiThoughts}"`;
-              } else {
-                  if (typeof m.userTurnEffectivenessScore === 'number') entry += `, "effectivenessScore": ${m.userTurnEffectivenessScore}`;
-                  if (typeof m.engagementDelta === 'number') entry += `, "engagementImpact": ${m.engagementDelta}`;
+                  if (m.bodyLanguageDescription) entry.bodyLanguage = m.bodyLanguageDescription;
+                  if (m.aiThoughts) entry.internalThoughts = m.aiThoughts;
+									if (m.goalChange) entry.goalChange = m.goalChange;
+              } else { // user
+                  if (typeof m.userTurnEffectivenessScore === 'number') entry.effectivenessScore = m.userTurnEffectivenessScore;
+                  if (typeof m.engagementDelta === 'number') entry.engagementImpact = m.engagementDelta;
+                  if (m.positiveTraitContribution) entry.positiveTraitContribution = m.positiveTraitContribution;
+                  if (m.negativeTraitContribution) entry.negativeTraitContribution = m.negativeTraitContribution;
               }
-              entry += '}';
-              return entry;
+              return JSON.stringify(entry);
           })
           .join(',\n');
       
@@ -360,13 +407,21 @@ export class GeminiService {
       - AI Persona: ${scenario.aiName}, a ${scenario.aiGender} character. ${personalityPromptSegment}${agePromptSegment}${customContextPrompt}${goalPrompt}
       - Final Engagement Score: ${finalEngagement}/100
       
-      Conversation History (JSON format):
+      Conversation History (as an array of JSON objects):
       [
       ${historyForAnalysis}
       ]
       
       Task:
-      Analyze the entire conversation and generate a comprehensive report. Your response must be a single, valid JSON object.
+      Analyze the entire conversation and generate a comprehensive report.
+      
+      CRITICAL INSTRUCTIONS FOR JSON FORMATTING:
+      - Your entire response MUST be a single, valid JSON object and nothing else. Do not use markdown fences like \`\`\`json.
+      - All strings within the JSON, especially in fields like 'strengths', 'areasForImprovement', 'actionableTips', 'thingsToAvoid', and the 'analysis' fields, must be properly escaped.
+      - Double quotes (") inside a string MUST be escaped as \\".
+      - Newlines inside a string MUST be escaped as \\n.
+      - Backslashes (\\) inside a string MUST be escaped as \\\\.
+      - Be extremely careful with escaping to ensure the final output is machine-parsable. Do not produce truncated or incomplete JSON.
       
       1.  **Overall Scores (0-100)**:
           - \`overallCharismaScore\`: User's charm, confidence, and likability.
@@ -374,16 +429,17 @@ export class GeminiService {
           - \`engagementMaintenanceScore\`: User's ability to keep the conversation interesting and maintain the AI's engagement.
           - \`adaptabilityScore\`: How well the user adapted to the AI's personality and the flow of conversation.
           - \`goalAchievementScore\` (optional): If a goal was present, how well the user progressed towards and achieved it.
-      2.  **Qualitative Feedback**:
-          - \`strengths\`: A paragraph highlighting what the user did well (e.g., "You showed great empathy by..."). Be specific.
-          - \`areasForImprovement\`: A paragraph on what could be improved (e.g., "Your questions were often closed-ended...").
-          - \`actionableTips\`: Bullet points with concrete, actionable advice for future interactions.
-          - \`thingsToAvoid\`: Bullet points on specific behaviors or phrases the user should avoid.
-          - \`goalAchievementFeedback\` (optional): If a goal was present, provide specific feedback on their strategy and execution.
+          - \`overallAiEffectivenessScore\` (optional): How effective the AI was at its role, for diagnostics.
+      2.  **Qualitative Feedback (Be CONCISE)**:
+          - \`strengths\`: A paragraph highlighting what the user did well. Be specific.
+          - \`areasForImprovement\`: A paragraph on what could be improved.
+          - \`actionableTips\`: A string containing multiple bullet points (using * or -) with concrete advice.
+          - \`thingsToAvoid\`: A string containing multiple bullet points (using * or -) on behaviors to avoid.
+          - \`goalAchievementFeedback\` (optional): If a goal was present, provide specific feedback on their strategy.
       3.  **AI Perspective**:
           - \`aiEvolvingThoughtsSummary\`: A summary of how the AI's internal thoughts and perception of the user changed over time.
       4.  **Turn-by-Turn Breakdown**:
-          - \`turnByTurnAnalysis\`: An array of objects, one for each user+AI exchange. For each item, include the AI's response/thoughts and then the user's input and a brief analysis of that input.
+          - \`turnByTurnAnalysis\`: An array of objects, one for each user+AI exchange. If an AI message in the history includes a \`goalChange\` object, you MUST copy this object into the corresponding turn in the \`turnByTurnAnalysis\` array.
           
       JSON Structure for your response:
       {
@@ -392,6 +448,7 @@ export class GeminiService {
         "engagementMaintenanceScore": number,
         "adaptabilityScore": number,
         "goalAchievementScore": number,
+        "overallAiEffectivenessScore": number,
         "finalEngagementSnapshot": ${finalEngagement},
         "strengths": "string",
         "areasForImprovement": "string",
@@ -405,6 +462,7 @@ export class GeminiService {
             "aiBodyLanguage": "string",
             "aiThoughts": "string",
             "conversationMomentum": number,
+            "goalChange": { "type": "string", "from": "string"?, "to": "string"? }?,
             "userInput": "string",
             "userTurnEffectivenessScore": number,
             "engagementDelta": number,
@@ -426,7 +484,7 @@ export class GeminiService {
               return parsed;
           }
           console.error("Failed to parse analysis report from Gemini.", response.text);
-          throw new Error("Could not parse the analysis report from the AI.");
+          throw new Error("Failed to generate a valid analysis report. The AI's response was not in the expected format.");
 
       } catch (error) {
           const errorMessage = getGoogleApiErrorMessage(error, "Failed to generate analysis report.");

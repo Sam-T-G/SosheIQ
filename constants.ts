@@ -11,6 +11,6 @@ export const ENGAGEMENT_BAR_COLORS: Record<string, string> = {
     high: 'bg-green-500',
 };
 
-export const INITIAL_ENGAGEMENT = 70;
+export const INITIAL_ENGAGEMENT = 30;
 export const MAX_ZERO_ENGAGEMENT_STREAK = 3; // Reduced for faster game end if engagement is very low
 export const ENGAGEMENT_DECAY_PER_TURN = 1; // Engagement decrease per AI turn to simulate time passing
