@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChatBubbleIcon } from "./Icons";
+import { ChatBubbleIcon, ChevronDownIcon, ChevronUpIcon } from "./Icons";
 
 interface AIVisualCueProps {
 	imageBase64: string | null;
@@ -15,6 +15,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	const [displayedImage, setDisplayedImage] = useState<string | null>(null);
 	const [incomingImage, setIncomingImage] = useState<string | null>(null);
 	const [isAnimating, setIsAnimating] = useState<boolean>(false);
+	const [isBodyLanguageOpen, setIsBodyLanguageOpen] = useState(false); // Default to collapsed
 
 	const prevImageBase64Ref = useRef<string | null>(null);
 
@@ -101,14 +102,39 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 
 			{/* Body Language Container - Hidden on Desktop */}
 			{currentBodyLanguageText && (
-				<div className="w-full p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md flex-shrink-0 md:hidden">
-					<div className="flex items-center text-xs text-yellow-500 mb-1">
+				<div
+					role="button"
+					tabIndex={0}
+					onClick={() => setIsBodyLanguageOpen((prev) => !prev)}
+					onKeyPress={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							setIsBodyLanguageOpen((prev) => !prev);
+						}
+					}}
+					className="w-full bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md flex-shrink-0 md:hidden cursor-pointer hover:border-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-all"
+					aria-expanded={isBodyLanguageOpen}
+					aria-controls="body-language-content">
+					<div className="flex items-center text-xs text-yellow-500 p-2.5">
 						<ChatBubbleIcon className="h-4 w-4" />
 						<span className="ml-1.5 font-semibold">Body Language</span>
+						<div className="ml-auto">
+							{isBodyLanguageOpen ? (
+								<ChevronUpIcon className="h-5 w-5" />
+							) : (
+								<ChevronDownIcon className="h-5 w-5" />
+							)}
+						</div>
 					</div>
-					<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words">
-						{currentBodyLanguageText}
-					</p>
+					<div
+						id="body-language-content"
+						className={`overflow-hidden transition-all duration-300 ease-in-out ${
+							isBodyLanguageOpen ? "max-h-48" : "max-h-0"
+						}`}>
+						<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words px-2.5 pb-2.5">
+							{currentBodyLanguageText}
+						</p>
+					</div>
 				</div>
 			)}
 		</div>

@@ -1,7 +1,6 @@
 import React from "react";
 import type { ChatMessage } from "../types";
 import { ChatMessageViewAI } from "./ChatMessageViewAI";
-import { ChatMessageViewAIThoughtBubble } from "./ChatMessageViewAIThoughtBubble";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 import { StarIcon, SparklesIcon, XCircleIcon } from "./Icons";
 
@@ -10,6 +9,7 @@ interface ChatMessageViewProps {
 	isLastMessage: boolean;
 	isLoadingAI: boolean;
 	onAnimationComplete?: () => void;
+	scenarioDetailsAiName: string;
 }
 
 const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
@@ -76,6 +76,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 	isLastMessage,
 	isLoadingAI,
 	onAnimationComplete,
+	scenarioDetailsAiName,
 }) => {
 	const isUser = message.sender === "user";
 
@@ -115,21 +116,13 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 		);
 	}
 
-	// AI Message
-	if (message.isThoughtBubble) {
-		return (
-			<div className="flex justify-start pr-10 sm:pr-20">
-				<ChatMessageViewAIThoughtBubble message={message} />
-			</div>
-		);
-	}
-
 	// Standard AI message (handles its own internal layout for avatar + bubble)
 	return (
 		<div className="flex justify-start pr-10 sm:pr-20">
 			{" "}
 			{/* This ensures the whole AI group (bubble) aligns left */}
 			<ChatMessageViewAI
+				scenarioDetailsAiName={scenarioDetailsAiName}
 				message={message}
 				isLastMessage={isLastMessage}
 				isLoadingAI={isLoadingAI}

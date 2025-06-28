@@ -27,8 +27,6 @@ interface RenderChatInterfaceProps {
 	isMaxEngagement: boolean;
 	isOverlay: boolean;
 	onCloseOverlay?: () => void;
-	showGlobalAiThoughts: boolean;
-	onToggleGlobalAiThoughts: () => void;
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
 	goalJustChanged: boolean;
@@ -92,11 +90,11 @@ const InputArea: React.FC<InputAreaProps> = ({
 	};
 
 	const wrapperClasses = isOverlay
-		? "flex-shrink-0 p-3 border-t border-slate-700/40 bg-slate-900/80 backdrop-blur-sm shadow-lg z-10"
+		? "flex-shrink-0 p-3 border-t border-slate-700/40 bg-slate-900/50 backdrop-blur-sm shadow-lg z-10"
 		: "flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700"; // Desktop specific styling - changed bg
 
 	const textareaClasses = isOverlay
-		? `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-700/60 placeholder-gray-300`
+		? `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-800/50 placeholder-gray-300`
 		: `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`; // Desktop specific styling - changed bg
 
 	const placeholderText = isUserStart
@@ -207,8 +205,6 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	isMaxEngagement,
 	isOverlay,
 	onCloseOverlay,
-	showGlobalAiThoughts,
-	onToggleGlobalAiThoughts,
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
 	goalJustChanged,
@@ -223,7 +219,6 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const prevHistoryLengthRef = useRef(conversationHistory.length);
 	const prevIsLoadingAIRef = useRef(isLoadingAI);
 	const isScrollingMutedRef = useRef(false);
-	const prevShowGlobalAiThoughtsRef = useRef(showGlobalAiThoughts);
 
 	const scrollToBottom = useCallback((options: { force?: boolean } = {}) => {
 		const { force = false } = options;
@@ -244,29 +239,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		const finalMessages: ChatMessage[] = [];
 		let lastAiImageUrl: string | undefined;
 
-		const thoughtsToggled =
-			showGlobalAiThoughts !== prevShowGlobalAiThoughtsRef.current;
-
-		if (thoughtsToggled) {
-			isScrollingMutedRef.current = true;
-		}
-
 		conversationHistory.forEach((msg) => {
-			if (
-				showGlobalAiThoughts &&
-				msg.sender === "ai" &&
-				msg.aiThoughts &&
-				!msg.isThoughtBubble &&
-				msg.aiThoughts.trim()
-			) {
-				finalMessages.push({
-					id: `${msg.id}-thoughts`,
-					sender: "ai",
-					text: msg.aiThoughts,
-					timestamp: new Date(msg.timestamp.getTime() - 1),
-					isThoughtBubble: true,
-				});
-			}
 			if (msg.sender === "ai") {
 				const msgWithFallback = { ...msg, fallbackImageUrl: lastAiImageUrl };
 				finalMessages.push(msgWithFallback);
@@ -279,16 +252,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		});
 
 		setProcessedMessagesForDisplay(finalMessages);
-
-		prevShowGlobalAiThoughtsRef.current = showGlobalAiThoughts;
-
-		// Un-mute scrolling after the render cycle completes
-		if (thoughtsToggled) {
-			setTimeout(() => {
-				isScrollingMutedRef.current = false;
-			}, 100);
-		}
-	}, [conversationHistory, showGlobalAiThoughts]);
+	}, [conversationHistory]);
 
 	// Scroll to bottom when history length changes
 	useEffect(() => {
@@ -353,24 +317,6 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			</h3>
 			<div className="flex items-center space-x-1 sm:space-x-2">
 				<button
-					onClick={onToggleGlobalAiThoughts}
-					className={`p-2 rounded-full transition-colors duration-150 shadow-sm
-						${
-							showGlobalAiThoughts
-								? "bg-purple-600 hover:bg-purple-500 text-white ring-1 ring-purple-400"
-								: "bg-slate-700/70 hover:bg-slate-600 text-purple-300 hover:text-purple-100 ring-1 ring-slate-500"
-						}`}
-					aria-label={
-						showGlobalAiThoughts ? "Hide AI's thoughts" : "Show AI's thoughts"
-					}
-					title={
-						showGlobalAiThoughts
-							? "Hide AI's internal thoughts"
-							: "Show AI's internal thoughts"
-					}>
-					<StarIcon className="h-5 w-5" />
-				</button>
-				<button
 					onClick={onToggleQuickTipsOverlay}
 					className="p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm bg-slate-700/70 hover:bg-slate-600"
 					aria-label="View Quick Tips"
@@ -426,7 +372,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 
 	if (isOverlay) {
 		return (
-			<div className="flex flex-col h-full w-full absolute inset-0">
+			<div className="flex flex-col h-full w-full relative">
 				<div className="relative flex-shrink-0 z-20">
 					<ChatAreaHeader />
 					<EngagementBar />
@@ -461,6 +407,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 										? onAnimationComplete
 										: undefined
 								}
+								scenarioDetailsAiName={scenarioDetailsAiName}
 							/>
 						))}
 						{isLoadingAI && <ChatMessageViewAIThinking />}
@@ -475,7 +422,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	}
 
 	return (
-		<div className="flex flex-col h-full bg-slate-800">
+		<div className="flex flex-col h-full bg-slate-800 relative">
 			<ChatAreaHeader />
 
 			<div className="flex-grow min-h-0 overflow-y-auto px-4 pt-4 pb-4">
@@ -503,6 +450,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 									? onAnimationComplete
 									: undefined
 							}
+							scenarioDetailsAiName={scenarioDetailsAiName}
 						/>
 					))}
 					{isLoadingAI && <ChatMessageViewAIThinking />}

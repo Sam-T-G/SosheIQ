@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { ChatMessage } from "../types";
 import { AnimatedDialogue } from "./AnimatedDialogue";
-import { ChatBubbleIcon } from "./Icons";
+import {
+	ChatBubbleIcon,
+	StarIcon,
+	ChevronUpIcon,
+	ChevronDownIcon,
+} from "./Icons";
 
 interface ChatMessageViewAIProps {
 	message: ChatMessage;
 	isLastMessage: boolean;
 	isLoadingAI: boolean;
 	onAnimationComplete?: () => void;
+	scenarioDetailsAiName: string;
 }
 
 interface VisibleChunk {
@@ -19,9 +25,11 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	message,
 	isLastMessage,
 	onAnimationComplete,
+	scenarioDetailsAiName,
 }) => {
 	const [visibleChunks, setVisibleChunks] = useState<VisibleChunk[]>([]);
 	const [isComplete, setIsComplete] = useState(false);
+	const [isThoughtsOpen, setIsThoughtsOpen] = useState(false);
 
 	// Image cross-fade state
 	const [displayedImage, setDisplayedImage] = useState<string | null>(null);
@@ -124,12 +132,51 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		message.text ||
 		(message.dialogueChunks && message.dialogueChunks.length > 0);
 
-	if (!hasDialogue && !message.bodyLanguageDescription) {
+	if (!hasDialogue && !message.bodyLanguageDescription && !message.aiThoughts) {
 		return null;
 	}
 
 	return (
 		<div className="flex flex-col w-full">
+			{/* AI's Thoughts Banner */}
+			{message.aiThoughts && (
+				<div
+					role="button"
+					tabIndex={0}
+					onClick={() => setIsThoughtsOpen((prev) => !prev)}
+					onKeyPress={(e) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault();
+							setIsThoughtsOpen((prev) => !prev);
+						}
+					}}
+					className="w-full bg-purple-800/20 border border-purple-700/40 rounded-md shadow-md mb-2 cursor-pointer hover:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+					aria-expanded={isThoughtsOpen}
+					aria-controls={`ai-thoughts-content-${message.id}`}>
+					<div className="flex items-center text-xs text-purple-400 p-2.5">
+						<StarIcon className="h-4 w-4" />
+						<span className="ml-1.5 font-semibold">
+							{scenarioDetailsAiName}'s Thoughts
+						</span>
+						<div className="ml-auto">
+							{isThoughtsOpen ? (
+								<ChevronUpIcon className="h-5 w-5" />
+							) : (
+								<ChevronDownIcon className="h-5 w-5" />
+							)}
+						</div>
+					</div>
+					<div
+						id={`ai-thoughts-content-${message.id}`}
+						className={`overflow-hidden transition-all duration-300 ease-in-out ${
+							isThoughtsOpen ? "max-h-96" : "max-h-0"
+						}`}>
+						<p className="text-purple-200 italic text-sm whitespace-pre-wrap break-words px-2.5 pb-2.5">
+							{message.aiThoughts}
+						</p>
+					</div>
+				</div>
+			)}
 			{/* Top Row for Avatar and Body Language */}
 			<div className="flex items-start space-x-3 mb-2">
 				{/* Avatar Container - Visible on mobile, hidden on desktop */}
@@ -164,7 +211,9 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 					<div className="flex-grow p-3 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md animate-fadeIn">
 						<div className="flex items-center text-xs text-yellow-500 mb-1">
 							<ChatBubbleIcon className="h-4 w-4" />
-							<span className="ml-1.5 font-semibold">Body Language</span>
+							<span className="ml-1.5 font-semibold">
+								{scenarioDetailsAiName}'s Body Language
+							</span>
 						</div>
 						<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words">
 							{message.bodyLanguageDescription}

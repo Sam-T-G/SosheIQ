@@ -16,8 +16,6 @@ interface InteractionScreenProps {
 	isLoadingAI: boolean; // True when AI is fetching new image/text
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
-	showGlobalAiThoughts: boolean;
-	onToggleGlobalAiThoughts: () => void;
 	initialAiBodyLanguage: string | null;
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
@@ -90,8 +88,6 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	isLoadingAI,
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
-	showGlobalAiThoughts,
-	onToggleGlobalAiThoughts,
 	initialAiBodyLanguage,
 	goalJustChanged,
 	onAnimationComplete,
@@ -117,6 +113,19 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		window.addEventListener("keydown", handleEsc);
 		return () => {
 			window.removeEventListener("keydown", handleEsc);
+		};
+	}, [showChatOverlay]);
+
+	useEffect(() => {
+		const body = document.body;
+		if (showChatOverlay) {
+			body.style.overflow = "hidden";
+		} else {
+			body.style.overflow = "";
+		}
+
+		return () => {
+			body.style.overflow = "";
 		};
 	}, [showChatOverlay]);
 
@@ -180,8 +189,6 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					scenarioDetailsAiName={scenarioDetails.aiName}
 					isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
 					isOverlay={false}
-					showGlobalAiThoughts={showGlobalAiThoughts}
-					onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
 					onToggleHelpOverlay={onToggleHelpOverlay}
 					onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
 					goalJustChanged={goalJustChanged}
@@ -193,33 +200,49 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{!showChatOverlay && (
 				<button
 					onClick={() => setShowChatOverlay(true)}
-					className="md:hidden fixed bottom-6 right-6 z-30 bg-sky-600 text-white p-4 rounded-full shadow-xl hover:bg-sky-500 transition-all duration-150 ease-in-out transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50"
+					className="md:hidden fixed bottom-6 right-6 z-30 bg-sky-600 text-white p-4 rounded-full shadow-xl hover:bg-sky-500 transition-all duration-150 ease-in-out transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50 animate-pulse-glow-fab"
 					aria-label="Open chat">
-					<ChatBubbleIcon />
+					<ChatBubbleIcon className="h-7 w-7" />
 				</button>
 			)}
 
 			{/* Mobile: Full Screen Chat Overlay */}
 			{showChatOverlay && (
-				<div className="md:hidden fixed inset-0 z-40 bg-slate-900/80 backdrop-blur-lg flex flex-col animate-[fadeIn_0.2s_ease-out]">
-					<RenderChatInterface
-						conversationHistory={conversationHistory}
-						currentEngagement={currentEngagement}
-						displayedGoal={displayedGoal}
-						onSendMessage={onSendMessage}
-						onEndConversation={onEndConversation}
-						isLoadingAI={isLoadingAI}
-						scenarioDetailsAiName={scenarioDetails.aiName}
-						isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
-						isOverlay={true}
-						onCloseOverlay={() => setShowChatOverlay(false)}
-						showGlobalAiThoughts={showGlobalAiThoughts}
-						onToggleGlobalAiThoughts={onToggleGlobalAiThoughts}
-						onToggleHelpOverlay={onToggleHelpOverlay}
-						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
-						goalJustChanged={goalJustChanged}
-						onAnimationComplete={onAnimationComplete}
-					/>
+				<div
+					className="md:hidden fixed inset-0 z-40 bg-slate-900 animate-[fadeIn_0.2s_ease-out]"
+					role="dialog"
+					aria-modal="true">
+					{/* Background Image Layer */}
+					{aiImageBase64 && (
+						<img
+							src={`data:image/jpeg;base64,${aiImageBase64}`}
+							alt=""
+							aria-hidden="true"
+							className="absolute inset-0 w-full h-full object-cover object-center"
+						/>
+					)}
+					{/* Darkening & Blur Layer */}
+					<div className="absolute inset-0 w-full h-full bg-slate-900/75 backdrop-blur-md" />
+
+					{/* Chat Interface Layer (on top) */}
+					<div className="relative z-10 h-full">
+						<RenderChatInterface
+							conversationHistory={conversationHistory}
+							currentEngagement={currentEngagement}
+							displayedGoal={displayedGoal}
+							onSendMessage={onSendMessage}
+							onEndConversation={onEndConversation}
+							isLoadingAI={isLoadingAI}
+							scenarioDetailsAiName={scenarioDetails.aiName}
+							isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
+							isOverlay={true}
+							onCloseOverlay={() => setShowChatOverlay(false)}
+							onToggleHelpOverlay={onToggleHelpOverlay}
+							onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+							goalJustChanged={goalJustChanged}
+							onAnimationComplete={onAnimationComplete}
+						/>
+					</div>
 				</div>
 			)}
 		</div>

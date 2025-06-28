@@ -64,7 +64,6 @@ const HomePage: React.FC = () => {
 	const [showHelpOverlay, setShowHelpOverlay] = useState(false);
 	const [showQuickTipsOverlay, setShowQuickTipsOverlay] = useState(false);
 	const [showConfirmEndDialog, setShowConfirmEndDialog] = useState(false);
-	const [showGlobalAiThoughts, setShowGlobalAiThoughts] = useState(false);
 
 	useEffect(() => {
 		const initServices = async () => {
@@ -109,7 +108,6 @@ const HomePage: React.FC = () => {
 		setZeroEngagementStreak(0);
 		setAnalysisReport(null);
 		setCurrentAIImage(null);
-		setShowGlobalAiThoughts(false);
 		setInitialAiBodyLanguage(null);
 		setGoalJustChanged(false);
 	};
@@ -588,10 +586,6 @@ const HomePage: React.FC = () => {
 						isLoadingAI={isAiResponding}
 						onToggleHelpOverlay={handleToggleHelpOverlay}
 						onToggleQuickTipsOverlay={handleToggleQuickTipsOverlay}
-						showGlobalAiThoughts={showGlobalAiThoughts}
-						onToggleGlobalAiThoughts={() =>
-							setShowGlobalAiThoughts((prev) => !prev)
-						}
 						initialAiBodyLanguage={initialAiBodyLanguage}
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={handleLastMessageAnimationComplete}

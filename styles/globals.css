@@ -184,6 +184,20 @@ html {
   animation: image-cross-fade-in 0.75s ease-in-out forwards;
 }
 
+/* FAB Glow Animation */
+@keyframes pulse-glow-fab {
+  0% {
+    box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.6); /* sky-500 */
+  }
+  100% {
+    box-shadow: 0 0 0 1rem rgba(14, 165, 233, 0);
+  }
+}
+.animate-pulse-glow-fab {
+  animation: pulse-glow-fab 2.5s infinite;
+}
+
+
 /* AI Thinking Ellipses Animation */
 @keyframes thinking-blink {
   0%, 80%, 100% {

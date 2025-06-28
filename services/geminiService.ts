@@ -304,7 +304,7 @@ export class GeminiService {
       1.  **Analyze User Input**: Based on your persona and the context, analyze the user's message for tone, relevance, and effectiveness.
       2.  **Determine Your Reaction**: Decide how your character, ${scenario.aiName}, would react.
       3.  **Generate Response**:
-          - \`dialogueChunks\`: An array of objects, each with the structure { "text": "string", "delayAfter": boolean (optional) }. The user's interface will display the first chunk immediately. Use \`delayAfter: true\` to add a natural, spoken-like pause *before the next chunk* is displayed. Use this deliberately for realistic pacing, not on every chunk.
+          - \`dialogueChunks\`: An array of objects, each with the structure { "text": "string", "delayAfter": boolean (optional) }. Use \`delayAfter: true\` to add a natural pause *before the next chunk*. Use this for realistic pacing. **This array MUST contain between 1 and 4 chunks.** If your response is long, condense it into fewer, more substantial chunks.
           - \`aiBodyLanguage\`: Describe your new body language. This applies to the *final* dialogue chunk.
           - \`aiThoughts\`: Provide your internal monologue. This applies to the *final* dialogue chunk.
       4.  **Calculate Metrics**:
