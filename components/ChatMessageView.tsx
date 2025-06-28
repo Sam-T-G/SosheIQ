@@ -80,6 +80,17 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 	scenarioDetailsAiName,
 }) => {
 	const isUser = message.sender === "user";
+	const isSystem = message.sender === "system";
+
+	if (isSystem) {
+		return (
+			<div className="text-center my-2 animate-fadeIn">
+				<p className="text-sm italic text-slate-400 px-4 py-1 bg-slate-700/50 rounded-full inline-block">
+					{message.text}
+				</p>
+			</div>
+		);
+	}
 
 	if (isUser) {
 		const badges: React.ReactNode[] = [];

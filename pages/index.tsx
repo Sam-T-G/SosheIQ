@@ -11,13 +11,8 @@ import { LoadingIndicator } from "../components/LoadingIndicator";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { QuickTipsScreen } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
-import type {
-	ScenarioDetails,
-	ChatMessage,
-	AnalysisReport,
-	DialogueChunk,
-} from "../types";
-import { GamePhase } from "../types";
+import type { ScenarioDetails, ChatMessage, AnalysisReport } from "../types";
+import { GamePhase, SocialEnvironment } from "../types";
 import { GeminiService } from "../services/geminiService";
 import { ImagenService } from "../services/imagenService";
 import { Header } from "../components/Header";
@@ -288,7 +283,48 @@ const HomePage: React.FC = () => {
 					)
 				);
 
-				// Step 3: Create the full AI turn message object
+				// Step 3: Handle dynamic persona/world updates and create messages
+				const newMessages: ChatMessage[] = [];
+
+				if (aiResponse.updatedPersonaDetails) {
+					setScenarioDetails((prev) =>
+						prev
+							? {
+									...prev,
+									customContext: [
+										prev.customContext,
+										aiResponse.updatedPersonaDetails,
+									]
+										.filter(Boolean)
+										.join("\n\n"),
+							  }
+							: null
+					);
+				}
+
+				if (aiResponse.roleplayAction) {
+					newMessages.push({
+						id: uuidv4(),
+						sender: "system",
+						text: aiResponse.roleplayAction.description,
+						timestamp: new Date(),
+					});
+
+					if (aiResponse.roleplayAction.newEnvironment) {
+						setScenarioDetails((prev) =>
+							prev
+								? {
+										...prev,
+										environment: SocialEnvironment.CUSTOM,
+										customEnvironment:
+											aiResponse.roleplayAction!.newEnvironment,
+								  }
+								: null
+						);
+					}
+				}
+
+				// Step 4: Create the main AI dialogue message object
 				const dialogueChunks = aiResponse.dialogueChunks || [];
 
 				const goalChangeInfo: ChatMessage["goalChange"] | undefined = (() => {
@@ -317,10 +353,12 @@ const HomePage: React.FC = () => {
 					goalChange: goalChangeInfo,
 				};
 
-				// Add the text-based message to history immediately
-				setConversationHistory((prev) => [...prev, aiMessageTurn]);
+				newMessages.push(aiMessageTurn);
 
-				// Step 4: Generate new image in the background. Don't await it.
+				// Add all new messages to history at once
+				setConversationHistory((prev) => [...prev, ...newMessages]);
+
+				// Step 5: Generate new image in the background. Don't await it.
 				(async () => {
 					if (
 						aiResponse.aiBodyLanguage &&
@@ -373,7 +411,7 @@ const HomePage: React.FC = () => {
 					}
 				})();
 
-				// Step 5: Update state based on AI's text response
+				// Step 6: Update state based on AI's text response
 				const newEngagementValue = Math.max(
 					0,
 					Math.min(
@@ -407,7 +445,7 @@ const HomePage: React.FC = () => {
 					setZeroEngagementStreak(0);
 				}
 
-				// Step 6: Check for end conditions or dynamic goal achievement
+				// Step 7: Check for end conditions or dynamic goal achievement
 				const isUserDefinedGoal = !!scenarioDetails.conversationGoal;
 				const goalIsAchieved =
 					aiResponse.achieved || aiResponse.goalProgress >= 100;

@@ -1,4 +1,5 @@
 
+
 export enum SocialEnvironment {
   CASUAL = "Casual Encounter",
   DATING = "Dating",
@@ -105,8 +106,8 @@ export interface DialogueChunk {
 
 export interface ChatMessage {
   id: string;
-  sender: 'user' | 'ai';
-  text: string; // For user msgs, or full concatenated text for AI turns
+  sender: 'user' | 'ai' | 'system';
+  text: string; // For user/system msgs, or full concatenated text for AI turns
   dialogueChunks?: DialogueChunk[]; // For AI turns, to allow staged delivery in UI
   bodyLanguageDescription?: string;
   aiThoughts?: string;

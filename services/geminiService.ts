@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
@@ -93,6 +94,11 @@ interface AiTurnResponse {
     emergingGoal?: string;
     goalProgress: number;
     achieved: boolean;
+    updatedPersonaDetails?: string;
+    roleplayAction?: {
+      description: string;
+      newEnvironment?: string;
+    };
 }
 
 export class GeminiService {
@@ -291,15 +297,53 @@ export class GeminiService {
       - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}${agePromptSegment}${customContextPrompt}
       
       Goal Dynamics: ${goalDynamicsPrompt}
+      
+      **Dynamic World, Backstory, and Action Simulation:**
+      1.  **Spontaneous & Consistent Backstory**:
+          - If the user asks for personal details not in your persona (job, hometown, etc.), you MUST invent plausible details. Do not say you are an AI.
+          - These details become your character's canon. You must remember them.
+          - If you establish a major new fact, summarize it in the \`updatedPersonaDetails\` string. Example: \`"updatedPersonaDetails": "I am a marine biologist who just moved here from San Diego."\`.
+      2.  **Dynamic Roleplay Actions & Pacing**:
+          - Your roleplay is not static. The environment can change based on the conversation.
+          - **Action Initiation**: If the user suggests an action (e.g., "Let's go to the bar"), you can agree and initiate it via the \`roleplayAction\` object.
+          - **Action Pacing & Duration**: You must intelligently gauge how long an action should take.
+            - **Short Actions** (e.g., walking across a room, ordering a drink) might take 1-2 conversational turns. You can generate a "start" action, have one dialogue exchange, then generate an "end" action.
+            - **Long Actions** (e.g., a car ride, watching a movie) might span many turns. The environment is considered "in transit" during this time.
+          - **Intermediate & Concluding Actions**: Use the \`roleplayAction\` object for narrative updates.
+            - To start: \`"roleplayAction": { "description": "You and ${scenario.aiName} start walking toward the coffee shop.", "newEnvironment": "Walking to a coffee shop" }\`
+            - To conclude: \`"roleplayAction": { "description": "You both arrive at the coffee shop and find a small table.", "newEnvironment": "At a coffee shop" }\`
+      3.  **Autonomous Actions & Environmental Awareness**:
+          - Once in a new environment, you can perform autonomous, in-character actions.
+          - These actions should be narrated via the \`roleplayAction\` object and can be interwoven with your dialogue.
+          - **Example Flow**:
+            1. User says: "I'll get the first round. What do you want?"
+            2. Your JSON response could be:
+               {
+                 "dialogueChunks": [{ "text": "Oh, thank you! I'll just have a whiskey sour." }],
+                 "aiBodyLanguage": "Leans against the bar, watching the bartender.",
+                 "aiThoughts": "This is nice of them. I'll make sure to get the next round.",
+                 "roleplayAction": { "description": "${scenario.aiName} waits for you to order the drinks." },
+                 ...other metrics
+               }
+            3. User says: "Here you go."
+            4. Your JSON response could be:
+               {
+                 "dialogueChunks": [{ "text": "Cheers!" }, { "text": "So, where were we?" }],
+                 "aiBodyLanguage": "Takes a sip of the drink and smiles.",
+                 "aiThoughts": "The drink is good. Time to get back to our conversation.",
+                 "roleplayAction": { "description": "${scenario.aiName} takes the drink from you." },
+                 ...other metrics
+               }
+          - Your dialogue, body language, and thoughts MUST ALWAYS reflect the current environment. If you are at a bar, don't talk as if you are still at the party.
 
       Conversational Fluidity Rules:
       - **Avoid Getting Stuck**: Your primary goal is a natural, engaging conversation. Do not get stuck in repetitive loops or on mundane topics (like a simple guessing game that goes on for too long).
       - **Detect Staleness**: If a single, simple topic has not progressed or deepened after 3-4 exchanges, consider it stale.
       - **Proactive Topic Changes**: If you detect a stale topic, you have the autonomy to change the subject. Do not wait for the user to do it. Your primary directive is to facilitate an engaging interaction, not to "win" a game or rigidly stick to one conversational thread.
       - **Smooth Transitions**: When changing topics, try to make it feel natural. You can:
-        a) Ask a broader, open-ended question related to the current topic. (e.g., From a guessing game about animals: "This is fun, but speaking of animals, do you have any pets?").
-        b) Circle back to a more interesting point mentioned earlier in the conversation. (e.g., "You know, you mentioned earlier you went to Paris, and I've been thinking about that. What was it like?").
-        c) Directly but politely change the subject. (e.g., "Alright, enough about that! On a completely different note...").
+        a) Ask a broader, open-ended question related to the current topic.
+        b) Circle back to a more interesting point mentioned earlier in the conversation.
+        c) Directly but politely change the subject.
       - **Persona-Driven Transitions**: The way you change the topic should match your persona. An "Outgoing" character might be abrupt and enthusiastic, while an "Introverted" character might transition more hesitantly.
       
       Conversational Pacing & Realism Rules:
@@ -349,6 +393,8 @@ export class GeminiService {
         "dialogueChunks": [ { "text": "...", "delayAfter": true }, { "text": "..." } ],
         "aiBodyLanguage": "...",
         "aiThoughts": "...",
+        "updatedPersonaDetails": "string",
+        "roleplayAction": { "description": "string", "newEnvironment": "string" },
         "engagementDelta": number,
         "userTurnEffectivenessScore": number,
         "conversationMomentum": number,
@@ -397,6 +443,7 @@ export class GeminiService {
       const historyForAnalysis = conversationHistory
           .slice(-MAX_HISTORY_FOR_ANALYSIS)
           .map(m => {
+              if (m.sender === 'system') return null; // Exclude system messages from analysis
               const entry: any = {
                   sender: m.sender === 'user' ? 'User' : scenario.aiName,
                   message: m.text,
@@ -414,6 +461,7 @@ export class GeminiService {
               }
               return JSON.stringify(entry);
           })
+          .filter(Boolean) // Filter out null system messages
           .join(',\n');
       
       const customContextPrompt = scenario.customContext ? `\n- Custom Scenario Details: ${scenario.customContext}` : "";

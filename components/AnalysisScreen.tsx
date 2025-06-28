@@ -584,15 +584,17 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					<div
 						ref={turnByTurnAnalysisContainerRef}
 						className="max-h-96 overflow-y-auto pr-2 space-y-3 bg-slate-800 p-3 rounded-md border border-slate-700">
-						{report.turnByTurnAnalysis.map((item, index) => (
-							<TurnAnalysisItemDisplay
-								key={index}
-								item={item}
-								index={index}
-								aiName={scenarioDetails.aiName || "AI"}
-								showPerTurnScores={showPerTurnScores}
-							/>
-						))}
+						{report.turnByTurnAnalysis
+							.filter((item) => item.userInput || item.aiResponse) // Defensively filter out empty turns
+							.map((item, index) => (
+								<TurnAnalysisItemDisplay
+									key={index}
+									item={item}
+									index={index}
+									aiName={scenarioDetails.aiName || "AI"}
+									showPerTurnScores={showPerTurnScores}
+								/>
+							))}
 					</div>
 				</div>
 			</div>
