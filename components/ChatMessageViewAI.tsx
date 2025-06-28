@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { ChatMessage } from "../types";
-import { AnimatedDialogue } from "./AnimatedDialogue";
 import {
 	ChatBubbleIcon,
 	StarIcon,
@@ -13,6 +12,7 @@ interface ChatMessageViewAIProps {
 	isLastMessage: boolean;
 	isLoadingAI: boolean;
 	onAnimationComplete?: () => void;
+	onThoughtToggle: () => void;
 	scenarioDetailsAiName: string;
 }
 
@@ -25,6 +25,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	message,
 	isLastMessage,
 	onAnimationComplete,
+	onThoughtToggle,
 	scenarioDetailsAiName,
 }) => {
 	const [visibleChunks, setVisibleChunks] = useState<VisibleChunk[]>([]);
@@ -136,6 +137,11 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		return null;
 	}
 
+	const handleToggleThoughts = () => {
+		onThoughtToggle();
+		setIsThoughtsOpen((prev) => !prev);
+	};
+
 	return (
 		<div className="flex flex-col w-full">
 			{/* AI's Thoughts Banner */}
@@ -143,11 +149,11 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 				<div
 					role="button"
 					tabIndex={0}
-					onClick={() => setIsThoughtsOpen((prev) => !prev)}
+					onClick={handleToggleThoughts}
 					onKeyPress={(e) => {
 						if (e.key === "Enter" || e.key === " ") {
 							e.preventDefault();
-							setIsThoughtsOpen((prev) => !prev);
+							handleToggleThoughts();
 						}
 					}}
 					className="w-full bg-purple-800/20 border border-purple-700/40 rounded-md shadow-md mb-2 cursor-pointer hover:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"

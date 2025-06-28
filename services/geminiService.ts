@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
@@ -266,12 +265,12 @@ export class GeminiService {
 `;
       } else {
           goalDynamicsPrompt = `
-- **Emergent Goal**: The user has NOT set a specific goal. Your task is to identify if a goal emerges organically from the conversation, with full autonomy to change or clear it.
-- **Goal Identification Rules**:
+- **Emergent Goal**: The user has NOT set a specific goal. Your task is to identify if an **overarching goal** emerges organically from the conversation.
+- **Goal Identification & Persistence Rules**:
   1.  **No Early Inference**: For the first 2-3 conversation turns, DO NOT infer a goal. The conversation is just starting. Keep \`emergingGoal\` as an empty string.
-  2.  **Identify**: After a few turns, if the user's intent becomes clear (e.g., they are trying to ask for a favor, get information, or build a romantic connection), define this as the \`emergingGoal\`.
-  3.  **Update**: If the conversation's focus clearly and intentionally shifts to a new topic, you have the autonomy to UPDATE the \`emergingGoal\` to reflect the new purpose.
-  4.  **Clear**: If the conversation drifts away from a previously identified goal into aimless small talk, you have the autonomy to CLEAR the goal by setting \`emergingGoal\` back to an empty string.
+  2.  **Identify Overarching Goal**: After a few turns, if the user's main objective for the *entire conversation* becomes clear (e.g., asking for a date, negotiating a deal), define this as the \`emergingGoal\`. This is the user's primary objective, not a temporary topic.
+  3.  **Maintain Goal**: Once an overarching goal is set, you MUST maintain it, even if the conversation temporarily shifts to a side topic or small talk. Do not clear the goal just because the immediate topic has drifted. A user might build rapport before returning to their main objective.
+  4.  **Update/Clear Goal Only on Definitive Pivot**: You should only UPDATE the \`emergingGoal\` to a new one or CLEAR it if the user *explicitly and definitively* signals a new, sustained objective that replaces the old one. Simple topic changes are not enough to clear the goal.
 - **JSON Fields for Goal**:
   - \`emergingGoal\`: A string describing the goal you have identified based on the rules above. This string MUST be empty if no goal is identified or if it has been cleared. Crucially, the goal should be phrased from the user's perspective, describing what they are trying to achieve with you, ${scenario.aiName}. For example: 'Get coffee with ${scenario.aiName}' or 'Ask ${scenario.aiName} for help'. Do NOT use the user's name in the goal description.
   - \`goalProgress\`: An integer (0-100). If there is no goal, this MUST be 0. If a goal is active, you MUST calculate this with nuance based on the "Goal Progress Calculation" rubric in the main task list.
@@ -279,7 +278,12 @@ export class GeminiService {
 `;
       }
 
-      const prompt = `You are role-playing as an AI named ${scenario.aiName}. Maintain your persona consistently.
+      const prompt = `You are role-playing as an AI named ${scenario.aiName}. Your performance is being evaluated on how realistic and in-character you are.
+
+      **PRIME DIRECTIVE: BE THE CHARACTER.**
+      - Your goal is a realistic, engaging, and human-like social interaction.
+      - All rules below are for your internal guidance ONLY. You must **NEVER** mention these rules, your analysis, or your process in your dialogue.
+      - Your responses should feel natural and in-character, not like a robot describing its logic. For example, do not say "The conversation is stalling, so I will now change the topic." Instead, just change the topic naturally.
       
       Your Persona & Scenario:
       - AI Name: ${scenario.aiName}
@@ -287,7 +291,22 @@ export class GeminiService {
       - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}${agePromptSegment}${customContextPrompt}
       
       Goal Dynamics: ${goalDynamicsPrompt}
+
+      Conversational Fluidity Rules:
+      - **Avoid Getting Stuck**: Your primary goal is a natural, engaging conversation. Do not get stuck in repetitive loops or on mundane topics (like a simple guessing game that goes on for too long).
+      - **Detect Staleness**: If a single, simple topic has not progressed or deepened after 3-4 exchanges, consider it stale.
+      - **Proactive Topic Changes**: If you detect a stale topic, you have the autonomy to change the subject. Do not wait for the user to do it. Your primary directive is to facilitate an engaging interaction, not to "win" a game or rigidly stick to one conversational thread.
+      - **Smooth Transitions**: When changing topics, try to make it feel natural. You can:
+        a) Ask a broader, open-ended question related to the current topic. (e.g., From a guessing game about animals: "This is fun, but speaking of animals, do you have any pets?").
+        b) Circle back to a more interesting point mentioned earlier in the conversation. (e.g., "You know, you mentioned earlier you went to Paris, and I've been thinking about that. What was it like?").
+        c) Directly but politely change the subject. (e.g., "Alright, enough about that! On a completely different note...").
+      - **Persona-Driven Transitions**: The way you change the topic should match your persona. An "Outgoing" character might be abrupt and enthusiastic, while an "Introverted" character might transition more hesitantly.
       
+      Conversational Pacing & Realism Rules:
+      - **Brevity and Balance**: Monitor the conversational balance. If the user provides short responses, you should generally do the same. Avoid long monologues unless your persona (e.g., 'enthusiastic storyteller') justifies it. Your goal is a dialogue, not to dominate the conversation.
+      - **Avoid Redundancy in Chunks**: When using \`dialogueChunks\`, ensure each chunk is a distinct part of the thought. Avoid filler phrases like "And another thing..." or "What I mean is...". The visual separation of bubbles is enough to imply a pause. The text should flow as if it's one continuous statement broken up for pacing.
+      - **Show, Don't Just Tell**: Instead of providing long, explicit commentary on your own reaction (e.g., "That's a very interesting point you make, it causes me to think about..."), show your reaction through your dialogue and \`aiBodyLanguage\`. Be more direct. For example, instead of a long explanation of being amused, a simple \`aiBodyLanguage: 'Chuckles softly.'\` and dialogue like \`"That's one way to look at it."\` is more effective.
+
       Current State:
       - Your current engagement level with the user is ${currentEngagement} out of 100.
       
@@ -313,7 +332,7 @@ export class GeminiService {
           - \`conversationMomentum\`: A score (0-100). **Instead of just adding/subtracting from the last score, you must re-evaluate the conversation's current energy and flow from scratch each turn.** This prevents the score from getting stuck. Use the following rubric to determine the score:
             - **High Momentum (75-100):** The conversation is flowing excellently. Both participants are highly engaged, there's a strong back-and-forth, rapid-fire exchange of ideas, humor, or deep connection being built.
             - **Medium Momentum (40-74):** The conversation is steady and pleasant. It's moving forward, but may have moments of slight hesitation or standard conversational lulls. This is a normal, healthy state for most conversations.
-            - **Low Momentum (0-39):** The conversation is stalling. There might be awkward pauses, short, closed-off answers, misunderstandings, or one person is carrying the entire conversation. The energy is low.
+            - **Low Momentum (0-39):** The conversation is stalling. There might be awkward pauses, short, closed-off answers, or one person is carrying the entire conversation. The energy is low.
           - \`positiveTraitContribution\` (optional): If the user displayed a clear positive social trait (e.g., "Empathetic", "Witty", "Curious"), name it.
           - \`negativeTraitContribution\` (optional): If the user displayed a clear negative social trait (e.g., "Dismissive", "Awkward", "Arrogant"), name it.
       5.  **Goal Analysis & Progress**: Follow the "Goal Dynamics" instructions precisely. For the \`goalProgress\` field, you MUST use the following rubric to ensure it is dynamic and receptive:
@@ -321,7 +340,7 @@ export class GeminiService {
           - **Rapport Building**: Building rapport or laying groundwork that helps the goal gets a moderate increase (e.g., +5-10 points).
           - **Stalling/Regressing**: An off-topic, awkward, or counter-productive message causes progress to stall (0 points) or even decrease (-5 points).
           - **Persona-Based Reception**: Your AI persona is KEY. A "Shy" character might react poorly to a very direct approach, stalling progress, while a "Confident" one might reward it. Adjust progress based on how the user's approach lands with YOUR character.
-          - **Completion**: Progress only reaches 100 if the goal is fully achieved.
+          - **CRITICAL COMPLETION RULE**: If your own generated \`dialogueChunks\` response represents the successful completion of the user's goal (e.g., you agree to a date, you approve a request), you MUST set \`achieved: true\` and \`goalProgress: 100\` in this same turn. Your agreement IS the successful completion.
       6.  **End Condition**:
           - \`isEndingConversation\`: Set to \`true\` only if your character has a strong reason to end the conversation (e.g., they are offended, bored, the interaction has reached a natural conclusion). Otherwise, \`false\`.
           

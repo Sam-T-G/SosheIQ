@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { ScenarioDetails, ChatMessage } from "../types";
 import { ProgressBar } from "./ProgressBar";
 import { AIVisualCue } from "./AIVisualCue";
-import { ChatBubbleIcon, TargetIcon } from "./Icons";
+import { ChatBubbleIcon, TargetIcon, CheckCircleIcon } from "./Icons";
 import { RenderChatInterface } from "./RenderChatInterface";
 
 interface InteractionScreenProps {
@@ -19,6 +19,7 @@ interface InteractionScreenProps {
 	initialAiBodyLanguage: string | null;
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
+	showGoalAchievedToast: { show: boolean; text: string };
 }
 
 // Helper function to get the last meaningful AI body language description
@@ -77,6 +78,18 @@ const GoalBanner: React.FC<{
 	</div>
 );
 
+const GoalAchievedToast: React.FC<{ message: string }> = ({ message }) => (
+	<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md p-4 bg-green-600 border-2 border-green-400 rounded-xl shadow-2xl animate-goal-toast">
+		<div className="flex items-center gap-3">
+			<CheckCircleIcon className="h-8 w-8 text-white flex-shrink-0" />
+			<div>
+				<h3 className="font-bold text-lg text-white">Goal Achieved!</h3>
+				<p className="text-sm text-green-100 italic">"{message}"</p>
+			</div>
+		</div>
+	</div>
+);
+
 export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	scenarioDetails,
 	conversationHistory,
@@ -91,6 +104,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	initialAiBodyLanguage,
 	goalJustChanged,
 	onAnimationComplete,
+	showGoalAchievedToast,
 }) => {
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	// Use helper function to get the body language description
@@ -133,6 +147,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 	return (
 		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-transparent shadow-2xl rounded-xl relative overflow-hidden">
+			{/* Goal Achieved Toast */}
+			{showGoalAchievedToast.show && (
+				<GoalAchievedToast message={showGoalAchievedToast.text} />
+			)}
+
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`

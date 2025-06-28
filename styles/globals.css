@@ -1,5 +1,6 @@
 
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -117,16 +118,36 @@ html {
   animation: popInAndSettle 0.4s ease-out forwards;
 }
 
-/* Fading Trait Badge Animation */
+/* NEW Sequential User Feedback Badge Animation */
+@keyframes badgePlopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-badge-plop {
+  opacity: 0;
+  animation: badgePlopIn 1s ease-out forwards;
+}
+
+
+/* Fading Trait Badge Animation (now persistent) */
 @keyframes popInSettleFadeOut {
   0% { opacity: 0; transform: scale(0.5); }
   20% { opacity: 1; transform: scale(1.1); }
   40% { transform: scale(1); }
-  80% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
 }
 .animate-popInSettleFadeOut {
-  animation: popInSettleFadeOut 3s ease-in-out forwards;
+  animation: popInSettleFadeOut 0.4s ease-in-out forwards;
 }
 
 
@@ -233,4 +254,31 @@ html {
 }
 .animate-glow-pulse {
   animation: glow-pulse 2.5s ease-out;
+}
+
+/* Goal Achieved Toast Animation */
+@keyframes goal-toast-in-out {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%) translateX(-50%);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(10px) translateX(-50%);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-50%);
+  }
+}
+.animate-goal-toast {
+  animation: goal-toast-in-out 7s ease-in-out forwards;
 }

@@ -64,6 +64,10 @@ const HomePage: React.FC = () => {
 	const [showHelpOverlay, setShowHelpOverlay] = useState(false);
 	const [showQuickTipsOverlay, setShowQuickTipsOverlay] = useState(false);
 	const [showConfirmEndDialog, setShowConfirmEndDialog] = useState(false);
+	const [showGoalAchievedToast, setShowGoalAchievedToast] = useState<{
+		show: boolean;
+		text: string;
+	}>({ show: false, text: "" });
 
 	useEffect(() => {
 		const initServices = async () => {
@@ -110,6 +114,7 @@ const HomePage: React.FC = () => {
 		setCurrentAIImage(null);
 		setInitialAiBodyLanguage(null);
 		setGoalJustChanged(false);
+		setShowGoalAchievedToast({ show: false, text: "" });
 	};
 
 	const handleNavigate = useCallback((phase: GamePhase) => {
@@ -402,22 +407,38 @@ const HomePage: React.FC = () => {
 					setZeroEngagementStreak(0);
 				}
 
+				// Step 6: Check for end conditions or dynamic goal achievement
+				const isUserDefinedGoal = !!scenarioDetails.conversationGoal;
+				const goalIsAchieved =
+					aiResponse.achieved || aiResponse.goalProgress >= 100;
+				const shouldEndForUserGoal = isUserDefinedGoal && goalIsAchieved;
 				const currentTurnZeroStreak =
 					newEngagementValue <= 0 ? zeroEngagementStreak + 1 : 0;
-				const goalIsActive = displayedGoal || scenarioDetails.conversationGoal;
+				const shouldEndForLowEngagement =
+					newEngagementValue <= 0 &&
+					currentTurnZeroStreak >= MAX_ZERO_ENGAGEMENT_STREAK;
 
 				if (
 					aiResponse.isEndingConversation ||
-					(goalIsActive && aiResponse.achieved) ||
-					(goalIsActive && aiResponse.goalProgress >= 100) ||
-					(newEngagementValue <= 0 &&
-						currentTurnZeroStreak >= MAX_ZERO_ENGAGEMENT_STREAK)
+					shouldEndForUserGoal ||
+					shouldEndForLowEngagement
 				) {
 					handleEndConversation(true);
 					setIsAiResponding(false); // Ensure loading stops if conversation ends here
 				}
-				// Note: `setIsAiResponding(false)` is now called by `handleLastMessageAnimationComplete`
-				// unless the conversation ends here.
+
+				// Check for dynamic goal achievement to show toast
+				const isDynamicGoal = !scenarioDetails.conversationGoal;
+				const dynamicGoalAchieved =
+					isDynamicGoal && displayedGoal && goalIsAchieved;
+				if (dynamicGoalAchieved) {
+					setShowGoalAchievedToast({ show: true, text: displayedGoal.text });
+					setDisplayedGoal(null); // Clear the goal so a new one can emerge
+					setTimeout(
+						() => setShowGoalAchievedToast({ show: false, text: "" }),
+						7000
+					); // Hide toast after 7s
+				}
 			} catch (e: any) {
 				console.error("Error sending message or getting AI response:", e);
 				setError(`Communication error: ${e.message}`);
@@ -589,6 +610,7 @@ const HomePage: React.FC = () => {
 						initialAiBodyLanguage={initialAiBodyLanguage}
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={handleLastMessageAnimationComplete}
+						showGoalAchievedToast={showGoalAchievedToast}
 					/>
 				);
 			case GamePhase.ANALYSIS:

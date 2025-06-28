@@ -129,7 +129,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 						}`}>
 						<p className="p-3 text-center text-green-300 font-semibold text-sm">
 							Max Engagement Reached! You can 'Finish' for your analysis, or
-							keep practicing.
+							click this banner to hide it and keep practicing.
 						</p>
 					</div>
 					<div
@@ -216,23 +216,18 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
 
-	const prevHistoryLengthRef = useRef(conversationHistory.length);
-	const prevIsLoadingAIRef = useRef(isLoadingAI);
 	const isScrollingMutedRef = useRef(false);
 
-	const scrollToBottom = useCallback((options: { force?: boolean } = {}) => {
-		const { force = false } = options;
-		const container = chatContainerRef.current;
-		if (container) {
-			const scrollThreshold = 150; // pixels from bottom to still count as "at the bottom"
-			const isScrolledNearBottom =
-				container.scrollHeight - container.clientHeight <=
-				container.scrollTop + scrollThreshold;
+	const scrollToBottom = useCallback((force = false) => {
+		if (isScrollingMutedRef.current && !force) return;
+		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	}, []);
 
-			if (force || isScrolledNearBottom) {
-				chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-			}
-		}
+	const handleThoughtToggle = useCallback(() => {
+		isScrollingMutedRef.current = true;
+		setTimeout(() => {
+			isScrollingMutedRef.current = false;
+		}, 500); // Mute for 500ms, longer than the animation duration
 	}, []);
 
 	useEffect(() => {
@@ -252,32 +247,29 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		});
 
 		setProcessedMessagesForDisplay(finalMessages);
-	}, [conversationHistory]);
-
-	// Scroll to bottom when history length changes
-	useEffect(() => {
-		if (conversationHistory.length > prevHistoryLengthRef.current) {
-			scrollToBottom({ force: true });
+		// Force scroll when new message is added to history
+		if (conversationHistory.length > processedMessagesForDisplay.length) {
+			scrollToBottom(true);
 		}
-		prevHistoryLengthRef.current = conversationHistory.length;
-	}, [conversationHistory.length, scrollToBottom]);
+	}, [conversationHistory, processedMessagesForDisplay.length, scrollToBottom]);
 
-	// Scroll to bottom when AI finishes speaking
+	// Force scroll when AI thinking state changes.
 	useEffect(() => {
-		if (prevIsLoadingAIRef.current && !isLoadingAI) {
-			scrollToBottom({ force: true });
-		}
-		prevIsLoadingAIRef.current = isLoadingAI;
+		scrollToBottom(true);
 	}, [isLoadingAI, scrollToBottom]);
 
-	// Scroll on other DOM mutations (like image load), but respect the mute flag
+	// Observer for DOM mutations (like image loads, staged text)
 	useEffect(() => {
 		const container = chatContainerRef.current;
 		if (!container) return;
 
-		const observer = new MutationObserver(() => {
-			if (isScrollingMutedRef.current) return;
-			scrollToBottom({ force: false }); // Don't force scroll, only if user is already at the bottom
+		const observer = new MutationObserver((mutations) => {
+			// Don't scroll for attribute changes (like adding an image src to an existing element)
+			// as this was causing jumps. Only scroll for new nodes being added.
+			const shouldScroll = mutations.some((m) => m.addedNodes.length > 0);
+			if (shouldScroll) {
+				scrollToBottom();
+			}
 		});
 
 		observer.observe(container, {
@@ -382,8 +374,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						</div>
 					)}
 				</div>
-				<div className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4">
-					<div ref={chatContainerRef} className="space-y-4">
+				<div
+					ref={chatContainerRef}
+					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4">
+					<div className="space-y-4">
 						{processedMessagesForDisplay.map((msg, index) => (
 							<ChatMessageView
 								key={msg.id}
@@ -407,6 +401,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 										? onAnimationComplete
 										: undefined
 								}
+								onThoughtToggle={handleThoughtToggle}
 								scenarioDetailsAiName={scenarioDetailsAiName}
 							/>
 						))}
@@ -425,8 +420,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		<div className="flex flex-col h-full bg-slate-800 relative">
 			<ChatAreaHeader />
 
-			<div className="flex-grow min-h-0 overflow-y-auto px-4 pt-4 pb-4">
-				<div ref={chatContainerRef} className="space-y-4">
+			<div
+				ref={chatContainerRef}
+				className="flex-grow min-h-0 overflow-y-auto px-4 pt-4 pb-4">
+				<div className="space-y-4">
 					{processedMessagesForDisplay.map((msg, index) => (
 						<ChatMessageView
 							key={msg.id}
@@ -450,6 +447,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 									? onAnimationComplete
 									: undefined
 							}
+							onThoughtToggle={handleThoughtToggle}
 							scenarioDetailsAiName={scenarioDetailsAiName}
 						/>
 					))}

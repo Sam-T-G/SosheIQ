@@ -18,8 +18,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({ percentage }) => {
 	return (
 		<div className="w-full bg-slate-700 rounded-full h-4 shadow-inner overflow-hidden relative">
 			<div
-				className={`h-full rounded-full ${barColorClass} transition-all duration-700 ease-out`}
-				style={{ width: `${cappedPercentage}%` }}
+				className={`h-full rounded-full ${barColorClass}`}
+				style={{
+					width: `${cappedPercentage}%`,
+					transition: "width 0.5s ease-out",
+				}}
 				role="progressbar"
 				aria-valuenow={cappedPercentage}
 				aria-valuemin={0}
