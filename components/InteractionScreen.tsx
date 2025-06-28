@@ -20,6 +20,7 @@ interface InteractionScreenProps {
 	onToggleGlobalAiThoughts: () => void;
 	initialAiBodyLanguage: string | null;
 	goalJustChanged: boolean;
+	onAnimationComplete: () => void;
 }
 
 // Helper function to get the last meaningful AI body language description
@@ -31,7 +32,6 @@ const getLastMeaningfulAiMessageWithBodyLanguage = (
 		if (
 			msg.sender === "ai" &&
 			!msg.isThoughtBubble &&
-			!msg.isThinkingBubble &&
 			msg.bodyLanguageDescription
 		) {
 			return msg.bodyLanguageDescription;
@@ -94,6 +94,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	onToggleGlobalAiThoughts,
 	initialAiBodyLanguage,
 	goalJustChanged,
+	onAnimationComplete,
 }) => {
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	// Use helper function to get the body language description
@@ -184,6 +185,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					onToggleHelpOverlay={onToggleHelpOverlay}
 					onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
 					goalJustChanged={goalJustChanged}
+					onAnimationComplete={onAnimationComplete}
 				/>
 			</div>
 
@@ -216,6 +218,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						onToggleHelpOverlay={onToggleHelpOverlay}
 						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
 						goalJustChanged={goalJustChanged}
+						onAnimationComplete={onAnimationComplete}
 					/>
 				</div>
 			)}

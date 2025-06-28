@@ -1,5 +1,4 @@
 
-
 export enum SocialEnvironment {
   CASUAL = "Casual Encounter",
   DATING = "Dating",
@@ -121,7 +120,6 @@ export interface ChatMessage {
   fallbackImageUrl?: string; // base64 for previous turn's image
   timestamp: Date;
   isThoughtBubble?: boolean;
-  isThinkingBubble?: boolean;
   goalChange?: {
     type: 'established' | 'changed' | 'removed';
     from?: string;

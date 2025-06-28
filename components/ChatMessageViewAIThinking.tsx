@@ -1,13 +1,6 @@
 import React from "react";
-import type { ChatMessage } from "../types";
 
-interface ChatMessageViewAIThinkingProps {
-	message: ChatMessage; // Keep message prop for potential future use or consistency
-}
-
-export const ChatMessageViewAIThinking: React.FC<
-	ChatMessageViewAIThinkingProps
-> = ({ message }) => {
+export const ChatMessageViewAIThinking: React.FC = () => {
 	return (
 		<div className="flex justify-start pr-10 sm:pr-20 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
 			<div

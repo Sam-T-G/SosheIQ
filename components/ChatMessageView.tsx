@@ -9,6 +9,7 @@ interface ChatMessageViewProps {
 	message: ChatMessage;
 	isLastMessage: boolean;
 	isLoadingAI: boolean;
+	onAnimationComplete?: () => void;
 }
 
 const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
@@ -74,6 +75,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 	message,
 	isLastMessage,
 	isLoadingAI,
+	onAnimationComplete,
 }) => {
 	const isUser = message.sender === "user";
 
@@ -114,10 +116,6 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 	}
 
 	// AI Message
-	if (message.isThinkingBubble) {
-		return <ChatMessageViewAIThinking message={message} />;
-	}
-
 	if (message.isThoughtBubble) {
 		return (
 			<div className="flex justify-start pr-10 sm:pr-20">
@@ -135,6 +133,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = ({
 				message={message}
 				isLastMessage={isLastMessage}
 				isLoadingAI={isLoadingAI}
+				onAnimationComplete={onAnimationComplete}
 			/>
 		</div>
 	);

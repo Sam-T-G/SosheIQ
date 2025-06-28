@@ -7,6 +7,7 @@ interface ChatMessageViewAIProps {
 	message: ChatMessage;
 	isLastMessage: boolean;
 	isLoadingAI: boolean;
+	onAnimationComplete?: () => void;
 }
 
 interface VisibleChunk {
@@ -17,6 +18,7 @@ interface VisibleChunk {
 export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	message,
 	isLastMessage,
+	onAnimationComplete,
 }) => {
 	const [visibleChunks, setVisibleChunks] = useState<VisibleChunk[]>([]);
 	const [isComplete, setIsComplete] = useState(false);
@@ -48,7 +50,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		imageRef.current = message.imageUrl ?? displayedImage;
 	}, [message.imageUrl, message.fallbackImageUrl, displayedImage]);
 
-	const onAnimationEnd = () => {
+	const onImageAnimationEnd = () => {
 		if (incomingImage) {
 			setDisplayedImage(incomingImage);
 			setIncomingImage(null);
@@ -72,6 +74,10 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 				);
 			}
 			setIsComplete(true);
+			// If it's the last message but we're not animating, we still need to signal completion.
+			if (isLastMessage && onAnimationComplete) {
+				onAnimationComplete();
+			}
 			return;
 		}
 
@@ -89,6 +95,9 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 				]);
 				if (index === chunks.length - 1) {
 					setIsComplete(true);
+					if (onAnimationComplete) {
+						onAnimationComplete();
+					}
 				}
 			}, delay);
 			timeouts.push(timeoutId);
@@ -103,7 +112,13 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		return () => {
 			timeouts.forEach(clearTimeout);
 		};
-	}, [message.id, message.dialogueChunks, message.text, isLastMessage]);
+	}, [
+		message.id,
+		message.dialogueChunks,
+		message.text,
+		isLastMessage,
+		onAnimationComplete,
+	]);
 
 	const hasDialogue =
 		message.text ||
@@ -137,7 +152,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 							src={`data:image/jpeg;base64,${incomingImage}`}
 							alt="AI's new visual cue"
 							className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in"
-							onAnimationEnd={onAnimationEnd}
+							onAnimationEnd={onImageAnimationEnd}
 						/>
 					)}
 					{!displayedImage && !incomingImage && (

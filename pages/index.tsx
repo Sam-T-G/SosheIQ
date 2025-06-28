@@ -229,6 +229,10 @@ const HomePage: React.FC = () => {
 		[]
 	);
 
+	const handleLastMessageAnimationComplete = useCallback(() => {
+		setIsAiResponding(false);
+	}, []);
+
 	const handleSendMessage = useCallback(
 		async (messageText: string) => {
 			if (
@@ -246,25 +250,15 @@ const HomePage: React.FC = () => {
 				timestamp: new Date(),
 			};
 
-			const thinkingMessage: ChatMessage = {
-				id: uuidv4(),
-				sender: "ai",
-				text: "",
-				timestamp: new Date(userMessage.timestamp.getTime() + 1),
-				isThinkingBubble: true,
-			};
-
-			setConversationHistory((prev) => [...prev, userMessage, thinkingMessage]);
+			setConversationHistory((prev) => [...prev, userMessage]);
 			setIsAiResponding(true);
 			setError(null);
 
 			try {
 				// Step 1: Get AI's text-based response and analysis of user's turn
-				const historyForAI = conversationHistory.filter(
-					(m) => !m.isThinkingBubble
-				);
+				const historyForAI = [...conversationHistory, userMessage];
 				const aiResponse = await geminiService.current.getNextAITurn(
-					[...historyForAI, userMessage],
+					historyForAI,
 					messageText,
 					currentEngagement,
 					scenarioDetails
@@ -291,7 +285,7 @@ const HomePage: React.FC = () => {
 					)
 				);
 
-				// Step 3: Remove thinking bubble and create the full AI turn message object
+				// Step 3: Create the full AI turn message object
 				const dialogueChunks = aiResponse.dialogueChunks || [];
 
 				const goalChangeInfo: ChatMessage["goalChange"] | undefined = (() => {
@@ -321,10 +315,7 @@ const HomePage: React.FC = () => {
 				};
 
 				// Add the text-based message to history immediately
-				setConversationHistory((prev) => [
-					...prev.filter((m) => !m.isThinkingBubble),
-					aiMessageTurn,
-				]);
+				setConversationHistory((prev) => [...prev, aiMessageTurn]);
 
 				// Step 4: Generate new image in the background. Don't await it.
 				(async () => {
@@ -425,8 +416,10 @@ const HomePage: React.FC = () => {
 						currentTurnZeroStreak >= MAX_ZERO_ENGAGEMENT_STREAK)
 				) {
 					handleEndConversation(true);
+					setIsAiResponding(false); // Ensure loading stops if conversation ends here
 				}
-				setIsAiResponding(false);
+				// Note: `setIsAiResponding(false)` is now called by `handleLastMessageAnimationComplete`
+				// unless the conversation ends here.
 			} catch (e: any) {
 				console.error("Error sending message or getting AI response:", e);
 				setError(`Communication error: ${e.message}`);
@@ -437,10 +430,7 @@ const HomePage: React.FC = () => {
 					bodyLanguageDescription: "Looks concerned.",
 					timestamp: new Date(),
 				};
-				setConversationHistory((prev) => [
-					...prev.filter((m) => !m.isThinkingBubble),
-					errorMessageContent,
-				]);
+				setConversationHistory((prev) => [...prev, errorMessageContent]);
 				setIsAiResponding(false);
 			}
 		},
@@ -469,7 +459,7 @@ const HomePage: React.FC = () => {
 			setError(null);
 
 			const historyForAnalysis = conversationHistory.filter(
-				(m) => !m.isThinkingBubble
+				(m) => !m.isThoughtBubble
 			);
 			setConversationHistory(historyForAnalysis);
 
@@ -604,6 +594,7 @@ const HomePage: React.FC = () => {
 						}
 						initialAiBodyLanguage={initialAiBodyLanguage}
 						goalJustChanged={goalJustChanged}
+						onAnimationComplete={handleLastMessageAnimationComplete}
 					/>
 				);
 			case GamePhase.ANALYSIS:

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { ChatMessage } from "../types";
 import { ChatMessageView } from "./ChatMessageView";
 import { ProgressBar } from "./ProgressBar"; // Import ProgressBar
@@ -12,6 +12,7 @@ import {
 	StarIcon,
 	TargetIcon,
 } from "./Icons";
+import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 
 interface RenderChatInterfaceProps {
 	conversationHistory: ChatMessage[];
@@ -29,6 +30,7 @@ interface RenderChatInterfaceProps {
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
 	goalJustChanged: boolean;
+	onAnimationComplete: () => void;
 }
 
 const GoalBanner: React.FC<{
@@ -106,6 +108,27 @@ const InputArea: React.FC<InputAreaProps> = ({
 				</div>
 			)}
 			<div className="flex items-start sm:items-center space-x-2">
+				<button
+					onClick={handleEndOrFinish}
+					disabled={isLoadingAI}
+					className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 min-h-[48px] sm:min-h-0
+						${
+							isMaxEngagement
+								? "bg-green-600 hover:bg-green-700 animate-pulse-glow"
+								: "bg-red-600 hover:bg-red-700"
+						}`}
+					aria-label={
+						isMaxEngagement ? "Finish conversation" : "End conversation"
+					}>
+					{isMaxEngagement ? (
+						<CheckCircleIcon className="h-5 w-5" />
+					) : (
+						<StopCircleIcon className="h-5 w-5" />
+					)}
+					<span className="hidden sm:inline">
+						{isMaxEngagement ? "Finish" : "End"}
+					</span>
+				</button>
 				<textarea
 					value={userInput}
 					onChange={(e) => setUserInput(e.target.value)}
@@ -122,37 +145,14 @@ const InputArea: React.FC<InputAreaProps> = ({
 					style={{ maxHeight: "calc(3 * 1.5rem + 2 * 0.75rem + 2 * 0.125rem)" }}
 					aria-label="Your response input"
 				/>
-				<div className="flex items-center space-x-2">
-					<button
-						onClick={handleSend}
-						disabled={!userInput.trim() || isLoadingAI}
-						className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-grow sm:flex-grow-0 min-h-[48px] sm:min-h-0"
-						aria-label="Send message">
-						<SendIcon className="h-5 w-5" />
-						<span className="hidden sm:inline">Send</span>
-					</button>
-					<button
-						onClick={handleEndOrFinish}
-						disabled={isLoadingAI}
-						className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-grow sm:flex-grow-0 min-h-[48px] sm:min-h-0
-							${
-								isMaxEngagement
-									? "bg-green-600 hover:bg-green-700 animate-pulse-glow"
-									: "bg-red-600 hover:bg-red-700"
-							}`}
-						aria-label={
-							isMaxEngagement ? "Finish conversation" : "End conversation"
-						}>
-						{isMaxEngagement ? (
-							<CheckCircleIcon className="h-5 w-5" />
-						) : (
-							<StopCircleIcon className="h-5 w-5" />
-						)}
-						<span className="hidden sm:inline">
-							{isMaxEngagement ? "Finish" : "End"}
-						</span>
-					</button>
-				</div>
+				<button
+					onClick={handleSend}
+					disabled={!userInput.trim() || isLoadingAI}
+					className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[48px] sm:min-h-0"
+					aria-label="Send message">
+					<SendIcon className="h-5 w-5" />
+					<span className="hidden sm:inline">Send</span>
+				</button>
 			</div>
 		</div>
 	);
@@ -174,15 +174,38 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
 	goalJustChanged,
+	onAnimationComplete,
 }) => {
 	const [userInput, setUserInput] = useState("");
+	const chatContainerRef = useRef<HTMLDivElement>(null);
 	const chatEndRef = useRef<HTMLDivElement>(null);
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
+	const prevHistoryLengthRef = useRef(conversationHistory.length);
+	const prevIsLoadingAIRef = useRef(isLoadingAI);
+
+	const scrollToBottom = useCallback((options: { force?: boolean } = {}) => {
+		const { force = false } = options;
+		const container = chatContainerRef.current;
+		if (container) {
+			const scrollThreshold = 150; // pixels from bottom to still count as "at the bottom"
+			const isScrolledNearBottom =
+				container.scrollHeight - container.clientHeight <=
+				container.scrollTop + scrollThreshold;
+
+			if (force || isScrolledNearBottom) {
+				chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+			}
+		}
+	}, []);
 
 	useEffect(() => {
 		const finalMessages: ChatMessage[] = [];
 		let lastAiImageUrl: string | undefined;
+
+		const forceScroll =
+			conversationHistory.length > prevHistoryLengthRef.current;
+		prevHistoryLengthRef.current = conversationHistory.length;
 
 		conversationHistory.forEach((msg) => {
 			// Add thought bubble first if needed. It won't have an image.
@@ -203,7 +226,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			}
 
 			// Now process the actual message.
-			if (msg.sender === "ai" && !msg.isThinkingBubble) {
+			if (msg.sender === "ai") {
 				// This AI message gets the fallback from the *previous* AI turn.
 				const msgWithFallback = { ...msg, fallbackImageUrl: lastAiImageUrl };
 				finalMessages.push(msgWithFallback);
@@ -218,11 +241,37 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			}
 		});
 		setProcessedMessagesForDisplay(finalMessages);
-	}, [conversationHistory, showGlobalAiThoughts]);
+		scrollToBottom({ force: forceScroll });
+	}, [conversationHistory, showGlobalAiThoughts, scrollToBottom]);
 
 	useEffect(() => {
-		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [processedMessagesForDisplay]);
+		// When isLoadingAI transitions from true to false, it means the AI has finished responding.
+		// We force a scroll to the bottom to make sure the user sees the final message,
+		// even if they had scrolled up.
+		if (prevIsLoadingAIRef.current && !isLoadingAI) {
+			scrollToBottom({ force: true });
+		}
+		// Update the ref to the current value for the next render.
+		prevIsLoadingAIRef.current = isLoadingAI;
+	}, [isLoadingAI, scrollToBottom]);
+
+	useEffect(() => {
+		const container = chatContainerRef.current;
+		if (!container) return;
+
+		const observer = new MutationObserver(() => {
+			// Any change to the children should trigger a scroll, but not forcibly.
+			// This handles dialogue chunks appearing one-by-one.
+			scrollToBottom({ force: false });
+		});
+
+		observer.observe(container, {
+			childList: true, // Watch for additions/removals of children
+			subtree: true, // Watch all descendants
+		});
+
+		return () => observer.disconnect();
+	}, [scrollToBottom]);
 
 	const handleSend = () => {
 		if (userInput.trim()) {
@@ -321,6 +370,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		isOverlay,
 		isUserStart,
 	};
+	const lastMessageIsAi =
+		conversationHistory[conversationHistory.length - 1]?.sender === "ai";
 
 	if (isOverlay) {
 		return (
@@ -335,7 +386,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					)}
 				</div>
 				<div className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4">
-					<div className="space-y-4">
+					<div ref={chatContainerRef} className="space-y-4">
 						{processedMessagesForDisplay.map((msg, index) => (
 							<ChatMessageView
 								key={msg.id}
@@ -353,8 +404,15 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 										conversationHistory[conversationHistory.length - 1]?.id &&
 									!msg.isThoughtBubble
 								}
+								onAnimationComplete={
+									lastMessageIsAi &&
+									index === processedMessagesForDisplay.length - 1
+										? onAnimationComplete
+										: undefined
+								}
 							/>
 						))}
+						{isLoadingAI && <ChatMessageViewAIThinking />}
 						<div ref={chatEndRef} />
 					</div>
 				</div>
@@ -370,7 +428,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			<ChatAreaHeader />
 
 			<div className="flex-grow min-h-0 overflow-y-auto px-4 pt-4 pb-4">
-				<div className="space-y-4">
+				<div ref={chatContainerRef} className="space-y-4">
 					{processedMessagesForDisplay.map((msg, index) => (
 						<ChatMessageView
 							key={msg.id}
@@ -388,8 +446,15 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 									conversationHistory[conversationHistory.length - 1]?.id &&
 								!msg.isThoughtBubble
 							}
+							onAnimationComplete={
+								lastMessageIsAi &&
+								index === processedMessagesForDisplay.length - 1
+									? onAnimationComplete
+									: undefined
+							}
 						/>
 					))}
+					{isLoadingAI && <ChatMessageViewAIThinking />}
 					<div ref={chatEndRef} />
 				</div>
 			</div>

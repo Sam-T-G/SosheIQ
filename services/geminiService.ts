@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS } from '../constants';
@@ -385,6 +386,7 @@ export class GeminiService {
                   if (m.bodyLanguageDescription) entry.bodyLanguage = m.bodyLanguageDescription;
                   if (m.aiThoughts) entry.internalThoughts = m.aiThoughts;
 									if (m.goalChange) entry.goalChange = m.goalChange;
+									if (typeof m.conversationMomentum === 'number') entry.conversationMomentum = m.conversationMomentum;
               } else { // user
                   if (typeof m.userTurnEffectivenessScore === 'number') entry.effectivenessScore = m.userTurnEffectivenessScore;
                   if (typeof m.engagementDelta === 'number') entry.engagementImpact = m.engagementDelta;
@@ -439,7 +441,7 @@ export class GeminiService {
       3.  **AI Perspective**:
           - \`aiEvolvingThoughtsSummary\`: A summary of how the AI's internal thoughts and perception of the user changed over time.
       4.  **Turn-by-Turn Breakdown**:
-          - \`turnByTurnAnalysis\`: An array of objects, one for each user+AI exchange. If an AI message in the history includes a \`goalChange\` object, you MUST copy this object into the corresponding turn in the \`turnByTurnAnalysis\` array.
+          - \`turnByTurnAnalysis\`: An array of objects, one for each user+AI exchange. If an AI message in the history includes a \`goalChange\` object or a \`conversationMomentum\` score, you MUST copy these values into the corresponding turn in the \`turnByTurnAnalysis\` array. Do not recalculate or alter them.
           
       JSON Structure for your response:
       {
