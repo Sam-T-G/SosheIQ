@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
-import type { ScenarioDetails, ChatMessage } from "../types";
+import type { ScenarioDetails, ChatMessage, ActiveAction } from "../types";
 import { ProgressBar } from "./ProgressBar";
 import { AIVisualCue } from "./AIVisualCue";
-import { ChatBubbleIcon, TargetIcon, CheckCircleIcon } from "./Icons";
+import {
+	ChatBubbleIcon,
+	TargetIcon,
+	CheckCircleIcon,
+	FastForwardIcon,
+} from "./Icons";
 import { RenderChatInterface } from "./RenderChatInterface";
 
 interface InteractionScreenProps {
@@ -10,8 +15,12 @@ interface InteractionScreenProps {
 	conversationHistory: ChatMessage[];
 	currentEngagement: number;
 	displayedGoal: { text: string; progress: number } | null;
+	activeAction: ActiveAction | null;
+	isActionPaused: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
+	onFastForwardAction: () => void;
+	onContinueWithoutSpeaking: () => void;
 	aiImageBase64: string | null;
 	isLoadingAI: boolean; // True when AI is fetching new image/text
 	onToggleHelpOverlay: () => void;
@@ -54,29 +63,71 @@ const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
 	return personalityDisplay;
 };
 
-const GoalBanner: React.FC<{
-	goal: { text: string; progress: number };
+const TopBanner: React.FC<{
+	goal: { text: string; progress: number } | null;
+	action: ActiveAction | null;
+	isPaused: boolean;
 	isGlowing?: boolean;
-}> = ({ goal, isGlowing }) => (
-	<div
-		className={`bg-teal-900/80 backdrop-blur-sm border-t-2 border-teal-500/50 p-3 shadow-lg animate-fadeIn rounded-md ${
-			isGlowing ? "animate-glow-pulse" : ""
-		}`}>
-		<div className="flex items-center gap-3 mb-1.5">
-			<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
-			<div className="flex-grow">
-				<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
-					Conversation Goal
-				</p>
-				<p className="text-sm text-teal-100 break-words" title={goal.text}>
-					{goal.text}
-				</p>
+	onFastForward: () => void;
+	isLoading: boolean;
+}> = ({ goal, action, isPaused, isGlowing, onFastForward, isLoading }) => {
+	if (action) {
+		return (
+			<div className="bg-sky-900/80 backdrop-blur-sm border-t-2 border-sky-500/50 p-3 shadow-lg animate-fadeIn rounded-md">
+				<div className="flex items-center gap-3 mb-1.5">
+					<div className="flex-grow">
+						<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
+							Active Action
+						</p>
+						<p
+							className="text-sm text-sky-100 break-words"
+							title={action.description}>
+							{action.description}
+						</p>
+						{isPaused && (
+							<p className="text-red-400 font-bold text-xs animate-pulse mt-1">
+								ACTIVE PAUSE
+							</p>
+						)}
+					</div>
+					<button
+						onClick={onFastForward}
+						disabled={isLoading}
+						className="p-2 rounded-full bg-sky-700/80 hover:bg-sky-600 text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
+						title="Fast Forward to the end of this action">
+						<FastForwardIcon className="h-5 w-5" />
+					</button>
+				</div>
+				<ProgressBar percentage={action.progress} />
 			</div>
-			<span className="text-lg font-bold text-white">{goal.progress}%</span>
-		</div>
-		<ProgressBar percentage={goal.progress} />
-	</div>
-);
+		);
+	}
+
+	if (goal) {
+		return (
+			<div
+				className={`bg-teal-900/80 backdrop-blur-sm border-t-2 border-teal-500/50 p-3 shadow-lg animate-fadeIn rounded-md ${
+					isGlowing ? "animate-glow-pulse" : ""
+				}`}>
+				<div className="flex items-center gap-3 mb-1.5">
+					<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
+					<div className="flex-grow">
+						<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
+							Conversation Goal
+						</p>
+						<p className="text-sm text-teal-100 break-words" title={goal.text}>
+							{goal.text}
+						</p>
+					</div>
+					<span className="text-lg font-bold text-white">{goal.progress}%</span>
+				</div>
+				<ProgressBar percentage={goal.progress} />
+			</div>
+		);
+	}
+
+	return null;
+};
 
 const GoalAchievedToast: React.FC<{ message: string }> = ({ message }) => (
 	<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md p-4 bg-green-600 border-2 border-green-400 rounded-xl shadow-2xl animate-goal-toast">
@@ -95,8 +146,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	conversationHistory,
 	currentEngagement,
 	displayedGoal,
+	activeAction,
+	isActionPaused,
 	onSendMessage,
 	onEndConversation,
+	onFastForwardAction,
+	onContinueWithoutSpeaking,
 	aiImageBase64,
 	isLoadingAI,
 	onToggleHelpOverlay,
@@ -146,7 +201,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
 
 	return (
-		<div className="w-full max-w-5xl h-[85vh] flex flex-col md:flex-row bg-transparent shadow-2xl rounded-xl relative overflow-hidden">
+		<div className="w-full max-w-7xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl relative overflow-hidden">
 			{/* Goal Achieved Toast */}
 			{showGoalAchievedToast.show && (
 				<GoalAchievedToast message={showGoalAchievedToast.text} />
@@ -155,8 +210,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`
-          w-full md:w-2/5 flex flex-col flex-grow p-4 bg-slate-800/80 
+          w-full md:w-1/3 md:flex-shrink-0 flex flex-col p-4 bg-slate-800
           md:h-full md:border-r md:border-slate-700 md:overflow-y-auto
+          flex-grow min-h-0 md:flex-grow-0
         `}>
 				<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
 					<h2 className="text-lg font-semibold text-sky-400">
@@ -167,7 +223,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						title={personalityDisplayText}>
 						{personalityDisplayText}
 					</p>
-					<p className="text-xs text-gray-400">{scenarioDetails.environment}</p>
+					<p className="text-xs text-gray-400">
+						{scenarioDetails.customEnvironment || scenarioDetails.environment}
+					</p>
 				</div>
 
 				{/* Wrapper for AIVisualCue and GoalBanner to allow them to grow and be ordered */}
@@ -177,11 +235,16 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						bodyLanguageDescription={bodyLanguageForDisplay}
 						isLoading={isLoadingAI && !aiImageBase64} // Show placeholder only if loading AND no image yet
 					/>
-					{/* Desktop Goal Banner - Moved under the visual cue */}
+					{/* Desktop Banner Area */}
 					<div className="hidden md:block">
-						{displayedGoal && (
-							<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
-						)}
+						<TopBanner
+							goal={displayedGoal}
+							action={activeAction}
+							isPaused={isActionPaused}
+							isGlowing={goalJustChanged}
+							onFastForward={onFastForwardAction}
+							isLoading={isLoadingAI}
+						/>
 					</div>
 				</div>
 
@@ -196,23 +259,46 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				</div>
 			</div>
 
-			{/* Chat Interface (Right on Desktop, hidden on Mobile Main View) */}
-			<div className="hidden md:flex md:flex-1 md:flex-col md:bg-slate-800 md:overflow-hidden md:h-full">
-				<RenderChatInterface
-					conversationHistory={conversationHistory}
-					currentEngagement={currentEngagement}
-					displayedGoal={displayedGoal}
-					onSendMessage={onSendMessage}
-					onEndConversation={onEndConversation}
-					isLoadingAI={isLoadingAI} // Pass this to disable send button etc.
-					scenarioDetailsAiName={scenarioDetails.aiName}
-					isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
-					isOverlay={false}
-					onToggleHelpOverlay={onToggleHelpOverlay}
-					onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
-					goalJustChanged={goalJustChanged}
-					onAnimationComplete={onAnimationComplete}
-				/>
+			{/* Chat Interface (Right on Desktop) */}
+			<div className="hidden md:flex md:w-2/3 relative">
+				{/* Background Container (handles blur and clipping) */}
+				<div className="absolute inset-0 overflow-hidden rounded-r-xl">
+					{aiImageBase64 && (
+						<img
+							src={`data:image/jpeg;base64,${aiImageBase64}`}
+							alt=""
+							aria-hidden="true"
+							className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110"
+						/>
+					)}
+					<div className="absolute inset-0 w-full h-full bg-slate-800/70" />
+				</div>
+
+				{/* Actual Chat Content on top */}
+				<div className="relative z-10 w-full h-full flex flex-col">
+					<RenderChatInterface
+						conversationHistory={conversationHistory}
+						currentEngagement={currentEngagement}
+						displayedGoal={displayedGoal}
+						activeAction={activeAction}
+						isActionPaused={isActionPaused}
+						onSendMessage={onSendMessage}
+						onEndConversation={onEndConversation}
+						onFastForwardAction={onFastForwardAction}
+						onContinueWithoutSpeaking={onContinueWithoutSpeaking}
+						isLoadingAI={isLoadingAI}
+						scenarioDetailsAiName={scenarioDetails.aiName}
+						isMaxEngagement={
+							currentEngagement >= 100 && !displayedGoal && !activeAction
+						}
+						isOverlay={false}
+						hasBlurredBackground={true}
+						onToggleHelpOverlay={onToggleHelpOverlay}
+						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+						goalJustChanged={goalJustChanged}
+						onAnimationComplete={onAnimationComplete}
+					/>
+				</div>
 			</div>
 
 			{/* Mobile: Open Chat FAB */}
@@ -249,12 +335,19 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							conversationHistory={conversationHistory}
 							currentEngagement={currentEngagement}
 							displayedGoal={displayedGoal}
+							activeAction={activeAction}
+							isActionPaused={isActionPaused}
 							onSendMessage={onSendMessage}
 							onEndConversation={onEndConversation}
+							onFastForwardAction={onFastForwardAction}
+							onContinueWithoutSpeaking={onContinueWithoutSpeaking}
 							isLoadingAI={isLoadingAI}
 							scenarioDetailsAiName={scenarioDetails.aiName}
-							isMaxEngagement={currentEngagement >= 100 && !displayedGoal}
+							isMaxEngagement={
+								currentEngagement >= 100 && !displayedGoal && !activeAction
+							}
 							isOverlay={true}
+							hasBlurredBackground={true}
 							onCloseOverlay={() => setShowChatOverlay(false)}
 							onToggleHelpOverlay={onToggleHelpOverlay}
 							onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}

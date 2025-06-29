@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, DialogueChunk } from "../types";
 import {
 	ChatBubbleIcon,
 	StarIcon,
@@ -18,6 +18,7 @@ interface ChatMessageViewAIProps {
 
 interface VisibleChunk {
 	text: string;
+	type: "dialogue" | "action";
 	key: string;
 }
 
@@ -73,11 +74,14 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		// If not the last message, or if there are no chunks, show everything instantly.
 		if (!isLastMessage || chunks.length === 0) {
 			if (chunks.length === 0 && message.text) {
-				setVisibleChunks([{ text: message.text, key: `${message.id}-0` }]);
+				setVisibleChunks([
+					{ text: message.text, type: "dialogue", key: `${message.id}-0` },
+				]);
 			} else {
 				setVisibleChunks(
 					chunks.map((chunk, index) => ({
 						text: chunk.text,
+						type: chunk.type,
 						key: `${message.id}-${index}`,
 					}))
 				);
@@ -100,7 +104,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			const timeoutId = setTimeout(() => {
 				setVisibleChunks((prev) => [
 					...prev,
-					{ text: chunk.text, key: `${message.id}-${index}` },
+					{ text: chunk.text, type: chunk.type, key: `${message.id}-${index}` },
 				]);
 				if (index === chunks.length - 1) {
 					setIsComplete(true);
@@ -129,11 +133,10 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		onAnimationComplete,
 	]);
 
-	const hasDialogue =
-		message.text ||
-		(message.dialogueChunks && message.dialogueChunks.length > 0);
+	const hasContent =
+		message.dialogueChunks && message.dialogueChunks.length > 0;
 
-	if (!hasDialogue && !message.bodyLanguageDescription && !message.aiThoughts) {
+	if (!hasContent && !message.bodyLanguageDescription && !message.aiThoughts) {
 		return null;
 	}
 
@@ -229,20 +232,34 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			</div>
 
 			{/* Dialogue Bubbles Container (no indent) */}
-			{hasDialogue && (
+			{hasContent && (
 				<div className="space-y-2">
-					{visibleChunks.map((chunk) => (
-						<div
-							key={chunk.key}
-							className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-							<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
-						</div>
-					))}
+					{visibleChunks.map((chunk) => {
+						if (chunk.type === "action") {
+							return (
+								<div
+									key={chunk.key}
+									className="text-center my-1 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+									<p className="text-sm italic text-slate-400 px-3 py-1 bg-slate-700/30 rounded-full inline-block">
+										{chunk.text}
+									</p>
+								</div>
+							);
+						}
+						// Default to dialogue bubble
+						return (
+							<div
+								key={chunk.key}
+								className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+								<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
+							</div>
+						);
+					})}
 				</div>
 			)}
 
 			{/* Timestamp */}
-			{isComplete && hasDialogue && (
+			{isComplete && hasContent && (
 				<div className="text-xs text-gray-400 mt-1 text-right opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
 					{new Date(message.timestamp).toLocaleTimeString([], {
 						hour: "2-digit",

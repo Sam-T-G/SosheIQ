@@ -11,7 +11,14 @@ import { LoadingIndicator } from "../components/LoadingIndicator";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { QuickTipsScreen } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
-import type { ScenarioDetails, ChatMessage, AnalysisReport } from "../types";
+import type {
+	ScenarioDetails,
+	ChatMessage,
+	AnalysisReport,
+	ActiveAction,
+	AiTurnResponse,
+	EstablishedVisuals,
+} from "../types";
 import { GamePhase, SocialEnvironment } from "../types";
 import { GeminiService } from "../services/geminiService";
 import { ImagenService } from "../services/imagenService";
@@ -21,12 +28,17 @@ import {
 	MAX_ZERO_ENGAGEMENT_STREAK,
 	ENGAGEMENT_DECAY_PER_TURN,
 	INITIAL_ENGAGEMENT,
+	SILENT_USER_ACTION_TOKEN,
 } from "../constants";
 
 type DisplayedGoal = {
 	text: string;
 	progress: number;
 } | null;
+
+interface ProcessAiResponseOptions {
+	wasFastForward?: boolean;
+}
 
 const HomePage: React.FC = () => {
 	const [currentPhase, setCurrentPhase] = useState<GamePhase>(GamePhase.HERO);
@@ -40,6 +52,8 @@ const HomePage: React.FC = () => {
 		useState<number>(INITIAL_ENGAGEMENT);
 	const [displayedGoal, setDisplayedGoal] = useState<DisplayedGoal>(null);
 	const [goalJustChanged, setGoalJustChanged] = useState(false);
+	const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
+	const [isActionPaused, setIsActionPaused] = useState(false);
 
 	const [zeroEngagementStreak, setZeroEngagementStreak] = useState<number>(0);
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
@@ -104,6 +118,8 @@ const HomePage: React.FC = () => {
 		setConversationHistory([]);
 		setCurrentEngagement(INITIAL_ENGAGEMENT);
 		setDisplayedGoal(null);
+		setActiveAction(null);
+		setIsActionPaused(false);
 		setZeroEngagementStreak(0);
 		setAnalysisReport(null);
 		setCurrentAIImage(null);
@@ -137,10 +153,9 @@ const HomePage: React.FC = () => {
 				customAiPersonality: details.customAiPersonality || undefined,
 				conversationGoal: details.conversationGoal || undefined,
 			};
-			setScenarioDetails(fullDetails);
 
 			try {
-				// Step 1: Get initial text-based data from AI
+				// Step 1: Get initial text-based data from AI, including the established visuals
 				const {
 					initialDialogueChunks,
 					initialBodyLanguage,
@@ -148,45 +163,33 @@ const HomePage: React.FC = () => {
 					initialEngagementScore,
 					initialConversationMomentum,
 					conversationStarter,
+					establishedVisuals, // Use the new structured object
 				} = await geminiService.current.startConversation(fullDetails);
 
-				// Step 2: Generate the initial image SYNCHRONOUSLY before showing the screen
-				const { fullImagenPrompt, newEstablishedVisualSegment } =
-					await geminiService.current.generateImagePromptForBodyLanguage(
-						initialBodyLanguage,
-						fullDetails.aiGender,
-						fullDetails.aiName,
-						fullDetails.aiAgeBracket,
-						fullDetails.customAiAge,
-						fullDetails.aiEstablishedVisualPromptSegment,
-						fullDetails.aiCulture
-					);
+				// Step 2: Store the details along with the established visuals
+				const updatedDetailsWithVisuals = {
+					...fullDetails,
+					establishedVisuals,
+				};
+				setScenarioDetails(updatedDetailsWithVisuals);
 
-				// Use a functional update to avoid stale state issues, especially important here
-				if (newEstablishedVisualSegment) {
-					setScenarioDetails((prev) =>
-						prev
-							? {
-									...prev,
-									aiEstablishedVisualPromptSegment: newEstablishedVisualSegment,
-							  }
-							: null
-					);
-				}
+				// Step 3: Generate the initial image SYNCHRONOUSLY before showing the screen
+				const { fullImagenPrompt } =
+					await geminiService.current.generateImagePrompt(establishedVisuals);
 
 				const imageBase64 = await imagenService.current.generateImage(
 					fullImagenPrompt
 				);
 				setCurrentAIImage(imageBase64);
 
-				// Step 3: Set all other state based on initial data
+				// Step 4: Set all other state based on initial data
 				setInitialAiBodyLanguage(initialBodyLanguage);
 				setCurrentEngagement(initialEngagementScore);
 				if (fullDetails.conversationGoal) {
 					setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
 				}
 
-				// Step 4: Add AI's initial state as the first message, regardless of who starts.
+				// Step 5: Add AI's initial state as the first message.
 				const initialAiMessage: ChatMessage = {
 					id: uuidv4(),
 					sender: "ai",
@@ -214,7 +217,7 @@ const HomePage: React.FC = () => {
 
 				setConversationHistory([initialAiMessage]);
 
-				// Step 5: Transition to the interaction screen
+				// Step 6: Transition to the interaction screen
 				setCurrentPhase(GamePhase.INTERACTION);
 			} catch (e: any) {
 				console.error("Error starting interaction:", e);
@@ -231,15 +234,255 @@ const HomePage: React.FC = () => {
 		setIsAiResponding(false);
 	}, []);
 
+	const processAiResponse = useCallback(
+		(
+			aiResponse: AiTurnResponse,
+			userMessageId?: string,
+			options?: ProcessAiResponseOptions
+		) => {
+			let currentScenario = { ...scenarioDetails! };
+
+			// Step 1: Update visual and persona state first
+			if (aiResponse.updatedEstablishedVisuals) {
+				currentScenario.establishedVisuals =
+					aiResponse.updatedEstablishedVisuals;
+			}
+			if (aiResponse.newEnvironment) {
+				const newEnvString = aiResponse.newEnvironment;
+				// Check if the returned string is a value in the SocialEnvironment enum
+				const isKnownEnvironment = Object.values(SocialEnvironment).includes(
+					newEnvString as SocialEnvironment
+				);
+
+				if (isKnownEnvironment) {
+					currentScenario.environment = newEnvString as SocialEnvironment;
+					// If it's a standard one, we can clear the custom description if it exists
+					if (newEnvString !== SocialEnvironment.CUSTOM) {
+						currentScenario.customEnvironment = undefined;
+					}
+				} else {
+					// It's a new, descriptive environment. Set to CUSTOM.
+					currentScenario.environment = SocialEnvironment.CUSTOM;
+					currentScenario.customEnvironment = newEnvString;
+				}
+
+				if (currentScenario.establishedVisuals) {
+					currentScenario.establishedVisuals.environmentDescription =
+						newEnvString;
+				}
+			}
+			if (aiResponse.updatedPersonaDetails) {
+				currentScenario.customContext = [
+					currentScenario.customContext,
+					aiResponse.updatedPersonaDetails,
+				]
+					.filter(Boolean)
+					.join("\n\n");
+			}
+			setScenarioDetails(currentScenario); // Commit state changes
+
+			// Step 2: Create the AI message object for the chat log
+			const dialogueChunks = aiResponse.dialogueChunks || [];
+
+			const goalChangeInfo: ChatMessage["goalChange"] | undefined = (() => {
+				const prevGoalText = displayedGoal?.text || null;
+				const newGoalText = aiResponse.emergingGoal?.trim() || null;
+				if (!currentScenario.conversationGoal) {
+					if (newGoalText && !prevGoalText)
+						return { type: "established", to: newGoalText };
+					if (prevGoalText && !newGoalText)
+						return { type: "removed", from: prevGoalText };
+					if (prevGoalText && newGoalText && prevGoalText !== newGoalText)
+						return { type: "changed", from: prevGoalText, to: newGoalText };
+				}
+				return undefined;
+			})();
+
+			const aiMessageTurn: ChatMessage = {
+				id: uuidv4(),
+				sender: "ai",
+				text: dialogueChunks
+					.filter((c) => c.type === "dialogue")
+					.map((c) => c.text)
+					.join("\n"),
+				dialogueChunks: dialogueChunks,
+				timestamp: new Date(),
+				bodyLanguageDescription: aiResponse.aiBodyLanguage,
+				aiThoughts: aiResponse.aiThoughts,
+				conversationMomentum: aiResponse.conversationMomentum,
+				goalChange: goalChangeInfo,
+			};
+
+			setConversationHistory((prev) => [...prev, aiMessageTurn]);
+
+			// Step 3: Update the user's message with AI feedback
+			if (userMessageId) {
+				const {
+					engagementDelta = 0,
+					userTurnEffectivenessScore,
+					positiveTraitContribution,
+					negativeTraitContribution,
+				} = aiResponse;
+				setConversationHistory((prev) =>
+					prev.map((m) =>
+						m.id === userMessageId
+							? {
+									...m,
+									engagementDelta,
+									userTurnEffectivenessScore,
+									positiveTraitContribution,
+									negativeTraitContribution,
+							  }
+							: m
+					)
+				);
+
+				const newEngagementValue = Math.max(
+					0,
+					Math.min(
+						100,
+						currentEngagement + engagementDelta - ENGAGEMENT_DECAY_PER_TURN
+					)
+				);
+				setCurrentEngagement(newEngagementValue);
+				setZeroEngagementStreak(
+					newEngagementValue <= 0 ? (prev) => prev + 1 : 0
+				);
+			}
+
+			// Step 4: Generate new image using the (potentially updated) visual state.
+			(async () => {
+				if (
+					currentScenario.establishedVisuals &&
+					geminiService.current &&
+					imagenService.current
+				) {
+					// The AI's response already contains the new pose/action in the visuals object
+					const finalVisualsForImage = {
+						...currentScenario.establishedVisuals,
+					};
+					finalVisualsForImage.currentPoseAndAction = aiResponse.aiBodyLanguage; // The body language description is the new pose
+					try {
+						const { fullImagenPrompt } =
+							await geminiService.current.generateImagePrompt(
+								finalVisualsForImage
+							);
+						const imageBase64 = await imagenService.current.generateImage(
+							fullImagenPrompt
+						);
+						setCurrentAIImage(imageBase64);
+						setConversationHistory((prev) =>
+							prev.map((m) =>
+								m.id === aiMessageTurn.id
+									? {
+											...m,
+											imageUrl: imageBase64,
+											imagePrompt: fullImagenPrompt,
+									  }
+									: m
+							)
+						);
+					} catch (imgError) {
+						console.error("Background image generation failed:", imgError);
+					}
+				}
+			})();
+
+			// Step 5: Update goal and active action UI state
+			let nextActiveAction: ActiveAction | null = activeAction;
+			let nextIsActionPaused: boolean = isActionPaused;
+			let nextDisplayedGoal: DisplayedGoal = displayedGoal;
+
+			// Case 1: An action is actively being returned by the AI.
+			if (aiResponse.activeAction) {
+				nextActiveAction = aiResponse.activeAction;
+				nextIsActionPaused = false;
+				nextDisplayedGoal = null; // Active action always takes priority over the goal banner.
+			}
+			// Case 2: No action is in the response, so we check if one was active before.
+			else if (activeAction) {
+				// An action was intentionally fast-forwarded OR its progress hit 100 in this turn. It's now complete.
+				if (options?.wasFastForward || activeAction.progress >= 100) {
+					nextActiveAction = null;
+					nextIsActionPaused = false;
+				}
+				// The action was active but didn't update and isn't finished. It's now paused.
+				else {
+					nextActiveAction = activeAction; // Keep the existing action data
+					nextIsActionPaused = true;
+					nextDisplayedGoal = null; // Paused action banner still has priority.
+				}
+			}
+
+			// After determining the action state, if no action is active, we can show the goal banner.
+			if (!nextActiveAction) {
+				if (goalChangeInfo) {
+					setGoalJustChanged(true);
+				}
+				if (currentScenario.conversationGoal) {
+					nextDisplayedGoal = {
+						text: currentScenario.conversationGoal,
+						progress: aiResponse.goalProgress,
+					};
+				} else if (aiResponse.emergingGoal?.trim()) {
+					nextDisplayedGoal = {
+						text: aiResponse.emergingGoal,
+						progress: aiResponse.goalProgress,
+					};
+				} else {
+					nextDisplayedGoal = null;
+				}
+			}
+
+			// Atomically set all related states at once
+			setActiveAction(nextActiveAction);
+			setIsActionPaused(nextIsActionPaused);
+			setDisplayedGoal(nextDisplayedGoal);
+
+			// Step 6: Check for end conditions or dynamic goal achievement
+			const isUserDefinedGoal = !!currentScenario.conversationGoal;
+			const goalIsAchieved =
+				aiResponse.achieved || aiResponse.goalProgress >= 100;
+			const shouldEndForUserGoal = isUserDefinedGoal && goalIsAchieved;
+			const currentTurnZeroStreak =
+				currentEngagement <= 0 ? zeroEngagementStreak + 1 : 0;
+			const shouldEndForLowEngagement =
+				currentEngagement <= 0 &&
+				currentTurnZeroStreak >= MAX_ZERO_ENGAGEMENT_STREAK;
+
+			if (
+				aiResponse.isEndingConversation ||
+				shouldEndForUserGoal ||
+				shouldEndForLowEngagement
+			) {
+				handleEndConversation(true);
+				setIsAiResponding(false);
+				return; // Prevent further state updates for this turn
+			}
+
+			const isDynamicGoal = !currentScenario.conversationGoal;
+			if (isDynamicGoal && displayedGoal && goalIsAchieved) {
+				setShowGoalAchievedToast({ show: true, text: displayedGoal.text });
+				setDisplayedGoal(null); // Clear achieved dynamic goal
+				setTimeout(
+					() => setShowGoalAchievedToast({ show: false, text: "" }),
+					7000
+				);
+			}
+		},
+		[
+			scenarioDetails,
+			currentEngagement,
+			displayedGoal,
+			zeroEngagementStreak,
+			activeAction,
+			isActionPaused,
+		]
+	);
+
 	const handleSendMessage = useCallback(
 		async (messageText: string) => {
-			if (
-				!geminiService.current ||
-				!imagenService.current ||
-				!scenarioDetails ||
-				isAiResponding
-			)
-				return;
+			if (!geminiService.current || !scenarioDetails || isAiResponding) return;
 
 			const userMessage: ChatMessage = {
 				id: uuidv4(),
@@ -253,7 +496,6 @@ const HomePage: React.FC = () => {
 			setError(null);
 
 			try {
-				// Step 1: Get AI's text-based response and analysis of user's turn
 				const historyForAI = [...conversationHistory, userMessage];
 				const aiResponse = await geminiService.current.getNextAITurn(
 					historyForAI,
@@ -261,245 +503,74 @@ const HomePage: React.FC = () => {
 					currentEngagement,
 					scenarioDetails
 				);
-
-				// Step 2: Update the user's message with the AI's feedback
-				const {
-					engagementDelta = 0,
-					userTurnEffectivenessScore,
-					positiveTraitContribution,
-					negativeTraitContribution,
-				} = aiResponse;
-				setConversationHistory((prev) =>
-					prev.map((m) =>
-						m.id === userMessage.id
-							? {
-									...m,
-									engagementDelta,
-									userTurnEffectivenessScore,
-									positiveTraitContribution,
-									negativeTraitContribution,
-							  }
-							: m
-					)
-				);
-
-				// Step 3: Handle dynamic persona/world updates and create messages
-				const newMessages: ChatMessage[] = [];
-
-				if (aiResponse.updatedPersonaDetails) {
-					setScenarioDetails((prev) =>
-						prev
-							? {
-									...prev,
-									customContext: [
-										prev.customContext,
-										aiResponse.updatedPersonaDetails,
-									]
-										.filter(Boolean)
-										.join("\n\n"),
-							  }
-							: null
-					);
-				}
-
-				if (aiResponse.roleplayAction) {
-					newMessages.push({
-						id: uuidv4(),
-						sender: "system",
-						text: aiResponse.roleplayAction.description,
-						timestamp: new Date(),
-					});
-
-					if (aiResponse.roleplayAction.newEnvironment) {
-						setScenarioDetails((prev) =>
-							prev
-								? {
-										...prev,
-										environment: SocialEnvironment.CUSTOM,
-										customEnvironment:
-											aiResponse.roleplayAction!.newEnvironment,
-								  }
-								: null
-						);
-					}
-				}
-
-				// Step 4: Create the main AI dialogue message object
-				const dialogueChunks = aiResponse.dialogueChunks || [];
-
-				const goalChangeInfo: ChatMessage["goalChange"] | undefined = (() => {
-					const prevGoalText = displayedGoal?.text || null;
-					const newGoalText = aiResponse.emergingGoal?.trim() || null;
-					if (!scenarioDetails.conversationGoal) {
-						if (newGoalText && !prevGoalText)
-							return { type: "established", to: newGoalText };
-						if (prevGoalText && !newGoalText)
-							return { type: "removed", from: prevGoalText };
-						if (prevGoalText && newGoalText && prevGoalText !== newGoalText)
-							return { type: "changed", from: prevGoalText, to: newGoalText };
-					}
-					return undefined;
-				})();
-
-				const aiMessageTurn: ChatMessage = {
-					id: uuidv4(),
-					sender: "ai",
-					text: dialogueChunks.map((c) => c.text).join("\n"),
-					dialogueChunks: dialogueChunks,
-					timestamp: new Date(),
-					bodyLanguageDescription: aiResponse.aiBodyLanguage,
-					aiThoughts: aiResponse.aiThoughts,
-					conversationMomentum: aiResponse.conversationMomentum,
-					goalChange: goalChangeInfo,
-				};
-
-				newMessages.push(aiMessageTurn);
-
-				// Add all new messages to history at once
-				setConversationHistory((prev) => [...prev, ...newMessages]);
-
-				// Step 5: Generate new image in the background. Don't await it.
-				(async () => {
-					if (
-						aiResponse.aiBodyLanguage &&
-						scenarioDetails &&
-						geminiService.current &&
-						imagenService.current
-					) {
-						try {
-							const { fullImagenPrompt, newEstablishedVisualSegment } =
-								await geminiService.current.generateImagePromptForBodyLanguage(
-									aiResponse.aiBodyLanguage,
-									scenarioDetails.aiGender,
-									scenarioDetails.aiName,
-									scenarioDetails.aiAgeBracket,
-									scenarioDetails.customAiAge,
-									scenarioDetails.aiEstablishedVisualPromptSegment,
-									scenarioDetails.aiCulture
-								);
-							if (newEstablishedVisualSegment) {
-								setScenarioDetails((prev) =>
-									prev
-										? {
-												...prev,
-												aiEstablishedVisualPromptSegment:
-													newEstablishedVisualSegment,
-										  }
-										: null
-								);
-							}
-							const imageBase64 = await imagenService.current.generateImage(
-								fullImagenPrompt
-							);
-							setCurrentAIImage(imageBase64);
-
-							// Update the message with the image once loaded
-							setConversationHistory((prev) =>
-								prev.map((m) =>
-									m.id === aiMessageTurn.id
-										? {
-												...m,
-												imageUrl: imageBase64,
-												imagePrompt: fullImagenPrompt,
-										  }
-										: m
-								)
-							);
-						} catch (imgError) {
-							console.error("Background image generation failed:", imgError);
-						}
-					}
-				})();
-
-				// Step 6: Update state based on AI's text response
-				const newEngagementValue = Math.max(
-					0,
-					Math.min(
-						100,
-						currentEngagement + engagementDelta - ENGAGEMENT_DECAY_PER_TURN
-					)
-				);
-				setCurrentEngagement(newEngagementValue);
-
-				if (goalChangeInfo) {
-					setGoalJustChanged(true);
-				}
-
-				if (scenarioDetails.conversationGoal) {
-					setDisplayedGoal({
-						text: scenarioDetails.conversationGoal,
-						progress: aiResponse.goalProgress,
-					});
-				} else {
-					aiResponse.emergingGoal?.trim()
-						? setDisplayedGoal({
-								text: aiResponse.emergingGoal,
-								progress: aiResponse.goalProgress,
-						  })
-						: setDisplayedGoal(null);
-				}
-
-				if (newEngagementValue <= 0) {
-					setZeroEngagementStreak((prev) => prev + 1);
-				} else {
-					setZeroEngagementStreak(0);
-				}
-
-				// Step 7: Check for end conditions or dynamic goal achievement
-				const isUserDefinedGoal = !!scenarioDetails.conversationGoal;
-				const goalIsAchieved =
-					aiResponse.achieved || aiResponse.goalProgress >= 100;
-				const shouldEndForUserGoal = isUserDefinedGoal && goalIsAchieved;
-				const currentTurnZeroStreak =
-					newEngagementValue <= 0 ? zeroEngagementStreak + 1 : 0;
-				const shouldEndForLowEngagement =
-					newEngagementValue <= 0 &&
-					currentTurnZeroStreak >= MAX_ZERO_ENGAGEMENT_STREAK;
-
-				if (
-					aiResponse.isEndingConversation ||
-					shouldEndForUserGoal ||
-					shouldEndForLowEngagement
-				) {
-					handleEndConversation(true);
-					setIsAiResponding(false); // Ensure loading stops if conversation ends here
-				}
-
-				// Check for dynamic goal achievement to show toast
-				const isDynamicGoal = !scenarioDetails.conversationGoal;
-				const dynamicGoalAchieved =
-					isDynamicGoal && displayedGoal && goalIsAchieved;
-				if (dynamicGoalAchieved) {
-					setShowGoalAchievedToast({ show: true, text: displayedGoal.text });
-					setDisplayedGoal(null); // Clear the goal so a new one can emerge
-					setTimeout(
-						() => setShowGoalAchievedToast({ show: false, text: "" }),
-						7000
-					); // Hide toast after 7s
-				}
+				processAiResponse(aiResponse, userMessage.id);
 			} catch (e: any) {
 				console.error("Error sending message or getting AI response:", e);
-				setError(`Communication error: ${e.message}`);
-				const errorMessageContent: ChatMessage = {
+				const systemErrorMessage: ChatMessage = {
 					id: uuidv4(),
-					sender: "ai",
-					text: "I'm having trouble responding right now. Please try again in a moment or end the conversation.",
-					bodyLanguageDescription: "Looks concerned.",
+					sender: "system",
+					text: "I'm sorry, I had a problem generating a response. Please try sending your message again.",
 					timestamp: new Date(),
 				};
-				setConversationHistory((prev) => [...prev, errorMessageContent]);
+				setConversationHistory((prev) => [...prev, systemErrorMessage]);
 				setIsAiResponding(false);
 			}
 		},
 		[
-			scenarioDetails,
+			processAiResponse,
 			conversationHistory,
 			currentEngagement,
-			displayedGoal,
-			zeroEngagementStreak,
+			scenarioDetails,
 			isAiResponding,
 		]
 	);
+
+	const handleContinueWithoutSpeaking = useCallback(() => {
+		if (isAiResponding) return;
+		handleSendMessage(SILENT_USER_ACTION_TOKEN);
+	}, [handleSendMessage, isAiResponding]);
+
+	const handleFastForwardAction = useCallback(async () => {
+		if (
+			!geminiService.current ||
+			!scenarioDetails ||
+			isAiResponding ||
+			!activeAction
+		)
+			return;
+
+		setIsAiResponding(true);
+		setError(null);
+		try {
+			const aiResponse = await geminiService.current.getNextAITurn(
+				conversationHistory,
+				"[User fast-forwarded the action]", // Internal note for AI context
+				currentEngagement,
+				scenarioDetails,
+				true // Fast Forward Flag
+			);
+			processAiResponse(aiResponse, undefined, { wasFastForward: true });
+		} catch (e: any) {
+			console.error("Error during fast forward:", e);
+			const systemErrorMessage: ChatMessage = {
+				id: uuidv4(),
+				sender: "system",
+				text: "Sorry, there was an error trying to fast-forward. Please continue normally.",
+				timestamp: new Date(),
+			};
+			setConversationHistory((prev) => [...prev, systemErrorMessage]);
+		} finally {
+			// This will be handled by the onAnimationComplete callback now
+			// setIsAiResponding(false);
+		}
+	}, [
+		processAiResponse,
+		conversationHistory,
+		currentEngagement,
+		scenarioDetails,
+		activeAction,
+		isAiResponding,
+	]);
 
 	const handleEndConversation = useCallback(
 		async (aiInitiated = false) => {
@@ -639,8 +710,12 @@ const HomePage: React.FC = () => {
 						conversationHistory={conversationHistory}
 						currentEngagement={currentEngagement}
 						displayedGoal={displayedGoal}
+						activeAction={activeAction}
+						isActionPaused={isActionPaused}
 						onSendMessage={handleSendMessage}
 						onEndConversation={handleAttemptEndConversation}
+						onFastForwardAction={handleFastForwardAction}
+						onContinueWithoutSpeaking={handleContinueWithoutSpeaking}
 						aiImageBase64={currentAIImage}
 						isLoadingAI={isAiResponding}
 						onToggleHelpOverlay={handleToggleHelpOverlay}

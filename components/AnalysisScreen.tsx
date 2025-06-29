@@ -584,8 +584,8 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					<div
 						ref={turnByTurnAnalysisContainerRef}
 						className="max-h-96 overflow-y-auto pr-2 space-y-3 bg-slate-800 p-3 rounded-md border border-slate-700">
-						{report.turnByTurnAnalysis
-							.filter((item) => item.userInput || item.aiResponse) // Defensively filter out empty turns
+						{(report.turnByTurnAnalysis || [])
+							.filter((item) => item && (item.userInput || item.aiResponse)) // Defensively filter out empty/malformed turns
 							.map((item, index) => (
 								<TurnAnalysisItemDisplay
 									key={index}

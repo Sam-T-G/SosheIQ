@@ -84,6 +84,14 @@ export enum AIAgeBracket {
   CUSTOM = "Custom Age",
 }
 
+// New interface for structured visual memory
+export interface EstablishedVisuals {
+  characterDescription: string; // "a woman in her late 20s with long, curly brown hair and green eyes"
+  clothingDescription: string; // "wearing a simple black t-shirt and blue jeans"
+  environmentDescription: string; // "sitting at a small wooden table in a dimly lit, cozy coffee shop"
+  currentPoseAndAction: string; // "leaning forward slightly, holding a coffee mug, with a curious expression"
+}
+
 export interface ScenarioDetails {
   environment: SocialEnvironment;
   customEnvironment?: string;
@@ -96,13 +104,39 @@ export interface ScenarioDetails {
   customAiAge?: number;
   customContext?: string;
   conversationGoal?: string;
-  aiEstablishedVisualPromptSegment?: string;
+  establishedVisuals?: EstablishedVisuals | null; // Replaces aiEstablishedVisualPromptSegment
 }
 
 export interface DialogueChunk {
   text: string;
+  type: 'dialogue' | 'action';
   delayAfter?: boolean;
 }
+
+export interface ActiveAction {
+  description: string;
+  progress: number; // 0-100
+}
+
+export interface AiTurnResponse {
+    dialogueChunks: DialogueChunk[];
+    aiBodyLanguage: string;
+    aiThoughts: string;
+    engagementDelta: number;
+    userTurnEffectivenessScore: number;
+    conversationMomentum: number;
+    positiveTraitContribution?: string;
+    negativeTraitContribution?: string;
+    isEndingConversation: boolean;
+    emergingGoal?: string;
+    goalProgress: number;
+    achieved: boolean;
+    updatedPersonaDetails?: string;
+    activeAction?: ActiveAction;
+    updatedEstablishedVisuals?: EstablishedVisuals; // New top-level field for visual state updates
+    newEnvironment?: string; // New top-level field for environment changes
+}
+
 
 export interface ChatMessage {
   id: string;

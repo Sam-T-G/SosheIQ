@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, ActiveAction } from "../types";
 import { ChatMessageView } from "./ChatMessageView";
 import { ProgressBar } from "./ProgressBar"; // Import ProgressBar
 import {
@@ -13,6 +13,8 @@ import {
 	TargetIcon,
 	ChevronDownIcon,
 	ChevronUpIcon,
+	FastForwardIcon,
+	PlayIcon,
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 
@@ -20,12 +22,17 @@ interface RenderChatInterfaceProps {
 	conversationHistory: ChatMessage[];
 	currentEngagement: number;
 	displayedGoal: { text: string; progress: number } | null;
+	activeAction: ActiveAction | null;
+	isActionPaused: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
+	onFastForwardAction: () => void;
+	onContinueWithoutSpeaking: () => void;
 	isLoadingAI: boolean;
 	scenarioDetailsAiName: string;
 	isMaxEngagement: boolean;
 	isOverlay: boolean;
+	hasBlurredBackground?: boolean; // New prop
 	onCloseOverlay?: () => void;
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
@@ -57,15 +64,88 @@ const GoalBanner: React.FC<{
 	</div>
 );
 
+const ActiveActionBanner: React.FC<{
+	action: ActiveAction;
+	onFastForward: () => void;
+	isLoading: boolean;
+	isPaused: boolean;
+}> = ({ action, onFastForward, isLoading, isPaused }) => (
+	<div className="bg-sky-900/60 p-3 shadow-lg border-b border-sky-800/50 rounded-b-md">
+		<div className="flex items-center gap-3 mb-1.5">
+			<div className="flex-grow">
+				<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
+					Active Action
+				</p>
+				<p
+					className="text-sm text-sky-100 break-words"
+					title={action.description}>
+					{action.description}
+				</p>
+				{isPaused && (
+					<p className="text-red-400 font-bold text-xs animate-pulse mt-1">
+						ACTIVE PAUSE
+					</p>
+				)}
+			</div>
+			<button
+				onClick={onFastForward}
+				disabled={isLoading}
+				className="p-2 rounded-full bg-sky-700/80 hover:bg-sky-600 text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
+				title="Fast Forward to the end of this action">
+				<FastForwardIcon className="h-5 w-5" />
+			</button>
+		</div>
+		<ProgressBar percentage={action.progress} />
+	</div>
+);
+
+const TopBanner: React.FC<{
+	activeAction: ActiveAction | null;
+	isActionPaused: boolean;
+	displayedGoal: { text: string; progress: number } | null;
+	onFastForwardAction: () => void;
+	isLoadingAI: boolean;
+	goalJustChanged: boolean;
+}> = ({
+	activeAction,
+	isActionPaused,
+	displayedGoal,
+	onFastForwardAction,
+	isLoadingAI,
+	goalJustChanged,
+}) => {
+	if (activeAction) {
+		return (
+			<div className="animate-slideDown">
+				<ActiveActionBanner
+					action={activeAction}
+					onFastForward={onFastForwardAction}
+					isLoading={isLoadingAI}
+					isPaused={isActionPaused}
+				/>
+			</div>
+		);
+	}
+	if (displayedGoal) {
+		return (
+			<div className="animate-slideDown">
+				<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
+			</div>
+		);
+	}
+	return null;
+};
+
 // Define InputArea as a standalone component to prevent re-renders from losing focus
 interface InputAreaProps {
 	userInput: string;
 	setUserInput: (value: string) => void;
 	handleSend: () => void;
 	handleEndOrFinish: () => void;
+	handleContinue: () => void;
 	isLoadingAI: boolean;
 	isMaxEngagement: boolean;
-	isOverlay: boolean;
+	hasBlurredBackground: boolean;
 	isUserStart: boolean;
 }
 
@@ -74,9 +154,10 @@ const InputArea: React.FC<InputAreaProps> = ({
 	setUserInput,
 	handleSend,
 	handleEndOrFinish,
+	handleContinue,
 	isLoadingAI,
 	isMaxEngagement,
-	isOverlay,
+	hasBlurredBackground,
 	isUserStart,
 }) => {
 	const [isMaxEngagementBannerOpen, setIsMaxEngagementBannerOpen] =
@@ -89,13 +170,13 @@ const InputArea: React.FC<InputAreaProps> = ({
 		}
 	};
 
-	const wrapperClasses = isOverlay
+	const wrapperClasses = hasBlurredBackground
 		? "flex-shrink-0 p-3 border-t border-slate-700/40 bg-slate-900/50 backdrop-blur-sm shadow-lg z-10"
-		: "flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700"; // Desktop specific styling - changed bg
+		: "flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700";
 
-	const textareaClasses = isOverlay
+	const textareaClasses = hasBlurredBackground
 		? `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-800/50 placeholder-gray-300`
-		: `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`; // Desktop specific styling - changed bg
+		: `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`;
 
 	const placeholderText = isUserStart
 		? "The scene is set. What's your opening line?"
@@ -182,6 +263,14 @@ const InputArea: React.FC<InputAreaProps> = ({
 					aria-label="Your response input"
 				/>
 				<button
+					onClick={handleContinue}
+					disabled={isLoadingAI}
+					className="p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[48px] sm:min-h-0"
+					aria-label="Continue without speaking"
+					title="Continue without speaking (pass your turn)">
+					<PlayIcon className="h-5 w-5" />
+				</button>
+				<button
 					onClick={handleSend}
 					disabled={!userInput.trim() || isLoadingAI}
 					className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[48px] sm:min-h-0"
@@ -198,12 +287,17 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	conversationHistory,
 	currentEngagement,
 	displayedGoal,
+	activeAction,
+	isActionPaused,
 	onSendMessage,
 	onEndConversation,
+	onFastForwardAction,
+	onContinueWithoutSpeaking,
 	isLoadingAI,
 	scenarioDetailsAiName,
 	isMaxEngagement,
 	isOverlay,
+	hasBlurredBackground = false,
 	onCloseOverlay,
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
@@ -296,10 +390,15 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		}
 	};
 
+	const headerBgClass =
+		isOverlay || hasBlurredBackground
+			? "bg-slate-900/60 backdrop-blur-sm"
+			: "bg-slate-700/50";
+
 	const ChatAreaHeader = () => (
 		<div
 			className={`flex-shrink-0 flex justify-between items-center p-3 z-10
-				${isOverlay ? "bg-slate-900/60 backdrop-blur-sm" : "bg-slate-700/50"} 
+				${headerBgClass} 
 				border-b border-slate-700/50 shadow-md
 			`}>
 			<h3 className="text-lg font-semibold text-sky-400">
@@ -354,75 +453,39 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		setUserInput,
 		handleSend,
 		handleEndOrFinish,
+		handleContinue: onContinueWithoutSpeaking,
 		isLoadingAI,
 		isMaxEngagement,
-		isOverlay,
+		hasBlurredBackground,
 		isUserStart,
 	};
 	const lastMessageIsAi =
 		conversationHistory[conversationHistory.length - 1]?.sender === "ai";
 
-	if (isOverlay) {
-		return (
-			<div className="flex flex-col h-full w-full relative">
-				<div className="relative flex-shrink-0 z-20">
-					<ChatAreaHeader />
-					<EngagementBar />
-					{displayedGoal && (
-						<div className="animate-slideDown">
-							<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
-						</div>
-					)}
-				</div>
-				<div
-					ref={chatContainerRef}
-					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4">
-					<div className="space-y-4">
-						{processedMessagesForDisplay.map((msg, index) => (
-							<ChatMessageView
-								key={msg.id}
-								message={msg}
-								isLastMessage={
-									index === processedMessagesForDisplay.length - 1 &&
-									msg.id ===
-										conversationHistory[conversationHistory.length - 1]?.id &&
-									!msg.isThoughtBubble
-								}
-								isLoadingAI={
-									isLoadingAI &&
-									index === processedMessagesForDisplay.length - 1 &&
-									msg.id ===
-										conversationHistory[conversationHistory.length - 1]?.id &&
-									!msg.isThoughtBubble
-								}
-								onAnimationComplete={
-									lastMessageIsAi &&
-									index === processedMessagesForDisplay.length - 1
-										? onAnimationComplete
-										: undefined
-								}
-								onThoughtToggle={handleThoughtToggle}
-								scenarioDetailsAiName={scenarioDetailsAiName}
-							/>
-						))}
-						{isLoadingAI && <ChatMessageViewAIThinking />}
-						<div ref={chatEndRef} />
-					</div>
-				</div>
-				<div className="flex-shrink-0 z-20">
-					<InputArea {...inputAreaProps} />
-				</div>
-			</div>
-		);
-	}
+	const mainContainerClasses = hasBlurredBackground
+		? "bg-transparent"
+		: "bg-slate-800";
 
 	return (
-		<div className="flex flex-col h-full bg-slate-800 relative">
-			<ChatAreaHeader />
+		<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
+			<div className="flex-shrink-0 z-20">
+				<ChatAreaHeader />
+				{isOverlay && <EngagementBar />}
+				{isOverlay && (
+					<TopBanner
+						activeAction={activeAction}
+						isActionPaused={isActionPaused}
+						displayedGoal={displayedGoal}
+						onFastForwardAction={onFastForwardAction}
+						isLoadingAI={isLoadingAI}
+						goalJustChanged={goalJustChanged}
+					/>
+				)}
+			</div>
 
 			<div
 				ref={chatContainerRef}
-				className="flex-grow min-h-0 overflow-y-auto px-4 pt-4 pb-4">
+				className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4">
 				<div className="space-y-4">
 					{processedMessagesForDisplay.map((msg, index) => (
 						<ChatMessageView
@@ -456,7 +519,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 				</div>
 			</div>
 
-			<InputArea {...inputAreaProps} />
+			<div className="flex-shrink-0 z-20">
+				<InputArea {...inputAreaProps} />
+			</div>
 		</div>
 	);
 };

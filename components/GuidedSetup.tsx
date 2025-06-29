@@ -80,6 +80,13 @@ const orderedPersonalityCategories = [
 	"Intellectual Style",
 ];
 
+const guidedSocialEnvironments = [
+	SocialEnvironment.CASUAL,
+	SocialEnvironment.DATING,
+	SocialEnvironment.WORK,
+	SocialEnvironment.SOCIAL_GATHERING,
+];
+
 const generateRandomAiName = (gender: AIGender): string => {
 	const maleNames = [
 		"David",
@@ -367,11 +374,15 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 1:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
+						<h2 className="text-2xl font-semibold text-sky-300 mb-4">
 							Where is this conversation taking place?
 						</h2>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-							{Object.values(SocialEnvironment).map((env) => (
+						<p className="text-sm text-gray-400 mb-6">
+							Choose a common scenario, or create your own below.
+						</p>
+
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+							{guidedSocialEnvironments.map((env) => (
 								<StepButton
 									key={env}
 									onClick={() => updateScenario({ environment: env })}
@@ -380,18 +391,57 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								</StepButton>
 							))}
 						</div>
-						{scenario.environment === SocialEnvironment.CUSTOM && (
-							<div className="mt-6 animate-fadeIn max-w-lg mx-auto">
-								<textarea
-									value={scenario.customEnvironment || ""}
-									onChange={(e) =>
-										updateScenario({ customEnvironment: e.target.value })
-									}
-									placeholder="e.g., A quiet library, a noisy coffee shop during rush hour..."
-									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-								/>
+
+						<div className="relative my-8">
+							<div
+								className="absolute inset-0 flex items-center"
+								aria-hidden="true">
+								<div className="w-full border-t border-slate-600"></div>
 							</div>
-						)}
+							<div className="relative flex justify-center">
+								<span className="bg-slate-800 px-3 text-sm font-medium text-gray-400">
+									Or
+								</span>
+							</div>
+						</div>
+
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() =>
+								updateScenario({ environment: SocialEnvironment.CUSTOM })
+							}
+							onKeyPress={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									updateScenario({ environment: SocialEnvironment.CUSTOM });
+								}
+							}}
+							className={`w-full p-4 rounded-lg border-2 transition-all duration-300
+								${
+									scenario.environment === SocialEnvironment.CUSTOM
+										? "bg-slate-700/70 border-teal-400 shadow-lg"
+										: "bg-slate-700/40 border-slate-600 hover:border-sky-500 cursor-pointer"
+								}`}>
+							<h3 className="text-center text-lg font-bold text-teal-300">
+								{SocialEnvironment.CUSTOM}
+							</h3>
+
+							{scenario.environment === SocialEnvironment.CUSTOM && (
+								<div className="mt-4 animate-fadeIn">
+									<textarea
+										value={scenario.customEnvironment || ""}
+										onChange={(e) =>
+											updateScenario({ customEnvironment: e.target.value })
+										}
+										onClick={(e) => e.stopPropagation()} // Prevent outer div's onClick from firing
+										placeholder="Describe a unique place or situation... e.g., A quiet library, A parent-teacher conference"
+										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
+										autoFocus
+									/>
+								</div>
+							)}
+						</div>
 					</div>
 				);
 
