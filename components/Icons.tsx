@@ -456,17 +456,36 @@ export const GestureIcon: React.FC<IconProps> = ({ className }) => (
 	</svg>
 );
 
-export const PinIcon: React.FC<IconProps> = ({ className }) => (
+export const PinOutlineIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		className={className || "h-5 w-5"}
-		viewBox="0 0 20 20"
-		fill="currentColor">
-		<path
-			fillRule="evenodd"
-			d="M10 3a1 1 0 011 1v5.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 9.586V4a1 1 0 011-1z"
-			clipRule="evenodd"
-		/>
-		<path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 16V11a1 1 0 011-1h2a1 1 0 011 1v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5z" />
+		viewBox="0 0 24 24"
+		strokeWidth="1.5"
+		stroke="currentColor"
+		fill="none"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		className={className || "h-6 w-6"}>
+		<path stroke="none" d="M0 0h24v24H0z" fill="none" />
+		<path d="M15 4.5l-4 4l-4 1.5l-1.5 1.5l7 7l1.5 -1.5l1.5 -4l4 -4" />
+		<line x1="9" y1="15" x2="4.5" y2="19.5" />
+		<line x1="14.5" y1="4" x2="20" y2="9.5" />
+	</svg>
+);
+
+export const PinSolidIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		strokeWidth="1.5"
+		stroke="currentColor"
+		fill="currentColor"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		className={className || "h-6 w-6"}>
+		<path stroke="none" d="M0 0h24v24H0z" fill="none" />
+		<path d="M15 4.5l-4 4l-4 1.5l-1.5 1.5l7 7l1.5 -1.5l1.5 -4l4 -4" />
+		<line x1="9" y1="15" x2="4.5" y2="19.5" />
+		<line x1="14.5" y1="4" x2="20" y2="9.5" />
 	</svg>
 );

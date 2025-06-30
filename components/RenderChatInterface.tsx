@@ -24,11 +24,13 @@ interface RenderChatInterfaceProps {
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
 	isPinnable: boolean;
+	isGoalPinned: boolean;
 	isContinueActionSuggested: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
 	onPinGoal: (goalText: string) => void;
+	onUnpinGoal: () => void;
 	onContinueWithoutSpeaking: () => void;
 	onRetryMessage: (messageText: string) => void;
 	isLoadingAI: boolean;
@@ -257,7 +259,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	activeAction,
 	isActionPaused,
 	isPinnable,
+	isGoalPinned,
 	onPinGoal,
+	onUnpinGoal,
 	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
@@ -460,7 +464,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						isActionPaused={isActionPaused}
 						displayedGoal={displayedGoal}
 						isPinnable={isPinnable}
+						isGoalPinned={isGoalPinned}
 						onPinGoal={onPinGoal}
+						onUnpinGoal={onUnpinGoal}
 						onFastForwardAction={onFastForwardAction}
 						isLoadingAI={isLoadingAI}
 						goalJustChanged={goalJustChanged}

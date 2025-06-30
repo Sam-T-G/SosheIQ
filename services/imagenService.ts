@@ -1,5 +1,6 @@
 
-import { GoogleGenAI, GenerateImagesResponse } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
+import type { GenerateImagesResponse } from "@google/genai";
 import { IMAGEN_MODEL } from '../constants';
 
 export class ImagenService {
@@ -24,7 +25,7 @@ export class ImagenService {
     throw new Error("No image data received from Imagen.");
     }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating image with ImagenService:", error);
       // It's possible the error object has more details, e.g. error.response.data
       const errorMessage = error instanceof Error ? error.message : String(error);

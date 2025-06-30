@@ -1,14 +1,21 @@
 import React from "react";
 import type { ActiveAction } from "../types";
 import { ProgressBar } from "./ProgressBar";
-import { TargetIcon, FastForwardIcon, PinIcon } from "./Icons";
+import {
+	TargetIcon,
+	FastForwardIcon,
+	PinOutlineIcon,
+	PinSolidIcon,
+} from "./Icons";
 
 interface TopBannerContainerProps {
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
 	displayedGoal: { text: string; progress: number } | null;
 	isPinnable: boolean;
+	isGoalPinned: boolean;
 	onPinGoal: (goalText: string) => void;
+	onUnpinGoal: () => void;
 	onFastForwardAction: () => void;
 	isLoadingAI: boolean;
 	goalJustChanged: boolean;
@@ -19,35 +26,54 @@ const GoalBanner: React.FC<{
 	goal: { text: string; progress: number };
 	isGlowing?: boolean;
 	isPinnable: boolean;
+	isGoalPinned: boolean;
 	onPinGoal: (goalText: string) => void;
-}> = ({ goal, isGlowing, isPinnable, onPinGoal }) => (
-	<div
-		className={`bg-teal-900/60 p-3 shadow-lg border-b border-teal-800/50 rounded-b-md ${
-			isGlowing ? "animate-glow-pulse" : ""
-		}`}>
-		<div className="flex items-center gap-3 mb-1.5">
-			<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
-			<div className="flex-grow">
-				<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
-					Conversation Goal
-				</p>
-				<p className="text-sm text-teal-100 break-words" title={goal.text}>
-					{goal.text}
-				</p>
+	onUnpinGoal: () => void;
+}> = ({
+	goal,
+	isGlowing,
+	isPinnable,
+	isGoalPinned,
+	onPinGoal,
+	onUnpinGoal,
+}) => {
+	const showPinButton = isPinnable || isGoalPinned;
+
+	return (
+		<div
+			className={`bg-teal-900/60 p-3 shadow-lg border-b border-teal-800/50 rounded-b-md ${
+				isGlowing ? "animate-glow-pulse" : ""
+			}`}>
+			<div className="flex items-center gap-3 mb-1.5">
+				<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
+				<div className="flex-grow">
+					<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
+						Conversation Goal
+					</p>
+					<p className="text-sm text-teal-100 break-words" title={goal.text}>
+						{goal.text}
+					</p>
+				</div>
+				{showPinButton && (
+					<button
+						onClick={isGoalPinned ? onUnpinGoal : () => onPinGoal(goal.text)}
+						className="p-1.5 rounded-full bg-teal-700/80 hover:bg-teal-600 text-white transition-colors"
+						title={
+							isGoalPinned ? "Unpin this goal" : "Pin this goal to track it"
+						}>
+						{isGoalPinned ? (
+							<PinSolidIcon className="h-5 w-5" />
+						) : (
+							<PinOutlineIcon className="h-5 w-5" />
+						)}
+					</button>
+				)}
+				<span className="text-lg font-bold text-white">{goal.progress}%</span>
 			</div>
-			{isPinnable && (
-				<button
-					onClick={() => onPinGoal(goal.text)}
-					className="p-1.5 rounded-full bg-teal-700/80 hover:bg-teal-600 text-white transition-colors"
-					title="Pin this goal to track it">
-					<PinIcon className="h-4 w-4" />
-				</button>
-			)}
-			<span className="text-lg font-bold text-white">{goal.progress}%</span>
+			<ProgressBar percentage={goal.progress} />
 		</div>
-		<ProgressBar percentage={goal.progress} />
-	</div>
-);
+	);
+};
 
 const ActiveActionBanner: React.FC<{
 	action: ActiveAction;
@@ -89,7 +115,9 @@ export const TopBannerContainer: React.FC<TopBannerContainerProps> = ({
 	isActionPaused,
 	displayedGoal,
 	isPinnable,
+	isGoalPinned,
 	onPinGoal,
+	onUnpinGoal,
 	onFastForwardAction,
 	isLoadingAI,
 	goalJustChanged,
@@ -117,7 +145,9 @@ export const TopBannerContainer: React.FC<TopBannerContainerProps> = ({
 						goal={displayedGoal}
 						isGlowing={goalJustChanged}
 						isPinnable={isPinnable}
+						isGoalPinned={isGoalPinned}
 						onPinGoal={onPinGoal}
+						onUnpinGoal={onUnpinGoal}
 					/>
 				</div>
 			);

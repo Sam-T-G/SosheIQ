@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { HeroScreen } from "../components/HeroScreen";
 import { InstructionsScreen } from "../components/InstructionsScreen";
 import { SetupScreen } from "../components/SetupScreen";
-import { GuidedSetup } from "@/components/GuidedSetup";
+import { GuidedSetup } from "../components/GuidedSetup";
 import { InteractionScreen } from "../components/InteractionScreen";
 import { AnalysisScreen } from "../components/AnalysisScreen";
 import { LoadingIndicator } from "../components/LoadingIndicator";
@@ -62,6 +62,9 @@ const HomePage: React.FC = () => {
 	const [displayedGoal, setDisplayedGoal] = useState<DisplayedGoal>(null);
 	const [lastCompletedGoal, setLastCompletedGoal] =
 		useState<DisplayedGoal>(null);
+	const [initialConversationGoal, setInitialConversationGoal] = useState<
+		string | null
+	>(null);
 	const [goalJustChanged, setGoalJustChanged] = useState(false);
 	const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 	const [isActionPaused, setIsActionPaused] = useState(false);
@@ -107,7 +110,7 @@ const HomePage: React.FC = () => {
 
 				geminiService.current = new GeminiService(data.apiKey);
 				imagenService.current = new ImagenService(data.apiKey);
-			} catch (err) {
+			} catch (err: any) {
 				console.error("Failed to fetch API key:", err);
 				setError("Could not initialize services.");
 			} finally {
@@ -139,6 +142,7 @@ const HomePage: React.FC = () => {
 		setStagnantTurnStreak(0);
 		setDisplayedGoal(null);
 		setLastCompletedGoal(null);
+		setInitialConversationGoal(null);
 		setActiveAction(null);
 		setIsActionPaused(false);
 		setIsContinueActionSuggested(false);
@@ -207,6 +211,9 @@ const HomePage: React.FC = () => {
 					establishedVisuals,
 				};
 				setScenarioDetails(updatedDetailsWithVisuals);
+				setInitialConversationGoal(
+					updatedDetailsWithVisuals.conversationGoal || null
+				);
 
 				// Step 3: Generate the initial image SYNCHRONOUSLY before showing the screen
 				const { fullImagenPrompt } =
@@ -493,7 +500,7 @@ const HomePage: React.FC = () => {
 									: m
 							)
 						);
-					} catch (imgError) {
+					} catch (imgError: any) {
 						console.error("Optimized image generation failed:", imgError);
 						// On error, fall back to associating the last known image to avoid a blank.
 						setConversationHistory((prev) =>
@@ -597,10 +604,10 @@ const HomePage: React.FC = () => {
 			setDisplayedGoal(nextDisplayedGoal);
 
 			// Step 6: Check for end conditions or dynamic goal achievement
-			const isUserDefinedGoal = !!currentScenario.conversationGoal;
+			const isPreconfiguredGoal = !!initialConversationGoal;
 			const goalIsAchieved =
 				aiResponse.achieved || (nextDisplayedGoal?.progress ?? 0) >= 100;
-			const shouldEndForUserGoal = isUserDefinedGoal && goalIsAchieved;
+			const shouldEndForUserGoal = isPreconfiguredGoal && goalIsAchieved;
 			const currentTurnZeroStreak =
 				currentEngagement <= 0 ? zeroEngagementStreak + 1 : 0;
 			const shouldEndForLowEngagement =
@@ -617,19 +624,16 @@ const HomePage: React.FC = () => {
 				return; // Prevent further state updates for this turn
 			}
 
-			const isDynamicGoal = !currentScenario.conversationGoal;
-			if (isDynamicGoal && nextDisplayedGoal && goalIsAchieved) {
+			const isDynamicOrPinnedGoal = !isPreconfiguredGoal;
+			if (isDynamicOrPinnedGoal && nextDisplayedGoal && goalIsAchieved) {
 				setLastCompletedGoal(nextDisplayedGoal);
 				setShowGoalAchievedToast({ show: true, text: nextDisplayedGoal.text });
 				setDisplayedGoal(null); // Clear achieved dynamic goal
-				setTimeout(
-					() => setShowGoalAchievedToast({ show: false, text: "" }),
-					7000
-				);
 			}
 		},
 		[
 			scenarioDetails,
+			initialConversationGoal,
 			currentEngagement,
 			displayedGoal,
 			zeroEngagementStreak,
@@ -821,6 +825,17 @@ const HomePage: React.FC = () => {
 		[scenarioDetails]
 	);
 
+	const handleUnpinGoal = useCallback(() => {
+		if (scenarioDetails) {
+			setScenarioDetails((prev) => ({
+				...prev!,
+				conversationGoal: undefined, // Unpin by clearing the official goal
+			}));
+			// The displayedGoal will revert to the AI's emergingGoal on the next turn.
+			setGoalJustChanged(true); // Trigger glow effect to show change
+		}
+	}, [scenarioDetails]);
+
 	const handleStartRandom = useCallback(() => {
 		if (!geminiService.current || !imagenService.current) {
 			setError("Services not initialized.");
@@ -856,6 +871,12 @@ const HomePage: React.FC = () => {
 
 		handleStartInteraction(randomScenario);
 	}, [handleStartInteraction]);
+
+	const handleGoToAnalysis = () => {
+		// Hide the toast immediately if it's open, then proceed.
+		setShowGoalAchievedToast({ show: false, text: "" });
+		handleAttemptEndConversation();
+	};
 
 	const renderContent = () => {
 		if (
@@ -930,6 +951,10 @@ const HomePage: React.FC = () => {
 					return <LoadingIndicator message="Loading scenario..." />;
 
 				const isPinnable = !!displayedGoal && !scenarioDetails.conversationGoal;
+				const isGoalPinned =
+					!!scenarioDetails.conversationGoal &&
+					scenarioDetails.conversationGoal === displayedGoal?.text;
+
 				return (
 					<InteractionScreen
 						scenarioDetails={scenarioDetails}
@@ -939,7 +964,9 @@ const HomePage: React.FC = () => {
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
 						isPinnable={isPinnable}
+						isGoalPinned={isGoalPinned}
 						onPinGoal={handlePinGoal}
+						onUnpinGoal={handleUnpinGoal}
 						isContinueActionSuggested={isContinueActionSuggested}
 						onSendMessage={handleSendMessage}
 						onRetryMessage={handleRetryMessage}
@@ -955,6 +982,10 @@ const HomePage: React.FC = () => {
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={handleLastMessageAnimationComplete}
 						showGoalAchievedToast={showGoalAchievedToast}
+						onGoToAnalysis={handleGoToAnalysis}
+						onCloseGoalToast={() =>
+							setShowGoalAchievedToast({ show: false, text: "" })
+						}
 					/>
 				);
 			case GamePhase.ANALYSIS:

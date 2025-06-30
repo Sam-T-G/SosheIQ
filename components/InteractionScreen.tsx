@@ -14,11 +14,13 @@ interface InteractionScreenProps {
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
 	isPinnable: boolean;
+	isGoalPinned: boolean;
 	isContinueActionSuggested: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
 	onPinGoal: (goalText: string) => void;
+	onUnpinGoal: () => void;
 	onContinueWithoutSpeaking: () => void;
 	onRetryMessage: (messageText: string) => void;
 	aiImageBase64: string | null;
@@ -30,6 +32,8 @@ interface InteractionScreenProps {
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
 	showGoalAchievedToast: { show: boolean; text: string };
+	onGoToAnalysis: () => void;
+	onCloseGoalToast: () => void;
 }
 
 // Helper function to get the last meaningful AI body language description
@@ -64,17 +68,45 @@ const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
 	return personalityDisplay;
 };
 
-const GoalAchievedToast: React.FC<{ message: string }> = ({ message }) => (
-	<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md p-4 bg-green-600 border-2 border-green-400 rounded-xl shadow-2xl animate-goal-toast">
-		<div className="flex items-center gap-3">
-			<CheckCircleIcon className="h-8 w-8 text-white flex-shrink-0" />
-			<div>
-				<h3 className="font-bold text-lg text-white">Goal Achieved!</h3>
-				<p className="text-sm text-green-100 italic">"{message}"</p>
+interface GoalAchievedToastProps {
+	message: string;
+	onGoToAnalysis: () => void;
+	onClose: () => void;
+}
+
+const GoalAchievedToast: React.FC<GoalAchievedToastProps> = ({
+	message,
+	onGoToAnalysis,
+	onClose,
+}) => {
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			onClose();
+		}, 7000); // Duration matches animation
+		return () => clearTimeout(timer);
+	}, [onClose]);
+
+	return (
+		<div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-lg p-4 bg-green-600 border-2 border-green-400 rounded-xl shadow-2xl animate-goal-toast overflow-hidden">
+			<div className="flex items-center gap-4">
+				<CheckCircleIcon className="h-10 w-10 text-white flex-shrink-0" />
+				<div className="flex-grow">
+					<h3 className="font-bold text-lg text-white">Goal Achieved!</h3>
+					<p className="text-sm text-green-100 italic">"{message}"</p>
+				</div>
+				<button
+					onClick={onGoToAnalysis}
+					className="flex-shrink-0 px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white font-semibold rounded-lg text-xs shadow-md transition-colors">
+					View Analysis
+				</button>
+			</div>
+			{/* Countdown bar wrapper */}
+			<div className="absolute bottom-0 left-0 right-0 h-1.5 bg-green-200/50">
+				<div className="h-full bg-white animate-countdown-bar"></div>
 			</div>
 		</div>
-	</div>
-);
+	);
+};
 
 export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	scenarioDetails,
@@ -84,11 +116,13 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	activeAction,
 	isActionPaused,
 	isPinnable,
+	isGoalPinned,
 	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
 	onFastForwardAction,
 	onPinGoal,
+	onUnpinGoal,
 	onContinueWithoutSpeaking,
 	onRetryMessage,
 	aiImageBase64,
@@ -100,6 +134,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	goalJustChanged,
 	onAnimationComplete,
 	showGoalAchievedToast,
+	onGoToAnalysis,
+	onCloseGoalToast,
 }) => {
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	// Use helper function to get the body language description
@@ -144,7 +180,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		<div className="w-full max-w-7xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl relative overflow-hidden">
 			{/* Goal Achieved Toast */}
 			{showGoalAchievedToast.show && (
-				<GoalAchievedToast message={showGoalAchievedToast.text} />
+				<GoalAchievedToast
+					message={showGoalAchievedToast.text}
+					onGoToAnalysis={onGoToAnalysis}
+					onClose={onCloseGoalToast}
+				/>
 			)}
 
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
@@ -173,7 +213,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					<AIVisualCue
 						imageBase64={aiImageBase64}
 						bodyLanguageDescription={bodyLanguageForDisplay}
-						isLoading={isLoadingAI && !aiImageBase64} // Show placeholder only if loading AND no image yet
+						isLoading={isLoadingAI && !aiImageBase64} // Show placeholder only if it's loading AND no image yet
 					/>
 					{/* Desktop Banner Area */}
 					<TopBannerContainer
@@ -181,7 +221,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						isActionPaused={isActionPaused}
 						displayedGoal={displayedGoal}
 						isPinnable={isPinnable}
+						isGoalPinned={isGoalPinned}
 						onPinGoal={onPinGoal}
+						onUnpinGoal={onUnpinGoal}
 						onFastForwardAction={onFastForwardAction}
 						isLoadingAI={isLoadingAI}
 						goalJustChanged={goalJustChanged}
@@ -223,7 +265,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
 						isPinnable={isPinnable}
+						isGoalPinned={isGoalPinned}
 						onPinGoal={onPinGoal}
+						onUnpinGoal={onUnpinGoal}
 						isContinueActionSuggested={isContinueActionSuggested}
 						onSendMessage={onSendMessage}
 						onRetryMessage={onRetryMessage}
@@ -283,7 +327,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							activeAction={activeAction}
 							isActionPaused={isActionPaused}
 							isPinnable={isPinnable}
+							isGoalPinned={isGoalPinned}
 							onPinGoal={onPinGoal}
+							onUnpinGoal={onUnpinGoal}
 							isContinueActionSuggested={isContinueActionSuggested}
 							onSendMessage={onSendMessage}
 							onRetryMessage={onRetryMessage}
