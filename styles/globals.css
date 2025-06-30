@@ -1,6 +1,5 @@
 
 
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -143,175 +142,167 @@ html {
 @keyframes popInSettleFadeOut {
   0% { opacity: 0; transform: scale(0.5); }
   20% { opacity: 1; transform: scale(1.1); }
-  40% { transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
   100% { opacity: 1; transform: scale(1); }
 }
-.animate-popInSettleFadeOut {
-  animation: popInSettleFadeOut 0.4s ease-in-out forwards;
-}
 
-
-/* Notification Single Pulse Animation */
-@keyframes slowPulseOnce {
-  0%, 100% {
+@keyframes thinking-dot-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+  }
+  40% {
     transform: scale(1);
   }
-  50% {
-    transform: scale(1.03);
-  }
-}
-.animate-slowPulseOnce {
-  animation: slowPulseOnce 2s ease-in-out 1; /* Run once */
 }
 
-/* Guided Setup Animations */
-@keyframes slideInFromRight {
-  from {
-    transform: translateX(30px);
-    opacity: 0;
+.thinking-dot {
+  animation: thinking-dot-bounce 1.4s infinite ease-in-out both;
+}
+
+.thinking-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.thinking-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #4a5568; /* slate-600 */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #718096; /* slate-500 */
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px 2px rgba(45, 212, 191, 0.4);
   }
-  to {
-    transform: translateX(0);
-    opacity: 1;
+  50% {
+    box-shadow: 0 0 20px 5px rgba(45, 212, 191, 0.7);
   }
 }
+
+.animate-glow-pulse {
+  animation: glow-pulse 2.5s infinite ease-in-out;
+}
+
 @keyframes slideOutToLeft {
   from {
-    transform: translateX(0);
     opacity: 1;
+    transform: translateX(0);
   }
   to {
-    transform: translateX(-30px);
     opacity: 0;
+    transform: translateX(-50px);
+  }
+}
+.animate-slideOutToLeft {
+  animation: slideOutToLeft 0.3s ease-out forwards;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 .animate-slideInFromRight {
   animation: slideInFromRight 0.35s ease-out forwards;
 }
-.animate-slideOutToLeft {
-  animation: slideOutToLeft 0.35s ease-out forwards;
-}
 
-/* AI Image Crossfade Animation */
 @keyframes image-cross-fade-in {
   0% {
     opacity: 0;
+    transform: scale(1.05);
   }
   100% {
     opacity: 1;
+    transform: scale(1);
   }
 }
 .animate-image-cross-fade-in {
   animation: image-cross-fade-in 0.75s ease-in-out forwards;
 }
 
-/* FAB Glow Animation */
 @keyframes pulse-glow-fab {
-  0% {
-    box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.6); /* sky-500 */
+  0%, 100% {
+    box-shadow: 0 0 12px 2px rgba(14, 165, 233, 0.5);
   }
-  100% {
-    box-shadow: 0 0 0 1rem rgba(14, 165, 233, 0);
+  50% {
+    box-shadow: 0 0 24px 8px rgba(14, 165, 233, 0.8);
   }
 }
 .animate-pulse-glow-fab {
-  animation: pulse-glow-fab 2.5s infinite;
+  animation: pulse-glow-fab 2.5s infinite ease-in-out;
 }
 
-
-/* AI Thinking Ellipses Animation */
-@keyframes thinking-blink {
-  0%, 80%, 100% {
-    opacity: 0.3;
-    transform: scale(0.9);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes goal-toast-in-out {
+  0% { transform: translate(-50%, -150%); opacity: 0; }
+  10% { transform: translate(-50%, 0); opacity: 1; }
+  15% { transform: translate(-50%, -5%); opacity: 1; }
+  20% { transform: translate(-50%, 0); opacity: 1; }
+  85% { transform: translate(-50%, 0); opacity: 1; }
+  100% { transform: translate(-50%, -150%); opacity: 0; }
 }
-.thinking-dot {
-  animation: thinking-blink 1.4s infinite both;
-}
-.thinking-dot:nth-child(1) { animation-delay: 0s; }
-.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
-.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* Goal Banner Glow Animation */
-@keyframes glow-pulse {
-  0% {
-    box-shadow: 0 0 0px 0px rgba(20, 184, 166, 0.0);
-    border-color: rgba(45, 212, 191, 0.5); /* teal-400 */
+.animate-goal-toast {
+    animation: goal-toast-in-out 7s ease-in-out forwards;
+}
+
+@keyframes pulse-glow-slow {
+  0%, 100% {
+    background-color: #4A5568; /* slate-600 */
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.0); /* sky-400 */
   }
   50% {
-    box-shadow: 0 0 14px 4px rgba(20, 184, 166, 0.5); /* teal-500 with glow */
-    border-color: rgba(94, 234, 212, 1); /* teal-300 */
-  }
-  100% {
-    box-shadow: 0 0 0px 0px rgba(20, 184, 166, 0.0);
-    border-color: rgba(45, 212, 191, 0.5);
+    background-color: #38bdf8; /* sky-400 */
+    box-shadow: 0 0 12px 4px rgba(56, 189, 248, 0.5);
   }
 }
-.animate-glow-pulse {
-  animation: glow-pulse 2.5s ease-out;
+.animate-pulse-glow-slow {
+  animation: pulse-glow-slow 3s infinite ease-in-out;
 }
 
-/* Goal Achieved Toast Animation */
-@keyframes goal-toast-in-out {
-  0% {
-    opacity: 0;
-    transform: translateY(-100%) translateX(-50%);
-  }
-  10% {
-    opacity: 1;
-    transform: translateY(10px) translateX(-50%);
-  }
-  15% {
-    opacity: 1;
-    transform: translateY(0) translateX(-50%);
-  }
-  85% {
-    opacity: 1;
-    transform: translateY(0) translateX(-50%);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-50%) translateX(-50%);
-  }
-}
-.animate-goal-toast {
-  animation: goal-toast-in-out 7s ease-in-out forwards;
-}
-
-/* Gesture Input Animations */
+/* Animations for Gesture Input */
 @keyframes slide-down-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-    grid-template-rows: 0fr;
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    grid-template-rows: 1fr;
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 .animate-slide-down-fade-in {
-  animation: slide-down-fade-in 0.3s ease-in-out forwards;
+    animation: slide-down-fade-in 0.3s ease-out forwards;
 }
 
 @keyframes slide-up-fade-out {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-    grid-template-rows: 1fr;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-10px);
-    grid-template-rows: 0fr;
-  }
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
 }
 .animate-slide-up-fade-out {
-  animation: slide-up-fade-out 0.3s ease-in-out forwards;
+    animation: slide-up-fade-out 0.3s ease-out forwards;
 }

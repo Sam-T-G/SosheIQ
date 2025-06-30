@@ -25,6 +25,7 @@ interface RenderChatInterfaceProps {
 	displayedGoal: { text: string; progress: number } | null;
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
+	isContinueActionSuggested: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
@@ -37,6 +38,7 @@ interface RenderChatInterfaceProps {
 	onCloseOverlay?: () => void;
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
+	onViewImage: (url: string | null) => void;
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
 }
@@ -145,6 +147,7 @@ interface InputAreaProps {
 	isLoadingAI: boolean;
 	isMaxEngagement: boolean;
 	hasBlurredBackground: boolean;
+	isContinueActionSuggested: boolean;
 	isUserStart: boolean;
 }
 
@@ -155,6 +158,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 	isLoadingAI,
 	isMaxEngagement,
 	hasBlurredBackground,
+	isContinueActionSuggested,
 	isUserStart,
 }) => {
 	const [dialogueInput, setDialogueInput] = useState("");
@@ -326,7 +330,9 @@ const InputArea: React.FC<InputAreaProps> = ({
 					<button
 						onClick={handleContinue}
 						disabled={isLoadingAI}
-						className="p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0"
+						className={`p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0 ${
+							isContinueActionSuggested ? "animate-pulse-glow-slow" : ""
+						}`}
 						aria-label="Continue without speaking"
 						title="Continue without speaking (pass your turn)">
 						<PlayIcon className="h-5 w-5" />
@@ -353,6 +359,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	displayedGoal,
 	activeAction,
 	isActionPaused,
+	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
 	onFastForwardAction,
@@ -365,6 +372,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	onCloseOverlay,
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
+	onViewImage,
 	goalJustChanged,
 	onAnimationComplete,
 }) => {
@@ -412,7 +420,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 
 	// Force scroll when AI thinking state changes.
 	useEffect(() => {
-		scrollToBottom(true);
+		if (isLoadingAI) {
+			scrollToBottom(true);
+		}
 	}, [isLoadingAI, scrollToBottom]);
 
 	// Observer for DOM mutations (like image loads, staged text)
@@ -529,6 +539,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		isLoadingAI,
 		isMaxEngagement,
 		hasBlurredBackground,
+		isContinueActionSuggested,
 		isUserStart,
 	};
 	const lastMessageIsAi =
@@ -584,6 +595,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 							}
 							onThoughtToggle={handleThoughtToggle}
 							scenarioDetailsAiName={scenarioDetailsAiName}
+							onViewImage={onViewImage}
 						/>
 					))}
 					{isLoadingAI && <ChatMessageViewAIThinking />}

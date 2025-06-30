@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS, SILENT_USER_ACTION_TOKEN } from '../constants';
@@ -99,12 +100,12 @@ export class GeminiService {
 		const starterInstruction = scenario.isRandomScenario ?
         `**Random Scenario Instructions:**
         - This is a randomly generated scenario. You MUST be the conversation starter.
-        - Invent a full scenario. Establish the environment, your relationship to you, and a potential conflict/challenge.
-        - Your first dialogue chunk MUST be of type 'action'. This action chunk should creatively set the scene for you. Be imaginative. For example: "You've just walked into a crowded art gallery opening. You spot Alex, a rival artist..." or "The rain is pouring down as you both huddle under the small awning of a closed bookshop. You've been friends for years, but tonight feels different."
+        - Invent a full scenario. Establish the environment, your relationship to me, and a potential conflict/challenge.
+        - Your first dialogue chunk MUST be of type 'action'. This action chunk should creatively set the scene for me. Be imaginative. For example: "You've just walked into a crowded art gallery opening. You spot Alex, a rival artist..." or "The rain is pouring down as you both huddle under the small awning of a closed bookshop. You've been friends for years, but tonight feels different."
         - After setting the scene with an action, you can add a 'dialogue' chunk to begin the conversation.` :
         `**Standard Scenario Instructions:**
         - Determine who should logically start this conversation based on the scenario. If my role implies I am approaching you (like on a date or as a customer), you should start. If your role implies you are initiating (like a host at a party or a server), you should start.
-        - Provide an opening line ONLY IF you determined that you should start. If you should start, \`initialDialogueChunks\` MUST be an empty array.`;
+        - Provide an opening line ONLY IF you determined that you should start. If I should start, \`initialDialogueChunks\` MUST be an empty array.`;
 
 
     const prompt = `You are an AI simulating a social interaction for training purposes.
@@ -258,7 +259,7 @@ export class GeminiService {
       **Goal Dynamics**: ${goalDynamicsPrompt}
       
       **Advanced Journey, Autonomy & Nuanced Communication**:
-      - **AI Initiative & Emotes (CRITICAL)**: To feel alive and present, you MUST frequently interleave 'action' chunks with your 'dialogue'. This is not optional. Every few lines of dialogue should be accompanied by some physical action or environmental interaction. This is the primary way you "show, not tell" and create an immersive experience. You have autonomy. You can take the initiative to start actions or journeys (e.g., 'Let's go to the bar'), interact with objects (e.g., 'picks up her menu'), or even speak to other (hypothetical) people in the environment (e.g., 'She turns to the bartender and says...'). Your actions should be driven by your personality.
+      - **AI Initiative & Emotes (CRITICAL)**: To feel alive and present, you MUST frequently interleave 'action' chunks with your 'dialogue'. This is not optional. Your persona should drive these actions. This is the primary way you "show, not tell" and create an immersive experience. You have autonomy. You can take the initiative to start actions or journeys (e.g., 'Let's go to the bar'), interact with objects (e.g., 'picks up her menu'), or even speak to other (hypothetical) people in the environment (e.g., 'She turns to the bartender and says...').
       - **Journey Pacing & Scene Changes**: Journeys have stages. A walk can start in one environment (e.g., 'leaving the train station') and end in another ('on a busy city street'). Break up long journeys with conversational snippets followed by narrated time skips (e.g., \`{"text": "A few minutes pass as you walk in comfortable silence.", "type": "action"}\`). A scene change is triggered by returning a NEW \`environmentDescription\` in the \`updatedEstablishedVisuals\` object.
       - **Progress Logic**: When a time-consuming action starts, return an \`activeAction\` object like \`{ "description": "Walking to the bar", "progress": 0 }\`. In subsequent turns, you MUST return the \`activeAction\` object with updated \`progress\`. Progress MUST NOT decrease unless there's an explicit narrative reason (e.g. "You walk back to the entrance"). Its value must be between 0 and 100.
       - **Pausing & Resuming**: ${actionPausedPrompt}
@@ -269,7 +270,7 @@ export class GeminiService {
         - **DO NOT** say "silent agreement confirmed" or otherwise comment on my silence in a meta way. INSTEAD, **SHOW** the agreement with an action.
         - **Assumed Affirmative Actions**: If context implies agreement (e.g., you say 'Ready to go?' and I am silent), generate a narrative action on my behalf (e.g., \`{"text": "You nod and start walking with her.", "type": "action"}\`).
         - **Shared Quiet Moments**: If the context is a shared experience (watching a sunset), interpret my silence as me joining in. Narrate this with an action chunk (e.g., \`"You stand beside her, enjoying the view in comfortable silence."\`). Never criticize me for appropriate silence.
-        - **Evaluating Silence**: Well-placed user silence is a sign of good social chemistry. You MUST reflect this with a good \`userTurnEffectivenessScore\` (85-100) and a positive \`engagementDelta\`.
+      - **Suggesting a User Action**: If you believe the most socially effective move for me is to be silent or perform a simple non-verbal action (e.g., a nod), you should set \`isUserActionSuggested: true\`. This will provide a UI cue to me. This is appropriate when I should let you continue, when a journey needs to progress, or during an intimate/contemplative moment.
       
       **Current State**:
       - Your current engagement level is ${currentEngagement}/100.
@@ -300,6 +301,7 @@ export class GeminiService {
         "updatedPersonaDetails": "string or null",
         "activeAction": { "description": "string", "progress": number } | null,
         "newEnvironment": "string or null",
+        "isUserActionSuggested": boolean,
         "engagementDelta": number,
         "userTurnEffectivenessScore": number,
         "conversationMomentum": number,

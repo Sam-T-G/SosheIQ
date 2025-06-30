@@ -5,6 +5,7 @@ import {
 	StarIcon,
 	ChevronUpIcon,
 	ChevronDownIcon,
+	EyeIcon,
 } from "./Icons";
 
 interface ChatMessageViewAIProps {
@@ -13,6 +14,7 @@ interface ChatMessageViewAIProps {
 	isLoadingAI: boolean;
 	onAnimationComplete?: () => void;
 	onThoughtToggle: () => void;
+	onViewImage: (url: string | null) => void;
 	scenarioDetailsAiName: string;
 }
 
@@ -27,6 +29,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	isLastMessage,
 	onAnimationComplete,
 	onThoughtToggle,
+	onViewImage,
 	scenarioDetailsAiName,
 }) => {
 	const [visibleChunks, setVisibleChunks] = useState<VisibleChunk[]>([]);
@@ -189,18 +192,23 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			{/* Top Row for Avatar and Body Language */}
 			<div className="flex items-start space-x-3 mb-2">
 				{/* Avatar Container - Visible on mobile, hidden on desktop */}
-				<div className="md:hidden w-20 h-20 flex-shrink-0 rounded-lg shadow-md bg-slate-700 overflow-hidden relative">
+				<button
+					onClick={() => displayedImage && onViewImage(displayedImage)}
+					disabled={!displayedImage}
+					className="group md:hidden w-20 h-20 flex-shrink-0 rounded-lg shadow-md bg-slate-700 overflow-hidden relative focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900/80 disabled:cursor-not-allowed">
 					{displayedImage && (
-						<img
-							key={`displayed-${displayedImage.substring(0, 20)}`}
-							src={`data:image/jpeg;base64,${displayedImage}`}
-							alt="AI's current visual cue"
-							className="absolute inset-0 w-full h-full object-cover"
-							style={{
-								opacity: isFading ? 0 : 1,
-								transition: isFading ? "opacity 0.75s ease-in-out" : "none",
-							}}
-						/>
+						<>
+							<img
+								key={`displayed-${displayedImage.substring(0, 20)}`}
+								src={`data:image/jpeg;base64,${displayedImage}`}
+								alt="AI's current visual cue"
+								className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+								style={{ opacity: isFading ? 0 : 1 }}
+							/>
+							<div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+								<EyeIcon className="h-8 w-8 text-white" />
+							</div>
+						</>
 					)}
 					{incomingImage && isFading && (
 						<img
@@ -214,7 +222,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 					{!displayedImage && !incomingImage && (
 						<div className="w-full h-full bg-slate-700" />
 					)}
-				</div>
+				</button>
 				{/* Body Language Bubble */}
 				{message.bodyLanguageDescription && (
 					<div className="flex-grow p-3 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md animate-fadeIn">

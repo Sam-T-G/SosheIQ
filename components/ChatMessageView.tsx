@@ -10,6 +10,7 @@ interface ChatMessageViewProps {
 	isLoadingAI: boolean;
 	onAnimationComplete?: () => void;
 	onThoughtToggle: () => void;
+	onViewImage: (url: string | null) => void;
 	scenarioDetailsAiName: string;
 }
 
@@ -79,6 +80,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = React.memo(
 		isLoadingAI,
 		onAnimationComplete,
 		onThoughtToggle,
+		onViewImage,
 		scenarioDetailsAiName,
 	}) => {
 		const isUser = message.sender === "user";
@@ -172,6 +174,7 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = React.memo(
 					isLoadingAI={isLoadingAI}
 					onAnimationComplete={onAnimationComplete}
 					onThoughtToggle={onThoughtToggle}
+					onViewImage={onViewImage}
 				/>
 			</div>
 		);

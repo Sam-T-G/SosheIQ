@@ -573,8 +573,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							What's their personality like?
 						</h2>
 						<p className="text-gray-400 mb-4">
-							Choose up to {MAX_PERSONALITY_TRAITS} traits, or describe them
-							yourself.
+							Describe them yourself, or choose up to {MAX_PERSONALITY_TRAITS}{" "}
+							traits.
 						</p>
 
 						<div className="space-y-4">
@@ -818,7 +818,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						<button
 							onClick={onSwitchToAdvanced}
 							className="p-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-base rounded-lg shadow-md transition-all flex items-center justify-center space-x-2">
-							<CogIcon className="h-6 w-6" />
+							<SparklesIcon className="h-6 w-6" />
 							<span className="hidden sm:inline">Advanced</span>
 						</button>
 					)}

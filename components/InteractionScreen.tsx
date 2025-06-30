@@ -17,6 +17,7 @@ interface InteractionScreenProps {
 	displayedGoal: { text: string; progress: number } | null;
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
+	isContinueActionSuggested: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
@@ -25,6 +26,7 @@ interface InteractionScreenProps {
 	isLoadingAI: boolean; // True when AI is fetching new image/text
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
+	onViewImage: (url: string | null) => void;
 	initialAiBodyLanguage: string | null;
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
@@ -148,6 +150,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	displayedGoal,
 	activeAction,
 	isActionPaused,
+	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
 	onFastForwardAction,
@@ -156,6 +159,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	isLoadingAI,
 	onToggleHelpOverlay,
 	onToggleQuickTipsOverlay,
+	onViewImage,
 	initialAiBodyLanguage,
 	goalJustChanged,
 	onAnimationComplete,
@@ -282,6 +286,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						displayedGoal={displayedGoal}
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
+						isContinueActionSuggested={isContinueActionSuggested}
 						onSendMessage={onSendMessage}
 						onEndConversation={onEndConversation}
 						onFastForwardAction={onFastForwardAction}
@@ -295,6 +300,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						hasBlurredBackground={true}
 						onToggleHelpOverlay={onToggleHelpOverlay}
 						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+						onViewImage={onViewImage}
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={onAnimationComplete}
 					/>
@@ -337,6 +343,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							displayedGoal={displayedGoal}
 							activeAction={activeAction}
 							isActionPaused={isActionPaused}
+							isContinueActionSuggested={isContinueActionSuggested}
 							onSendMessage={onSendMessage}
 							onEndConversation={onEndConversation}
 							onFastForwardAction={onFastForwardAction}
@@ -351,6 +358,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							onCloseOverlay={() => setShowChatOverlay(false)}
 							onToggleHelpOverlay={onToggleHelpOverlay}
 							onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+							onViewImage={onViewImage}
 							goalJustChanged={goalJustChanged}
 							onAnimationComplete={onAnimationComplete}
 						/>

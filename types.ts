@@ -134,6 +134,7 @@ export interface AiTurnResponse {
     positiveTraitContribution?: string;
     negativeTraitContribution?: string;
     isEndingConversation: boolean;
+    isUserActionSuggested?: boolean; // New field for suggesting a non-verbal user action
     emergingGoal?: string;
     goalProgress: number;
     achieved: boolean;

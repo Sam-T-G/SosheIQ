@@ -11,6 +11,7 @@ import { LoadingIndicator } from "../components/LoadingIndicator";
 import { HelpOverlay } from "../components/HelpOverlay";
 import { QuickTipsScreen } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
+import { ImageViewerOverlay } from "../components/ImageViewerOverlay";
 import type {
 	ScenarioDetails,
 	ChatMessage,
@@ -54,6 +55,8 @@ const HomePage: React.FC = () => {
 	const [goalJustChanged, setGoalJustChanged] = useState(false);
 	const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 	const [isActionPaused, setIsActionPaused] = useState(false);
+	const [isContinueActionSuggested, setIsContinueActionSuggested] =
+		useState(false);
 
 	const [zeroEngagementStreak, setZeroEngagementStreak] = useState<number>(0);
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
@@ -77,6 +80,7 @@ const HomePage: React.FC = () => {
 		show: boolean;
 		text: string;
 	}>({ show: false, text: "" });
+	const [imageToView, setImageToView] = useState<string | null>(null);
 
 	useEffect(() => {
 		const initServices = async () => {
@@ -120,12 +124,14 @@ const HomePage: React.FC = () => {
 		setDisplayedGoal(null);
 		setActiveAction(null);
 		setIsActionPaused(false);
+		setIsContinueActionSuggested(false);
 		setZeroEngagementStreak(0);
 		setAnalysisReport(null);
 		setCurrentAIImage(null);
 		setInitialAiBodyLanguage(null);
 		setGoalJustChanged(false);
 		setShowGoalAchievedToast({ show: false, text: "" });
+		setImageToView(null);
 	};
 
 	const handleNavigate = useCallback((phase: GamePhase) => {
@@ -134,6 +140,14 @@ const HomePage: React.FC = () => {
 			resetStateForNewGame();
 		}
 		setCurrentPhase(phase);
+	}, []);
+
+	const handleViewImage = useCallback((url: string | null) => {
+		setImageToView(url);
+	}, []);
+
+	const handleCloseImageViewer = useCallback(() => {
+		setImageToView(null);
 	}, []);
 
 	const handleStartInteraction = useCallback(
@@ -280,6 +294,9 @@ const HomePage: React.FC = () => {
 					.join("\n\n");
 			}
 			setScenarioDetails(currentScenario); // Commit state changes
+
+			// Step 1.5: Handle action suggestions
+			setIsContinueActionSuggested(aiResponse.isUserActionSuggested ?? false);
 
 			// Step 2: Create the AI message object for the chat log
 			const dialogueChunks = aiResponse.dialogueChunks || [];
@@ -432,12 +449,16 @@ const HomePage: React.FC = () => {
 				if (
 					goalChangeInfo?.type === "established" &&
 					displayedGoal?.progress === 100 &&
-					goalChangeInfo.to &&
-					displayedGoal.text
+					typeof goalChangeInfo.to === "string" &&
+					typeof displayedGoal.text === "string"
 				) {
 					if (
-						goalChangeInfo.to.includes(displayedGoal.text) ||
-						displayedGoal.text.includes(goalChangeInfo.to)
+						goalChangeInfo.to
+							.toLowerCase()
+							.includes(displayedGoal.text.toLowerCase()) ||
+						displayedGoal.text
+							.toLowerCase()
+							.includes(goalChangeInfo.to.toLowerCase())
 					) {
 						goalProgress = Math.max(goalProgress, 20); // Give a small boost
 					}
@@ -518,6 +539,7 @@ const HomePage: React.FC = () => {
 			setConversationHistory((prev) => [...prev, userMessage]);
 			setIsAiResponding(true);
 			setError(null);
+			setIsContinueActionSuggested(false); // Action taken, remove suggestion
 
 			try {
 				const historyForAI = [...conversationHistory, userMessage];
@@ -741,6 +763,7 @@ const HomePage: React.FC = () => {
 						displayedGoal={displayedGoal}
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
+						isContinueActionSuggested={isContinueActionSuggested}
 						onSendMessage={handleSendMessage}
 						onEndConversation={handleAttemptEndConversation}
 						onFastForwardAction={handleFastForwardAction}
@@ -749,6 +772,7 @@ const HomePage: React.FC = () => {
 						isLoadingAI={isAiResponding}
 						onToggleHelpOverlay={handleToggleHelpOverlay}
 						onToggleQuickTipsOverlay={handleToggleQuickTipsOverlay}
+						onViewImage={handleViewImage}
 						initialAiBodyLanguage={initialAiBodyLanguage}
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={handleLastMessageAnimationComplete}
@@ -823,6 +847,12 @@ const HomePage: React.FC = () => {
 
 				<Footer />
 
+				{imageToView && (
+					<ImageViewerOverlay
+						imageUrl={imageToView}
+						onClose={handleCloseImageViewer}
+					/>
+				)}
 				{showHelpOverlay && <HelpOverlay onClose={handleToggleHelpOverlay} />}
 				{showQuickTipsOverlay && (
 					<QuickTipsScreen onClose={handleToggleQuickTipsOverlay} />
