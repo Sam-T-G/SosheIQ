@@ -6,13 +6,7 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
-import {
-	PlayIcon,
-	CogIcon,
-	ArrowLeftIcon,
-	TargetIcon,
-	SparklesIcon,
-} from "./Icons";
+import { PlayIcon, CogIcon, ArrowLeftIcon, TargetIcon } from "./Icons";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -22,68 +16,55 @@ interface GuidedSetupProps {
 const MAX_STEPS = 6;
 const MAX_PERSONALITY_TRAITS = 5;
 
-// Expanded list of categorized personality traits
+// RETHOUGHT: New, simpler, and more diverse trait categories with Social Behavior at the top
 const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
-	"Social Style": [
-		AIPersonalityTrait.INTROVERTED,
-		AIPersonalityTrait.OUTGOING,
-		AIPersonalityTrait.RESERVED,
-		AIPersonalityTrait.SOCIABLE,
-		AIPersonalityTrait.FLIRTATIOUS,
-		AIPersonalityTrait.FORMAL,
-		AIPersonalityTrait.INFORMAL,
-		AIPersonalityTrait.GUARDED,
-	],
-	"Emotional Tone": [
-		AIPersonalityTrait.ANXIOUS,
-		AIPersonalityTrait.CYNICAL,
-		AIPersonalityTrait.HAPPY,
-		AIPersonalityTrait.SAD,
-		AIPersonalityTrait.IRRITABLE,
-		AIPersonalityTrait.EMPATHETIC,
-		AIPersonalityTrait.CALM,
-		AIPersonalityTrait.PLAYFUL,
-		AIPersonalityTrait.SERIOUS,
-		AIPersonalityTrait.ENTHUSIASTIC,
-	],
-	"Intellectual Style": [
-		AIPersonalityTrait.PHILOSOPHICAL,
-		AIPersonalityTrait.ACADEMIC,
-		AIPersonalityTrait.INQUISITIVE,
-		AIPersonalityTrait.NAIVE,
-		AIPersonalityTrait.EXPERIENCED,
-		AIPersonalityTrait.ANALYTICAL,
-		AIPersonalityTrait.CURIOUS,
-		AIPersonalityTrait.CREATIVE,
-		AIPersonalityTrait.LOGICAL,
-		AIPersonalityTrait.IMAGINATIVE,
-	],
-	"Core Traits": [
+	"Social Behavior": [
 		AIPersonalityTrait.CONFIDENT,
 		AIPersonalityTrait.SHY,
-		AIPersonalityTrait.AMBITIOUS,
+		AIPersonalityTrait.FLIRTATIOUS,
+		AIPersonalityTrait.GUARDED,
+		AIPersonalityTrait.EMPATHETIC,
 		AIPersonalityTrait.HUMBLE,
-		AIPersonalityTrait.UNCONVENTIONAL,
-		AIPersonalityTrait.UNEMOTIONAL,
+		AIPersonalityTrait.AMBITIOUS,
 		AIPersonalityTrait.IMPULSIVE,
-		AIPersonalityTrait.SUPPORTIVE,
-		AIPersonalityTrait.ASSERTIVE,
+	],
+	"Communication Style": [
+		AIPersonalityTrait.TALKATIVE,
+		AIPersonalityTrait.QUIET,
 		AIPersonalityTrait.DIRECT,
 		AIPersonalityTrait.SARCASTIC,
+		AIPersonalityTrait.FORMAL,
+		AIPersonalityTrait.INFORMAL,
 		AIPersonalityTrait.WITTY,
-		AIPersonalityTrait.CHALLENGING,
-		AIPersonalityTrait.SKEPTICAL,
+		AIPersonalityTrait.ASSERTIVE,
+	],
+	"General Mood": [
+		AIPersonalityTrait.CHEERFUL,
+		AIPersonalityTrait.GRUMPY,
+		AIPersonalityTrait.ANXIOUS,
+		AIPersonalityTrait.CALM,
+		AIPersonalityTrait.SERIOUS,
+		AIPersonalityTrait.PLAYFUL,
+		AIPersonalityTrait.SAD,
+		AIPersonalityTrait.ENTHUSIASTIC,
+	],
+	"Attitude / Outlook": [
 		AIPersonalityTrait.OPTIMISTIC,
 		AIPersonalityTrait.PESSIMISTIC,
+		AIPersonalityTrait.SUPPORTIVE,
+		AIPersonalityTrait.CHALLENGING,
+		AIPersonalityTrait.CURIOUS,
+		AIPersonalityTrait.SKEPTICAL,
+		AIPersonalityTrait.CREATIVE,
+		AIPersonalityTrait.LOGICAL,
 	],
 };
 
-// Define the desired display order for categories
 const orderedPersonalityCategories = [
-	"Social Style",
-	"Core Traits",
-	"Emotional Tone",
-	"Intellectual Style",
+	"Social Behavior",
+	"Communication Style",
+	"General Mood",
+	"Attitude / Outlook",
 ];
 
 const guidedSocialEnvironments = [
@@ -93,113 +74,7 @@ const guidedSocialEnvironments = [
 	SocialEnvironment.SOCIAL_GATHERING,
 ];
 
-const generateRandomAiName = (gender: AIGender): string => {
-	const maleNames = [
-		"David",
-		"James",
-		"Michael",
-		"John",
-		"Chris",
-		"Ryan",
-		"Daniel",
-		"Ethan",
-		"William",
-		"Matthew",
-		"Joseph",
-		"Anthony",
-		"Steven",
-		"Andrew",
-		"Mark",
-		"Paul",
-		"George",
-		"Kevin",
-		"Arthur",
-		"Robert",
-		"Liam",
-		"Noah",
-		"Brian",
-		"Thomas",
-		"Edward",
-		"Charles",
-		"Benjamin",
-		"Samuel",
-		"Henry",
-		"Jacob",
-	];
-	const femaleNames = [
-		"Sarah",
-		"Jennifer",
-		"Emily",
-		"Jessica",
-		"Linda",
-		"Ava",
-		"Grace",
-		"Chloe",
-		"Emma",
-		"Isabella",
-		"Olivia",
-		"Sophia",
-		"Mia",
-		"Amelia",
-		"Charlotte",
-		"Susan",
-		"Laura",
-		"Rebecca",
-		"Anna",
-		"Elizabeth",
-		"Mary",
-		"Ashley",
-		"Amanda",
-		"Michelle",
-		"Barbara",
-		"Patricia",
-		"Nancy",
-		"Sandra",
-		"Evelyn",
-	];
-	const neutralNames = [
-		"Alex",
-		"Jordan",
-		"Taylor",
-		"Casey",
-		"Morgan",
-		"Riley",
-		"Kai",
-		"Skyler",
-		"Cameron",
-		"Drew",
-		"Phoenix",
-		"River",
-		"Sage",
-		"Blake",
-		"Rowan",
-		"Quinn",
-		"Jesse",
-		"Finley",
-		"Avery",
-		"Devin",
-		"Emerson",
-		"Parker",
-		"Dakota",
-		"Logan",
-		"Charlie",
-		"Hayden",
-	];
-	let pool: string[];
-	switch (gender) {
-		case AIGender.MALE:
-			pool = maleNames;
-			break;
-		case AIGender.FEMALE:
-			pool = femaleNames;
-			break;
-		default:
-			pool = neutralNames;
-	}
-	return pool[Math.floor(Math.random() * pool.length)];
-};
-
-const initialScenario: Omit<ScenarioDetails, "aiName"> & { aiName: string } = {
+const initialScenario: Partial<ScenarioDetails> = {
 	environment: SocialEnvironment.CASUAL,
 	aiGender: AIGender.RANDOM,
 	aiName: "",
@@ -291,41 +166,11 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		}
 	};
 
-	const randomizeAndStart = () => {
-		const environments = Object.values(SocialEnvironment).filter(
-			(e) => e !== SocialEnvironment.CUSTOM
-		);
-		const genders = Object.values(AIGender);
-		const ageBrackets = Object.values(AIAgeBracket).filter(
-			(a) => a !== AIAgeBracket.CUSTOM && a !== AIAgeBracket.NOT_SPECIFIED
-		);
-		const personalityTraits = Object.values(AIPersonalityTrait);
-
-		const randomGender = genders[Math.floor(Math.random() * genders.length)];
-		const numTraits = Math.floor(Math.random() * 3) + 1; // 1 to 3 traits
-		const randomTraits = [...personalityTraits]
-			.sort(() => 0.5 - Math.random())
-			.slice(0, numTraits);
-
-		const randomScenario: ScenarioDetails = {
-			environment:
-				environments[Math.floor(Math.random() * environments.length)],
-			aiGender: randomGender,
-			aiName: generateRandomAiName(randomGender),
-			aiAgeBracket: ageBrackets[Math.floor(Math.random() * ageBrackets.length)],
-			aiPersonalityTraits: randomTraits,
-			isRandomScenario: true,
-		};
-		onStart(randomScenario);
-	};
-
 	const handleStart = () => {
 		const finalScenario: ScenarioDetails = {
 			environment: scenario.environment || SocialEnvironment.CASUAL,
 			aiGender: scenario.aiGender || AIGender.RANDOM,
-			aiName:
-				scenario.aiName?.trim() ||
-				generateRandomAiName(scenario.aiGender || AIGender.RANDOM),
+			aiName: scenario.aiName?.trim() || "", // Name is now handled by index.tsx
 			aiPersonalityTraits: scenario.aiPersonalityTraits || [],
 			// carry over optional fields
 			customEnvironment: scenario.customEnvironment,
@@ -359,30 +204,24 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				return (
 					<div key={step} className={`${animationClass} text-center`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-4">
-							Let's set up your practice session.
+							Let's get started.
 						</h2>
 						<p className="text-lg text-gray-400 mb-8">
-							Configure the AI step-by-step or jump right in.
+							Choose a setup method to create your practice scenario.
 						</p>
-						<div className="flex flex-col gap-4 max-w-xs mx-auto sm:max-w-full">
+						<div className="flex flex-col gap-4 max-w-sm mx-auto">
 							<button
 								onClick={handleNext}
-								className="w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg">
+								className="w-full px-6 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-2">
+								<PlayIcon className="h-5 w-5" />
 								Start Guided Setup
 							</button>
-							<div className="text-center">
-								<button
-									onClick={randomizeAndStart}
-									className="w-full px-6 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105">
-									I'm Feeling Lucky
-								</button>
-								<p className="text-xs text-gray-500 mt-2 px-4">
-									Let the AI create a completely random scenario for you. It
-									will invent the environment, your relationship to the
-									character, and a potential conflict or challenge to get you
-									started immediately.
-								</p>
-							</div>
+							<button
+								onClick={onSwitchToAdvanced}
+								className="w-full px-6 py-4 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-2">
+								<CogIcon className="h-5 w-5" />
+								Advanced Setup
+							</button>
 						</div>
 					</div>
 				);
@@ -786,11 +625,15 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	return (
 		<div className="w-full max-w-2xl p-4 md:p-8 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between h-[85vh] md:h-auto md:min-h-[70vh]">
 			<div className="flex-grow overflow-y-auto custom-scrollbar pr-2 -mr-2">
-				<div className="relative h-1 bg-slate-700 rounded-full mb-8">
-					<div
-						className="absolute top-0 left-0 h-1 bg-teal-400 rounded-full transition-all duration-500"
-						style={{ width: `${(step / MAX_STEPS) * 100}%` }}></div>
-				</div>
+				{step > 0 && (
+					<div className="relative h-1 bg-slate-700 rounded-full mb-8">
+						<div
+							className="absolute top-0 left-0 h-1 bg-teal-400 rounded-full transition-all duration-500"
+							style={{
+								width: `${((step - 1) / (MAX_STEPS - 1)) * 100}%`,
+							}}></div>
+					</div>
+				)}
 				<div className="min-h-[280px] md:min-h-[300px] px-2">
 					{renderStepContent()}
 				</div>
@@ -809,17 +652,6 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							className="w-full sm:w-auto px-6 py-4 bg-slate-600 text-white font-semibold text-base rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2 transition-colors">
 							<ArrowLeftIcon className="h-5 w-5" />
 							<span>Back</span>
-						</button>
-					)}
-				</div>
-
-				<div className="flex-shrink-0">
-					{step > 0 && (
-						<button
-							onClick={onSwitchToAdvanced}
-							className="p-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-base rounded-lg shadow-md transition-all flex items-center justify-center space-x-2">
-							<SparklesIcon className="h-6 w-6" />
-							<span className="hidden sm:inline">Advanced</span>
 						</button>
 					)}
 				</div>

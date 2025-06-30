@@ -12,6 +12,7 @@ import { HelpOverlay } from "../components/HelpOverlay";
 import { QuickTipsScreen } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
 import { ImageViewerOverlay } from "../components/ImageViewerOverlay";
+import { InitialLoadingScreen } from "../components/InitialLoadingScreen";
 import type {
 	ScenarioDetails,
 	ChatMessage,
@@ -20,7 +21,13 @@ import type {
 	AiTurnResponse,
 	EstablishedVisuals,
 } from "../types";
-import { GamePhase, SocialEnvironment } from "../types";
+import {
+	GamePhase,
+	SocialEnvironment,
+	AIGender,
+	AIAgeBracket,
+	AIPersonalityTrait,
+} from "../types";
 import { GeminiService } from "../services/geminiService";
 import { ImagenService } from "../services/imagenService";
 import { Header } from "../components/Header";
@@ -51,7 +58,10 @@ const HomePage: React.FC = () => {
 	);
 	const [currentEngagement, setCurrentEngagement] =
 		useState<number>(INITIAL_ENGAGEMENT);
+	const [stagnantTurnStreak, setStagnantTurnStreak] = useState<number>(0);
 	const [displayedGoal, setDisplayedGoal] = useState<DisplayedGoal>(null);
+	const [lastCompletedGoal, setLastCompletedGoal] =
+		useState<DisplayedGoal>(null);
 	const [goalJustChanged, setGoalJustChanged] = useState(false);
 	const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 	const [isActionPaused, setIsActionPaused] = useState(false);
@@ -59,6 +69,7 @@ const HomePage: React.FC = () => {
 		useState(false);
 
 	const [zeroEngagementStreak, setZeroEngagementStreak] = useState<number>(0);
+	const [isAppLoading, setIsAppLoading] = useState<boolean>(true); // For initial app load
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
 	const [isAiResponding, setIsAiResponding] = useState<boolean>(false); // Specific for AI turn processing (image and text)
 	const [error, setError] = useState<string | null>(null);
@@ -90,7 +101,7 @@ const HomePage: React.FC = () => {
 
 				if (!data.apiKey) {
 					setError("API key is missing.");
-					setIsLoading(false);
+					setIsAppLoading(false);
 					return;
 				}
 
@@ -100,7 +111,10 @@ const HomePage: React.FC = () => {
 				console.error("Failed to fetch API key:", err);
 				setError("Could not initialize services.");
 			} finally {
-				setIsLoading(false);
+				// Give a small artificial delay for the loading animation to be seen
+				setTimeout(() => {
+					setIsAppLoading(false);
+				}, 500);
 			}
 		};
 
@@ -118,10 +132,13 @@ const HomePage: React.FC = () => {
 	}, [goalJustChanged]);
 
 	const resetStateForNewGame = () => {
+		setSetupMode("guided");
 		setScenarioDetails(null);
 		setConversationHistory([]);
 		setCurrentEngagement(INITIAL_ENGAGEMENT);
+		setStagnantTurnStreak(0);
 		setDisplayedGoal(null);
+		setLastCompletedGoal(null);
 		setActiveAction(null);
 		setIsActionPaused(false);
 		setIsContinueActionSuggested(false);
@@ -163,26 +180,30 @@ const HomePage: React.FC = () => {
 
 			const fullDetails: ScenarioDetails = {
 				...details,
+				aiName: details.aiName?.trim() || "", // Pass empty string to service if user left it blank
 				aiPersonalityTraits: details.aiPersonalityTraits || [],
 				customAiPersonality: details.customAiPersonality || undefined,
 				conversationGoal: details.conversationGoal || undefined,
 			};
 
 			try {
-				// Step 1: Get initial text-based data from AI, including the established visuals
+				// Step 1: Get initial text-based data from AI, including the established visuals and a generated name if needed.
 				const {
+					aiName: aiGeneratedName, // The AI will return a name
+					scenarioBackstory,
 					initialDialogueChunks,
 					initialBodyLanguage,
 					initialAiThoughts,
 					initialEngagementScore,
 					initialConversationMomentum,
 					conversationStarter,
-					establishedVisuals, // Use the new structured object
+					establishedVisuals,
 				} = await geminiService.current.startConversation(fullDetails);
 
-				// Step 2: Store the details along with the established visuals
+				// Step 2: Store the details with the definitive AI-provided name and visuals
 				const updatedDetailsWithVisuals = {
 					...fullDetails,
+					aiName: aiGeneratedName, // Use the name from the AI
 					establishedVisuals,
 				};
 				setScenarioDetails(updatedDetailsWithVisuals);
@@ -199,8 +220,22 @@ const HomePage: React.FC = () => {
 				// Step 4: Set all other state based on initial data
 				setInitialAiBodyLanguage(initialBodyLanguage);
 				setCurrentEngagement(initialEngagementScore);
-				if (fullDetails.conversationGoal) {
-					setDisplayedGoal({ text: fullDetails.conversationGoal, progress: 0 });
+				if (updatedDetailsWithVisuals.conversationGoal) {
+					setDisplayedGoal({
+						text: updatedDetailsWithVisuals.conversationGoal,
+						progress: 0,
+					});
+				}
+
+				const initialMessages: ChatMessage[] = [];
+
+				if (scenarioBackstory) {
+					initialMessages.push({
+						id: uuidv4(),
+						sender: "backstory",
+						text: scenarioBackstory,
+						timestamp: new Date(),
+					});
 				}
 
 				// Step 5: Add AI's initial state as the first message.
@@ -229,14 +264,16 @@ const HomePage: React.FC = () => {
 					initialAiMessage.dialogueChunks = initialDialogueChunks;
 				}
 
-				setConversationHistory([initialAiMessage]);
+				initialMessages.push(initialAiMessage);
+				setConversationHistory(initialMessages);
 
 				// Step 6: Transition to the interaction screen
 				setCurrentPhase(GamePhase.INTERACTION);
 			} catch (e: any) {
 				console.error("Error starting interaction:", e);
 				setError(`Failed to start interaction: ${e.message}`);
-				setCurrentPhase(GamePhase.SETUP); // Revert to setup on failure
+				// Revert to setup on failure, keeping setup mode consistent
+				setCurrentPhase(GamePhase.SETUP);
 			} finally {
 				setIsLoading(false); // Turn off loading indicator after everything is done
 			}
@@ -247,6 +284,51 @@ const HomePage: React.FC = () => {
 	const handleLastMessageAnimationComplete = useCallback(() => {
 		setIsAiResponding(false);
 	}, []);
+
+	const handleEndConversation = useCallback(
+		async (aiInitiated = false) => {
+			if (!geminiService.current || !scenarioDetails) {
+				setError(
+					"Cannot end conversation: service or scenario details missing."
+				);
+				setCurrentPhase(GamePhase.HERO);
+				return;
+			}
+
+			setShowConfirmEndDialog(false);
+			setIsLoading(true);
+			setError(null);
+
+			const historyForAnalysis = conversationHistory.filter(
+				(m) => !m.isThoughtBubble
+			);
+			setConversationHistory(historyForAnalysis);
+
+			setCurrentPhase(GamePhase.ANALYSIS);
+
+			try {
+				const finalScenarioDetails = { ...scenarioDetails };
+				// This ensures that an emerged goal is passed to the analysis screen
+				if (displayedGoal && !finalScenarioDetails.conversationGoal) {
+					finalScenarioDetails.conversationGoal = displayedGoal.text;
+				}
+
+				const report = await geminiService.current.analyzeConversation(
+					historyForAnalysis,
+					finalScenarioDetails,
+					currentEngagement
+				);
+				setAnalysisReport(report);
+			} catch (e: any) {
+				console.error("Error generating analysis report:", e);
+				setError(`Failed to generate analysis: ${e.message}`);
+				setAnalysisReport(null);
+			} finally {
+				setIsLoading(false);
+			}
+		},
+		[conversationHistory, scenarioDetails, currentEngagement, displayedGoal]
+	);
 
 	const processAiResponse = useCallback(
 		(
@@ -358,27 +440,38 @@ const HomePage: React.FC = () => {
 					0,
 					Math.min(
 						100,
-						currentEngagement + engagementDelta - ENGAGEMENT_DECAY_PER_TURN
+						currentEngagement +
+							engagementDelta -
+							ENGAGEMENT_DECAY_PER_TURN -
+							stagnantTurnStreak
 					)
 				);
 				setCurrentEngagement(newEngagementValue);
 				setZeroEngagementStreak(
 					newEngagementValue <= 0 ? (prev) => prev + 1 : 0
 				);
+
+				// Update stagnant streak for the NEXT turn
+				if (engagementDelta <= 0) {
+					setStagnantTurnStreak((prev) => prev + 1);
+				} else {
+					setStagnantTurnStreak(0);
+				}
 			}
 
-			// Step 4: Generate new image using the (potentially updated) visual state.
+			// Step 4: Conditionally generate new image.
 			(async () => {
 				if (
+					aiResponse.shouldGenerateNewImage &&
 					currentScenario.establishedVisuals &&
 					geminiService.current &&
 					imagenService.current
 				) {
-					// The AI's response already contains the new pose/action in the visuals object
+					// A significant visual change occurred, generate a new image.
 					const finalVisualsForImage = {
 						...currentScenario.establishedVisuals,
 					};
-					finalVisualsForImage.currentPoseAndAction = aiResponse.aiBodyLanguage; // The body language description is the new pose
+					finalVisualsForImage.currentPoseAndAction = aiResponse.aiBodyLanguage;
 					try {
 						const { fullImagenPrompt } =
 							await geminiService.current.generateImagePrompt(
@@ -387,7 +480,8 @@ const HomePage: React.FC = () => {
 						const imageBase64 = await imagenService.current.generateImage(
 							fullImagenPrompt
 						);
-						setCurrentAIImage(imageBase64);
+						setCurrentAIImage(imageBase64); // Update the main view
+						// Associate the NEW image with the current turn's message
 						setConversationHistory((prev) =>
 							prev.map((m) =>
 								m.id === aiMessageTurn.id
@@ -400,8 +494,26 @@ const HomePage: React.FC = () => {
 							)
 						);
 					} catch (imgError) {
-						console.error("Background image generation failed:", imgError);
+						console.error("Optimized image generation failed:", imgError);
+						// On error, fall back to associating the last known image to avoid a blank.
+						setConversationHistory((prev) =>
+							prev.map((m) =>
+								m.id === aiMessageTurn.id
+									? { ...m, imageUrl: currentAIImage ?? undefined }
+									: m
+							)
+						);
 					}
+				} else {
+					// No new image needed. Carry over the last known image URL to this turn's message for history consistency.
+					// The main view's image (`currentAIImage`) does not change.
+					setConversationHistory((prev) =>
+						prev.map((m) =>
+							m.id === aiMessageTurn.id
+								? { ...m, imageUrl: currentAIImage ?? undefined }
+								: m
+						)
+					);
 				}
 			})();
 
@@ -445,23 +557,23 @@ const HomePage: React.FC = () => {
 				}
 				let goalProgress = aiResponse.goalProgress;
 
-				// If a new goal is similar to the last, transfer some progress
+				// If a new dynamic goal is being established and a previous one was just completed, transfer some progress
 				if (
 					goalChangeInfo?.type === "established" &&
-					displayedGoal?.progress === 100 &&
-					typeof goalChangeInfo.to === "string" &&
-					typeof displayedGoal.text === "string"
+					lastCompletedGoal &&
+					typeof goalChangeInfo.to === "string"
 				) {
 					if (
 						goalChangeInfo.to
 							.toLowerCase()
-							.includes(displayedGoal.text.toLowerCase()) ||
-						displayedGoal.text
+							.includes(lastCompletedGoal.text.toLowerCase()) ||
+						lastCompletedGoal.text
 							.toLowerCase()
 							.includes(goalChangeInfo.to.toLowerCase())
 					) {
 						goalProgress = Math.max(goalProgress, 20); // Give a small boost
 					}
+					setLastCompletedGoal(null); // Consume the completed goal state
 				}
 
 				if (currentScenario.conversationGoal) {
@@ -507,6 +619,7 @@ const HomePage: React.FC = () => {
 
 			const isDynamicGoal = !currentScenario.conversationGoal;
 			if (isDynamicGoal && nextDisplayedGoal && goalIsAchieved) {
+				setLastCompletedGoal(nextDisplayedGoal);
 				setShowGoalAchievedToast({ show: true, text: nextDisplayedGoal.text });
 				setDisplayedGoal(null); // Clear achieved dynamic goal
 				setTimeout(
@@ -522,6 +635,10 @@ const HomePage: React.FC = () => {
 			zeroEngagementStreak,
 			activeAction,
 			isActionPaused,
+			lastCompletedGoal,
+			stagnantTurnStreak,
+			handleEndConversation,
+			currentAIImage,
 		]
 	);
 
@@ -543,11 +660,20 @@ const HomePage: React.FC = () => {
 
 			try {
 				const historyForAI = [...conversationHistory, userMessage];
+				const lastAiMessage = [...conversationHistory]
+					.reverse()
+					.find((m) => m.sender === "ai");
+				const lastAiPose =
+					lastAiMessage?.bodyLanguageDescription ||
+					scenarioDetails.establishedVisuals?.currentPoseAndAction ||
+					"";
+
 				const aiResponse = await geminiService.current.getNextAITurn(
 					historyForAI,
 					messageText,
 					currentEngagement,
 					scenarioDetails,
+					lastAiPose,
 					false, // fastForwardAction
 					isActionPaused // isActionPaused
 				);
@@ -557,8 +683,10 @@ const HomePage: React.FC = () => {
 				const systemErrorMessage: ChatMessage = {
 					id: uuidv4(),
 					sender: "system",
-					text: "I'm sorry, I had a problem generating a response. Please try sending your message again.",
+					text: "I'm sorry, I had a problem generating a response.",
 					timestamp: new Date(),
+					isRetryable: true,
+					originalMessageText: messageText,
 				};
 				setConversationHistory((prev) => [...prev, systemErrorMessage]);
 				setIsAiResponding(false);
@@ -572,6 +700,34 @@ const HomePage: React.FC = () => {
 			isAiResponding,
 			isActionPaused,
 		]
+	);
+
+	const handleRetryMessage = useCallback(
+		(messageText: string) => {
+			// Remove the system error message and the failed user message before retrying.
+			setConversationHistory((prev) => {
+				const lastIsRetryableSystem =
+					prev[prev.length - 1]?.sender === "system" &&
+					prev[prev.length - 1]?.isRetryable;
+				const secondLastIsUser = prev[prev.length - 2]?.sender === "user";
+
+				if (prev.length >= 2 && lastIsRetryableSystem && secondLastIsUser) {
+					return prev.slice(0, -2);
+				}
+				// Fallback if the message order is not as expected, just remove the system message.
+				if (prev.length >= 1 && lastIsRetryableSystem) {
+					return prev.slice(0, -1);
+				}
+				return prev;
+			});
+
+			// Use a timeout to ensure the state update from removing messages has processed
+			// before we add the new message back in handleSendMessage.
+			setTimeout(() => {
+				handleSendMessage(messageText);
+			}, 100);
+		},
+		[handleSendMessage]
 	);
 
 	const handleContinueWithoutSpeaking = useCallback(() => {
@@ -591,11 +747,20 @@ const HomePage: React.FC = () => {
 		setIsAiResponding(true);
 		setError(null);
 		try {
+			const lastAiMessage = [...conversationHistory]
+				.reverse()
+				.find((m) => m.sender === "ai");
+			const lastAiPose =
+				lastAiMessage?.bodyLanguageDescription ||
+				scenarioDetails.establishedVisuals?.currentPoseAndAction ||
+				"";
+
 			const aiResponse = await geminiService.current.getNextAITurn(
 				conversationHistory,
 				"[User fast-forwarded the action]", // Internal note for AI context
 				currentEngagement,
 				scenarioDetails,
+				lastAiPose,
 				true, // Fast Forward Flag
 				isActionPaused
 			);
@@ -623,51 +788,6 @@ const HomePage: React.FC = () => {
 		isActionPaused,
 	]);
 
-	const handleEndConversation = useCallback(
-		async (aiInitiated = false) => {
-			if (!geminiService.current || !scenarioDetails) {
-				setError(
-					"Cannot end conversation: service or scenario details missing."
-				);
-				setCurrentPhase(GamePhase.HERO);
-				return;
-			}
-
-			setShowConfirmEndDialog(false);
-			setIsLoading(true);
-			setError(null);
-
-			const historyForAnalysis = conversationHistory.filter(
-				(m) => !m.isThoughtBubble
-			);
-			setConversationHistory(historyForAnalysis);
-
-			setCurrentPhase(GamePhase.ANALYSIS);
-
-			try {
-				const finalScenarioDetails = { ...scenarioDetails };
-				// This ensures that an emerged goal is passed to the analysis screen
-				if (displayedGoal && !finalScenarioDetails.conversationGoal) {
-					finalScenarioDetails.conversationGoal = displayedGoal.text;
-				}
-
-				const report = await geminiService.current.analyzeConversation(
-					historyForAnalysis,
-					finalScenarioDetails,
-					currentEngagement
-				);
-				setAnalysisReport(report);
-			} catch (e: any) {
-				console.error("Error generating analysis report:", e);
-				setError(`Failed to generate analysis: ${e.message}`);
-				setAnalysisReport(null);
-			} finally {
-				setIsLoading(false);
-			}
-		},
-		[conversationHistory, scenarioDetails, currentEngagement, displayedGoal]
-	);
-
 	const handleRestart = useCallback(() => {
 		setCurrentPhase(GamePhase.SETUP);
 		resetStateForNewGame();
@@ -686,6 +806,56 @@ const HomePage: React.FC = () => {
 	const handleAttemptEndConversation = () => {
 		handleEndConversation(false);
 	};
+
+	const handlePinGoal = useCallback(
+		(goalText: string) => {
+			if (scenarioDetails) {
+				setScenarioDetails((prev) => ({
+					...prev!,
+					conversationGoal: goalText,
+				}));
+				setDisplayedGoal((prev) => (prev ? { ...prev, text: goalText } : null));
+				setGoalJustChanged(true); // Trigger glow effect for pinning
+			}
+		},
+		[scenarioDetails]
+	);
+
+	const handleStartRandom = useCallback(() => {
+		if (!geminiService.current || !imagenService.current) {
+			setError("Services not initialized.");
+			return;
+		}
+		// Show loading indicator immediately
+		setIsLoading(true);
+
+		const environments = Object.values(SocialEnvironment).filter(
+			(e) => e !== SocialEnvironment.CUSTOM
+		);
+		const genders = Object.values(AIGender);
+		const ageBrackets = Object.values(AIAgeBracket).filter(
+			(a) => a !== AIAgeBracket.CUSTOM && a !== AIAgeBracket.NOT_SPECIFIED
+		);
+		const personalityTraits = Object.values(AIPersonalityTrait);
+
+		const randomGender = genders[Math.floor(Math.random() * genders.length)];
+		const numTraits = Math.floor(Math.random() * 3) + 1; // 1 to 3 traits
+		const randomTraits = [...personalityTraits]
+			.sort(() => 0.5 - Math.random())
+			.slice(0, numTraits);
+
+		const randomScenario: ScenarioDetails = {
+			environment:
+				environments[Math.floor(Math.random() * environments.length)],
+			aiGender: randomGender,
+			aiName: "", // Name will be generated by the AI service
+			aiAgeBracket: ageBrackets[Math.floor(Math.random() * ageBrackets.length)],
+			aiPersonalityTraits: randomTraits,
+			isRandomScenario: true,
+		};
+
+		handleStartInteraction(randomScenario);
+	}, [handleStartInteraction]);
 
 	const renderContent = () => {
 		if (
@@ -709,34 +879,33 @@ const HomePage: React.FC = () => {
 
 		if (
 			isLoading &&
-			(currentPhase === GamePhase.SETUP ||
+			(currentPhase === GamePhase.HERO ||
+				currentPhase === GamePhase.SETUP ||
 				(currentPhase === GamePhase.INTERACTION && !scenarioDetails) ||
 				(currentPhase === GamePhase.ANALYSIS && !analysisReport && !error))
 		) {
-			return (
-				<LoadingIndicator
-					message={
-						currentPhase === GamePhase.ANALYSIS
-							? "Generating analysis..."
-							: "Loading..."
-					}
-				/>
-			);
+			let message = "Loading...";
+			if (currentPhase === GamePhase.ANALYSIS) {
+				message = "Generating analysis...";
+			} else if (
+				scenarioDetails?.isRandomScenario ||
+				(currentPhase === GamePhase.HERO && isLoading)
+			) {
+				message = "Conjuring a scenario...";
+			}
+			return <LoadingIndicator message={message} />;
 		}
 
 		switch (currentPhase) {
 			case GamePhase.HERO:
 				return (
 					<HeroScreen
-						onStartGuided={() => {
+						onStart={() => {
 							setSetupMode("guided");
 							handleNavigate(GamePhase.SETUP);
 						}}
-						onStartAdvanced={() => {
-							setSetupMode("advanced");
-							handleNavigate(GamePhase.SETUP);
-						}}
 						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
+						onStartRandom={handleStartRandom}
 					/>
 				);
 			case GamePhase.INSTRUCTIONS:
@@ -750,11 +919,17 @@ const HomePage: React.FC = () => {
 						/>
 					);
 				}
-				return <SetupScreen onStart={handleStartInteraction} />;
+				return (
+					<SetupScreen
+						onStart={handleStartInteraction}
+						onBack={() => setSetupMode("guided")}
+					/>
+				);
 			case GamePhase.INTERACTION:
 				if (!scenarioDetails)
 					return <LoadingIndicator message="Loading scenario..." />;
 
+				const isPinnable = !!displayedGoal && !scenarioDetails.conversationGoal;
 				return (
 					<InteractionScreen
 						scenarioDetails={scenarioDetails}
@@ -763,8 +938,11 @@ const HomePage: React.FC = () => {
 						displayedGoal={displayedGoal}
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
+						isPinnable={isPinnable}
+						onPinGoal={handlePinGoal}
 						isContinueActionSuggested={isContinueActionSuggested}
 						onSendMessage={handleSendMessage}
+						onRetryMessage={handleRetryMessage}
 						onEndConversation={handleAttemptEndConversation}
 						onFastForwardAction={handleFastForwardAction}
 						onContinueWithoutSpeaking={handleContinueWithoutSpeaking}
@@ -796,15 +974,12 @@ const HomePage: React.FC = () => {
 			default:
 				return (
 					<HeroScreen
-						onStartGuided={() => {
+						onStart={() => {
 							setSetupMode("guided");
 							handleNavigate(GamePhase.SETUP);
 						}}
-						onStartAdvanced={() => {
-							setSetupMode("advanced");
-							handleNavigate(GamePhase.SETUP);
-						}}
 						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
+						onStartRandom={handleStartRandom}
 					/>
 				);
 		}
@@ -822,8 +997,13 @@ const HomePage: React.FC = () => {
 				<link rel="icon" href="/logo.svg" />
 			</Head>
 
+			{isAppLoading && <InitialLoadingScreen />}
+
 			{/* Outermost div now visible by default */}
-			<div className="flex flex-col min-h-screen bg-slate-900 text-gray-100">
+			<div
+				className={`flex flex-col min-h-screen bg-slate-900 text-gray-100 ${
+					isAppLoading ? "invisible" : "visible"
+				}`}>
 				<Header
 					onLogoClick={() => {
 						if (currentPhase === GamePhase.INTERACTION) {

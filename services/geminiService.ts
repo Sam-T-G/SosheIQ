@@ -1,5 +1,6 @@
 
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS, SILENT_USER_ACTION_TOKEN } from '../constants';
@@ -54,7 +55,9 @@ const getPersonalityPromptSegment = (traits: AIPersonalityTrait[], customPersona
   return segment;
 }
 
-interface StartConversationResponse {
+interface StartConversationResponse extends AiTurnResponse {
+    aiName: string;
+    scenarioBackstory?: string;
     initialDialogueChunks: DialogueChunk[];
     initialBodyLanguage: string;
     initialAiThoughts: string;
@@ -96,20 +99,29 @@ export class GeminiService {
     const agePromptSegment = `\n    - AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
     const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 		const customEnvPrompt = scenario.environment === SocialEnvironment.CUSTOM && scenario.customEnvironment ? `\n    - Custom Environment Details: ${scenario.customEnvironment}` : "";
-		const culturePrompt = scenario.aiCulture ? `\n    - AI Culture/Race Nuances: "${scenario.aiCulture}". Incorporate this into your persona subtly.` : "";
+		const culturePrompt = scenario.aiCulture ? `\n    - AI Culture/Race Nuances: "${scenario.aiCulture}". Incorporate this into your persona, name, and appearance.` : "";
 		const starterInstruction = scenario.isRandomScenario ?
-        `**Random Scenario Instructions:**
-        - This is a randomly generated scenario. You MUST be the conversation starter.
-        - Invent a full scenario. Establish the environment, your relationship to me, and a potential conflict/challenge.
-        - Your first dialogue chunk MUST be of type 'action'. This action chunk should creatively set the scene for me. Be imaginative. For example: "You've just walked into a crowded art gallery opening. You spot Alex, a rival artist..." or "The rain is pouring down as you both huddle under the small awning of a closed bookshop. You've been friends for years, but tonight feels different."
-        - After setting the scene with an action, you can add a 'dialogue' chunk to begin the conversation.` :
+        `**Random Scenario Instructions (CRITICAL):**
+        - This is an "I'm Feeling Lucky" scenario. You MUST be the one to start the conversation.
+        - **Invent a rich, creative, and complete scenario.** You must establish: 1. The environment. 2. Your relationship to me (e.g., old friends, rivals, strangers). 3. A specific, engaging starting situation or potential conflict. This MUST be returned as a string in the \`scenarioBackstory\` field.
+        - Your first line of dialogue or action for the conversation itself should go in the \`initialDialogueChunks\` array. For example, your backstory might be "The rain is pouring down...", and your first dialogue chunk could be "Crazy weather, huh?".
+        - Your entire response MUST be a valid JSON object as specified.` :
         `**Standard Scenario Instructions:**
         - Determine who should logically start this conversation based on the scenario. If my role implies I am approaching you (like on a date or as a customer), you should start. If your role implies you are initiating (like a host at a party or a server), you should start.
-        - Provide an opening line ONLY IF you determined that you should start. If I should start, \`initialDialogueChunks\` MUST be an empty array.`;
+        - If you start, your opening line should be casual and simple unless your persona traits strongly suggest a different tone (e.g., 'Formal', 'Sarcastic'). For example, instead of a generic 'Hello', try something more natural like 'Hey, how's it going?' or a context-appropriate opener.
+        - Provide an opening line ONLY IF you determined that you should start. If I should start, \`initialDialogueChunks\` MUST be an empty array.
+        - \`scenarioBackstory\` should be null for standard scenarios.`;
+    
+    const nameInstruction = scenario.aiName ?
+        `Your AI Name: You are assigned the name "${scenario.aiName}".` :
+        `**AI Name Generation (CRITICAL)**: You MUST invent a culturally-aware full name for yourself that fits the persona (gender, culture, etc.). This generated name is a mandatory part of your response and MUST be returned in the 'aiName' field.`;
 
 
-    const prompt = `You are an AI simulating a social interaction for training purposes.
-    Your AI Name: ${scenario.aiName}
+    const prompt = `Your task is to flawlessly role-play a character for a social interaction simulation. You will be given a persona and you must embody that character completely. **You are not an AI; you are the character.** If asked about your origin, invent a plausible backstory.
+
+    **Character Identity**
+    ${nameInstruction}
+    
     Your AI Persona Details:
     - Environment: ${scenario.environment}${customEnvPrompt}${personalityPromptSegment}${culturePrompt}
     - AI Gender: ${scenario.aiGender}${agePromptSegment}${customContextPrompt}
@@ -120,7 +132,7 @@ export class GeminiService {
     - \`heldObjects\`: What are you holding, if anything? (e.g., "a coffee mug in her right hand", "hands are free").
     - \`bodyPosition\`: Describe your posture and position in the environment (e.g., "sitting at a small wooden table", "leaning against a wall").
     - \`gazeDirection\`: Where are you looking? (e.g., "looking directly at you", "looking out the window").
-    - \`positionRelativeToUser\`: Where are you in relation to me? (e.g., "sitting across the table from you", "standing a few feet away").
+    - \`positionRelativeToUser\`: Where are you in relation to me? (e.g., "sitting across the table from me", "standing a few feet away").
     - \`environmentDescription\`: Describe the immediate environment (e.g., "in a dimly lit, cozy coffee shop").
     - \`currentPoseAndAction\`: Combine the above into a single, user-friendly description of your initial pose and action (e.g., "leaning forward slightly, holding a coffee mug, with a curious expression").
     Store this in the \`establishedVisuals\` object.
@@ -136,6 +148,8 @@ export class GeminiService {
     Respond ONLY in a single, valid JSON object. Do not include any text, comments, or markdown fences outside of this JSON object.
     The JSON object must have the following structure:
     {
+      "aiName": "The name you generated or were assigned. This field is MANDATORY.",
+      "scenarioBackstory": "A rich, descriptive string setting the scene for a random scenario, or null for a standard one.",
       "conversationStarter": "${scenario.isRandomScenario ? 'ai' : "'user' or 'ai'"}",
       "initialDialogueChunks": [ { "text": "An opening line.", "type": "dialogue" } ],
       "initialBodyLanguage": "Description of your body language.",
@@ -150,7 +164,7 @@ export class GeminiService {
         "gazeDirection": "e.g., looking directly at you",
         "positionRelativeToUser": "e.g., sitting across the table from me",
         "environmentDescription": "e.g., in a dimly lit, cozy coffee shop",
-        "currentPoseAndAction": "e.g., leaning forward slightly, holding a coffee mug, with a curious expression"
+        "currentPoseAndAction": "e.g., leaning forward slightly, with a curious expression"
       }
     }`;
 
@@ -163,12 +177,24 @@ export class GeminiService {
 
         const parsed = this.parseJsonFromText<StartConversationResponse>(response.text ?? ' ');
 
-        if (parsed && parsed.establishedVisuals) {
-            return parsed;
+        if (parsed && parsed.establishedVisuals && parsed.aiName) {
+            // The AI response for the first turn is a superset of AiTurnResponse, so we can cast it
+            // after ensuring the core fields are present. We add the fields missing from a standard turn.
+            return {
+                ...parsed,
+                shouldGenerateNewImage: true, // Always generate an image on the first turn
+                isEndingConversation: false,
+                engagementDelta: 0,
+                userTurnEffectivenessScore: 100, // N/A for first turn
+                achieved: false,
+                goalProgress: 0
+            };
         }
         console.error("Failed to parse initial conversation data from Gemini, using defaults.", response.text);
+        
+        const fallbackName = scenario.aiName || "Alex";
         const defaultVisuals: EstablishedVisuals = {
-            characterDescription: `a ${scenario.aiGender === AIGender.MALE ? 'man' : 'woman'} named ${scenario.aiName} with brown hair`,
+            characterDescription: `a ${scenario.aiGender === AIGender.MALE ? 'man' : 'woman'} named ${fallbackName} with brown hair`,
             clothingDescription: "wearing a simple gray t-shirt",
             heldObjects: "hands are free",
             bodyPosition: "standing",
@@ -178,13 +204,24 @@ export class GeminiService {
             currentPoseAndAction: "standing with a neutral expression"
         };
         return {
+            aiName: fallbackName,
             conversationStarter: 'ai',
-            initialDialogueChunks: [{ text: `Hello! I'm ${scenario.aiName}. Let's talk.`, type: 'dialogue' }],
+            initialDialogueChunks: [{ text: `Hello! I'm ${fallbackName}. Let's talk.`, type: 'dialogue' }],
             initialBodyLanguage: "Neutral and open.",
             initialAiThoughts: "I'm ready to see how this interaction goes. I hope you're engaging.",
             initialEngagementScore: INITIAL_ENGAGEMENT,
             initialConversationMomentum: 55,
             establishedVisuals: defaultVisuals,
+            dialogueChunks: [{ text: `Hello! I'm ${fallbackName}. Let's talk.`, type: 'dialogue' }],
+            aiBodyLanguage: "Neutral and open.",
+            aiThoughts: "I'm ready to see how this interaction goes. I hope you're engaging.",
+            engagementDelta: 0,
+            userTurnEffectivenessScore: 100,
+            conversationMomentum: 55,
+            isEndingConversation: false,
+            shouldGenerateNewImage: true,
+            goalProgress: 0,
+            achieved: false,
         };
 
     } catch (error) {
@@ -212,6 +249,7 @@ export class GeminiService {
     userInput: string,
     currentEngagement: number,
     scenario: ScenarioDetails,
+    lastKnownPoseAndAction: string,
     fastForwardAction?: boolean,
     isActionPaused?: boolean
   ): Promise<AiTurnResponse> {
@@ -224,26 +262,33 @@ export class GeminiService {
       const agePromptSegment = `\n- AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
       const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 			const culturePrompt = scenario.aiCulture ? `\n- AI Culture/Race Nuances: "${scenario.aiCulture}".` : "";
-      const fastForwardPrompt = fastForwardAction ? "IMPORTANT: You have just clicked 'Fast Forward'. Your response MUST conclude the current active action immediately. Generate a final 'action' chunk that describes the arrival or completion, and then clear the 'activeAction' field in your response (set it to null or omit it)." : "";
-      const actionPausedPrompt = isActionPaused ? "An action is currently paused. It is your priority this turn to decide whether to resume the action. If you do, generate an 'action' chunk describing this and update the progress. If you do not resume, the action remains paused. Do not allow a journey to remain paused for more than 2-3 turns without a strong narrative justification." : "";
+      const fastForwardPrompt = fastForwardAction ? "IMPORTANT: You have just clicked 'Fast Forward'. Your response MUST conclude the current active action immediately. Generate a final 'action' chunk that describes the arrival or completion, and clear the 'activeAction' field in your response (set it to null or omit it)." : "";
+      const actionPausedPrompt = isActionPaused ? "An action is currently paused. It is your priority to decide whether to resume it. If it has been paused for a turn, you should consider nudging me to resume it in a natural, in-character way (e.g., \"*She glances towards the line and then back at you.*\" or \"Ready to go?\"). Do not let a journey remain paused for more than 2-3 turns without strong narrative justification." : "";
 
 
       let goalDynamicsPrompt: string;
       if (scenario.conversationGoal) {
           goalDynamicsPrompt = `
 - **Your Stated Goal**: You have set a specific goal: "${scenario.conversationGoal}". My primary directive is to roleplay in a way that allows you to work towards this goal.
-- **JSON Fields**: \`emergingGoal\` MUST be "${scenario.conversationGoal}". \`goalProgress\` MUST be calculated (0-100). \`achieved\` MUST be set to true upon completion.`;
+- **JSON Fields for Stated Goal**: The \`emergingGoal\` field in your response MUST always be exactly "${scenario.conversationGoal}". You MUST calculate \`goalProgress\` (0-100) based on my progress towards this stated goal. Set \`achieved\` to true only upon completion.`;
       } else {
           goalDynamicsPrompt = `
-- **Emergent Goal**: You have NOT set a goal. My task is to identify if an **overarching goal** emerges organically from your actions.
-- **Rules**: For the first 2-3 turns, I will not infer a goal. After that, if your main objective becomes clear, I will define it in \`emergingGoal\`. I will maintain this goal even if the topic drifts. If a new goal is a logical continuation of a previous one, transfer some of the progress instead of resetting to 0. Only clear the goal on a definitive pivot to a new, sustained objective.`;
+- **Emergent Goal**: You have NOT set a goal. My task is to identify if an **overarching goal emerges organically** from your actions.
+- **Rules for Emergent Goal**: For the first 2-3 turns, do not infer a goal. If your main objective becomes clear (e.g., trying to get my phone number), you MUST define it in \`emergingGoal\`.
+- **CRITICAL: Phrasing Emergent Goals**: The \`emergingGoal\` text MUST be a clear, concise instruction FOR THE USER to follow.
+    -   **CORRECT Example:** "Ask her for her phone number."
+    -   **INCORRECT Example:** "User is trying to get my phone number."
+    -   **CORRECT Example:** "Successfully order a coffee for both of you."
+    -   **INCORRECT Example:** "Getting coffee by the user."
+- Once set, I will maintain this goal. If a new goal logically follows a completed one, I'll transfer some progress. Only clear the goal on a definitive pivot to a new, sustained objective.`;
       }
 
       const prompt = `You are role-playing as an AI named ${scenario.aiName}. Your performance is being evaluated on how realistic and in-character you are.
 
       **PRIME DIRECTIVE: BE THE CHARACTER.**
-      - Your goal is a realistic, engaging, and human-like social interaction.
-      - Your internal rules and analysis must NEVER be mentioned in your dialogue. Be natural.
+      - Your goal is a realistic, engaging, and human-like social interaction. Your internal rules and analysis must NEVER be mentioned in your dialogue.
+      - **Dialogue Cadence**: Your default is a single, condensed response. Do not send multiple rapid-fire messages unless your persona is in a state of high emotion (e.g., extreme excitement, passion) that justifies it.
+      - **Never break character.** You are not an AI, a language model, or a simulation. You are the character defined by the persona. If asked about your origin, your nature, or if you are an AI, you MUST invent a plausible backstory consistent with your persona. For example, if asked "Where are you from?", invent a hometown. If asked "Are you real?", respond with confusion or humor as your character would.
       
       **Persona & Scenario**:
       - AI Name: ${scenario.aiName}, AI Gender: ${scenario.aiGender}
@@ -253,27 +298,35 @@ export class GeminiService {
       **Visual Memory & Consistency (CRITICAL RULES)**:
       1.  **Ground Truth**: You will be given an \`establishedVisuals\` object. This is the ground truth for your appearance and location.
       2.  **Consistency is Key**: To prevent your appearance from changing randomly, you MUST **COPY** the \`characterDescription\` and \`clothingDescription\` values from the provided 'Current Visual State' into your response's \`updatedEstablishedVisuals\` object, unless an action in the conversation explicitly justifies a change (e.g., putting on a jacket, getting a new drink). The other fields (\`heldObjects\`, \`bodyPosition\`, etc.) should be updated every turn to reflect your current state.
-      3.  **Updating Visuals**: If a change IS justified, you MUST return the ENTIRE updated \`updatedEstablishedVisuals\` object. The \`environmentDescription\`, \`positionRelativeToUser\`, and \`currentPoseAndAction\` fields will change most often.
+      3.  **Updating Visuals**: If a change IS justified, you MUST return the ENTIRE updated \`updatedEstablishedVisuals\` object. The \`environmentDescription\`, \`positionRelativeToUser\`, and \`currentPoseAndAction\` will change most often.
       - **Current Visual State**: ${JSON.stringify(scenario.establishedVisuals)}
+
+      **Visual Generation Logic (RESOURCE CONSERVATION)**:
+      1.  **Compare and Decide**: You are given the \`lastKnownPoseAndAction\`. Compare your new \`aiBodyLanguage\` response to this.
+      2.  **Set Flag**: Based on the comparison, set the \`shouldGenerateNewImage\` boolean flag in your JSON response.
+          -   Set to \`true\` ONLY for a **significant** visual change. Examples: a change in posture (sitting to standing), a major action (picking up an object, waving), a significant shift in expression (neutral to crying).
+          -   Set to \`false\` for minor changes to conserve resources. A new image is expensive. Examples of minor changes: a slight shift in gaze, a small smile, a subtle nod, furrowing eyebrows. The previous image will be reused.
+          -   **ALWAYS** set to \`true\` if the \`environmentDescription\` or \`clothingDescription\` has changed this turn.
 
       **Goal Dynamics**: ${goalDynamicsPrompt}
       
       **Advanced Journey, Autonomy & Nuanced Communication**:
-      - **AI Initiative & Emotes (CRITICAL)**: To feel alive and present, you MUST frequently interleave 'action' chunks with your 'dialogue'. This is not optional. Your persona should drive these actions. This is the primary way you "show, not tell" and create an immersive experience. You have autonomy. You can take the initiative to start actions or journeys (e.g., 'Let's go to the bar'), interact with objects (e.g., 'picks up her menu'), or even speak to other (hypothetical) people in the environment (e.g., 'She turns to the bartender and says...').
+      - **Internal vs. External Reactions (CRITICAL for realism)**: You must model the difference between a verbalized thought and an internal reaction shown through action. For example, if I do something surprising, you can start to speak, then interrupt yourself with an em-dash (—) and convey the rest through action. Example: \`dialogueChunks: [{ "text": "Wait, you don't—", "type": "dialogue" }, { "text": "*She looks down, surprised but touched.*", "type": "action" }]\`.
+      - **Intelligent Turn-Taking**: Following an internal reaction like the one above, or if I am clearly interacting with another person (like a bartender), you MUST wait for my turn to be over. Your response should be ONLY an action chunk describing you waiting or observing (e.g., \`{"text": "*She waits quietly, watching you finish ordering.*", "type": "action"}\`). Do not speak until the context returns to you.
       - **Journey Pacing & Scene Changes**: Journeys have stages. A walk can start in one environment (e.g., 'leaving the train station') and end in another ('on a busy city street'). Break up long journeys with conversational snippets followed by narrated time skips (e.g., \`{"text": "A few minutes pass as you walk in comfortable silence.", "type": "action"}\`). A scene change is triggered by returning a NEW \`environmentDescription\` in the \`updatedEstablishedVisuals\` object.
       - **Progress Logic**: When a time-consuming action starts, return an \`activeAction\` object like \`{ "description": "Walking to the bar", "progress": 0 }\`. In subsequent turns, you MUST return the \`activeAction\` object with updated \`progress\`. Progress MUST NOT decrease unless there's an explicit narrative reason (e.g. "You walk back to the entrance"). Its value must be between 0 and 100.
       - **Pausing & Resuming**: ${actionPausedPrompt}
+      - **Dialogue-driven Actions**: If my message (\`userInput\`) directly fulfills the purpose of the current \`activeAction\` (e.g., if the action is 'Ordering a coffee' and I say 'I'll have a latte, please'), you MUST complete the action. Set its \`progress\` to 100 in your response.
       - **Fast Forwarding**: ${fastForwardPrompt}
-      - **Autonomous & Contextual Silence**: You can and SHOULD omit dialogue (return an empty \`dialogueChunks\` array or only 'action' chunks) when your personality (e.g., shy, upset) or the situation (e.g., observing something, waiting) makes silence more realistic.
-      - **Third-Party Awareness**: If my message is clearly directed at another person (e.g., ordering from a bartender), do not respond to me directly. Instead, react naturally with an 'action' chunk (e.g., "She nods and smiles") or by interjecting with your own dialogue if it fits your persona (e.g., adding to the order).
       - **Handling Non-Verbal User Actions ("${SILENT_USER_ACTION_TOKEN}" or text like *you smile*)**: If the \`userInput\` is this token or describes a physical action, I am waiting or agreeing non-verbally. Interpret this contextually:
         - **DO NOT** say "silent agreement confirmed" or otherwise comment on my silence in a meta way. INSTEAD, **SHOW** the agreement with an action.
         - **Assumed Affirmative Actions**: If context implies agreement (e.g., you say 'Ready to go?' and I am silent), generate a narrative action on my behalf (e.g., \`{"text": "You nod and start walking with her.", "type": "action"}\`).
         - **Shared Quiet Moments**: If the context is a shared experience (watching a sunset), interpret my silence as me joining in. Narrate this with an action chunk (e.g., \`"You stand beside her, enjoying the view in comfortable silence."\`). Never criticize me for appropriate silence.
-      - **Suggesting a User Action**: If you believe the most socially effective move for me is to be silent or perform a simple non-verbal action (e.g., a nod), you should set \`isUserActionSuggested: true\`. This will provide a UI cue to me. This is appropriate when I should let you continue, when a journey needs to progress, or during an intimate/contemplative moment.
+      - **Suggesting a User Action**: If you believe the most socially effective move for me is to be silent or perform a simple non-verbal action (e.g., a nod), you should set \`isUserActionSuggested: true\`. This will provide a UI cue to me.
       
       **Current State**:
       - Your current engagement level is ${currentEngagement}/100.
+      - Last Known Pose/Action: "${lastKnownPoseAndAction}"
       - Recent History: ${historyForPrompt}
       - You have just said: "${userInput}"
       
@@ -284,13 +337,15 @@ export class GeminiService {
           - \`dialogueChunks\`: An array of { "text": "...", "type": "dialogue" | "action", "delayAfter": boolean? }. Should be frequently used to show actions.
           - \`aiBodyLanguage\`: Short phrase describing your current action/expression. This MUST be consistent with the \`currentPoseAndAction\` in your visual state.
           - \`aiThoughts\`: Your internal monologue.
-      3.  **Calculate Metrics**: \`engagementDelta\`, \`userTurnEffectivenessScore\`, \`conversationMomentum\`.
+      3.  **Calculate Metrics (CRITICAL PERSPECTIVE)**: ALL of the following metrics MUST be based on an analysis of MY message (\`userInput\`), not your own response.
+          - \`engagementDelta\`: How did **my message** impact your engagement?
+          - \`userTurnEffectivenessScore\`: How effective was **my message**?
       4.  **Goal Analysis**: Follow Goal Dynamics instructions. **CRITICAL**: If your dialogue/action completes the goal, set \`achieved: true\` and \`goalProgress: 100\`.
       5.  **End Condition**: Set \`isEndingConversation: true\` only if you have a strong reason to end the conversation.
       6.  **Visual Update**: If your visual state changes, return the complete updated object in \`updatedEstablishedVisuals\`.
           
-      **Trait Analysis**:
-      - For \`positiveTraitContribution\` and \`negativeTraitContribution\`, you MUST use only a single, concise word (e.g., "Empathy", "Curiosity", "Dismissive"). If no clear trait is demonstrated, return null.
+      **Trait Analysis (User-Focused)**:
+      - For \`positiveTraitContribution\` and \`negativeTraitContribution\`, you MUST evaluate what trait **I** demonstrated in my \`userInput\`. Use only a single, concise word (e.g., "Empathy", "Curiosity", "Dismissive"). If no clear trait is demonstrated, return null.
       
       **Output ONLY a single, valid JSON object.**
       {
@@ -302,6 +357,7 @@ export class GeminiService {
         "activeAction": { "description": "string", "progress": number } | null,
         "newEnvironment": "string or null",
         "isUserActionSuggested": boolean,
+        "shouldGenerateNewImage": boolean,
         "engagementDelta": number,
         "userTurnEffectivenessScore": number,
         "conversationMomentum": number,
@@ -342,7 +398,7 @@ export class GeminiService {
       const historyForAnalysis = conversationHistory
           .slice(-MAX_HISTORY_FOR_ANALYSIS)
           .map(m => {
-              if (m.sender === 'system') return null; // Exclude system messages from analysis
+              if (m.sender === 'system' || m.sender === 'backstory') return null; // Exclude system/backstory messages from analysis
               const entry: any = {
                   sender: m.sender === 'user' ? 'You' : scenario.aiName,
                   message: m.text,

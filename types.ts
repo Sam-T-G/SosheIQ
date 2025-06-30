@@ -12,57 +12,45 @@ export enum SocialEnvironment {
 }
 
 export enum AIPersonalityTrait {
-  // Social Style (8)
-  INTROVERTED = "Introverted",
-  OUTGOING = "Outgoing", // Replaced EXTROVERTED
-  RESERVED = "Reserved", // Replaced ALOOF
-  SOCIABLE = "Sociable", // Replaced GREGARIOUS
-  FLIRTATIOUS = "Flirtatious",
-  FORMAL = "Formal",
-  INFORMAL = "Informal",
-  GUARDED = "Guarded", // New
-
-  // Emotional Tone (10)
-  ANXIOUS = "Anxious",
-  CYNICAL = "Cynical", // Replaced JADED
-  HAPPY = "Happy", // Replaced CHEERFUL
-  SAD = "Sad", // Replaced MELANCHOLY
-  IRRITABLE = "Irritable",
-  EMPATHETIC = "Empathetic",
-  CALM = "Calm",
-  PLAYFUL = "Playful",
-  SERIOUS = "Serious",
-  ENTHUSIASTIC = "Enthusiastic", // New
-
-  // Intellectual Style (10)
-  PHILOSOPHICAL = "Philosophical",
-  ACADEMIC = "Academic", // Replaced PEDANTIC
-  INQUISITIVE = "Inquisitive",
-  NAIVE = "Naive",
-  EXPERIENCED = "Experienced", // Replaced WORLDLY
-  ANALYTICAL = "Analytical",
-  CURIOUS = "Curious",
-  CREATIVE = "Creative",
-  LOGICAL = "Logical",
-  IMAGINATIVE = "Imaginative", // New
-
-  // Core Traits (16)
-  CONFIDENT = "Confident",
-  SHY = "Shy",
-  AMBITIOUS = "Ambitious",
-  HUMBLE = "Humble",
-  UNCONVENTIONAL = "Unconventional", // Replaced ECCENTRIC
-  UNEMOTIONAL = "Unemotional", // Replaced STOIC
-  IMPULSIVE = "Impulsive",
-  SUPPORTIVE = "Supportive",
-  ASSERTIVE = "Assertive",
+  // Communication Style
+  TALKATIVE = "Talkative",
+  QUIET = "Quiet",
   DIRECT = "Direct",
   SARCASTIC = "Sarcastic",
+  FORMAL = "Formal",
+  INFORMAL = "Informal",
   WITTY = "Witty",
-  CHALLENGING = "Challenging",
-  SKEPTICAL = "Skeptical",
+  ASSERTIVE = "Assertive",
+
+  // General Mood
+  CHEERFUL = "Cheerful",
+  GRUMPY = "Grumpy",
+  ANXIOUS = "Anxious",
+  CALM = "Calm",
+  SERIOUS = "Serious",
+  PLAYFUL = "Playful",
+  SAD = "Sad",
+  ENTHUSIASTIC = "Enthusiastic",
+  
+  // Attitude / Outlook
   OPTIMISTIC = "Optimistic",
   PESSIMISTIC = "Pessimistic",
+  SUPPORTIVE = "Supportive",
+  CHALLENGING = "Challenging",
+  CURIOUS = "Curious",
+  SKEPTICAL = "Skeptical",
+  CREATIVE = "Creative",
+  LOGICAL = "Logical",
+
+  // Social Behavior
+  CONFIDENT = "Confident",
+  SHY = "Shy",
+  FLIRTATIOUS = "Flirtatious",
+  GUARDED = "Guarded",
+  EMPATHETIC = "Empathetic",
+  HUMBLE = "Humble",
+  AMBITIOUS = "Ambitious",
+  IMPULSIVE = "Impulsive",
 }
 
 
@@ -125,6 +113,8 @@ export interface ActiveAction {
 }
 
 export interface AiTurnResponse {
+    aiName?: string; // Only present in the first turn
+    scenarioBackstory?: string; // For "I'm Feeling Lucky"
     dialogueChunks: DialogueChunk[];
     aiBodyLanguage: string;
     aiThoughts: string;
@@ -134,7 +124,8 @@ export interface AiTurnResponse {
     positiveTraitContribution?: string;
     negativeTraitContribution?: string;
     isEndingConversation: boolean;
-    isUserActionSuggested?: boolean; // New field for suggesting a non-verbal user action
+    isUserActionSuggested?: boolean;
+    shouldGenerateNewImage: boolean;
     emergingGoal?: string;
     goalProgress: number;
     achieved: boolean;
@@ -147,7 +138,7 @@ export interface AiTurnResponse {
 
 export interface ChatMessage {
   id: string;
-  sender: 'user' | 'ai' | 'system';
+  sender: 'user' | 'ai' | 'system' | 'backstory';
   text: string;
   dialogueChunks?: DialogueChunk[];
   bodyLanguageDescription?: string;
@@ -167,6 +158,8 @@ export interface ChatMessage {
     from?: string;
     to?: string;
   };
+  isRetryable?: boolean;
+  originalMessageText?: string;
 }
 
 export interface TurnByTurnAnalysisItem {

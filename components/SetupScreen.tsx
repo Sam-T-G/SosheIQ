@@ -6,9 +6,11 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
+import { ArrowLeftIcon } from "./Icons";
 
 interface SetupScreenProps {
 	onStart: (details: ScenarioDetails) => void;
+	onBack: () => void;
 }
 
 type NameInputMode = "manual" | "automatic";
@@ -19,68 +21,55 @@ const MAX_CONVERSATION_GOAL_LENGTH = 200;
 const MAX_CUSTOM_ENV_LENGTH = 200;
 const MAX_AI_CULTURE_LENGTH = 100;
 
-// Expanded list of categorized personality traits
+// RETHOUGHT: New, simpler, and more diverse trait categories
 const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
-	"Social Style": [
-		AIPersonalityTrait.INTROVERTED,
-		AIPersonalityTrait.OUTGOING,
-		AIPersonalityTrait.RESERVED,
-		AIPersonalityTrait.SOCIABLE,
-		AIPersonalityTrait.FLIRTATIOUS,
-		AIPersonalityTrait.FORMAL,
-		AIPersonalityTrait.INFORMAL,
-		AIPersonalityTrait.GUARDED,
-	],
-	"Emotional Tone": [
-		AIPersonalityTrait.ANXIOUS,
-		AIPersonalityTrait.CYNICAL,
-		AIPersonalityTrait.HAPPY,
-		AIPersonalityTrait.SAD,
-		AIPersonalityTrait.IRRITABLE,
-		AIPersonalityTrait.EMPATHETIC,
-		AIPersonalityTrait.CALM,
-		AIPersonalityTrait.PLAYFUL,
-		AIPersonalityTrait.SERIOUS,
-		AIPersonalityTrait.ENTHUSIASTIC,
-	],
-	"Intellectual Style": [
-		AIPersonalityTrait.PHILOSOPHICAL,
-		AIPersonalityTrait.ACADEMIC,
-		AIPersonalityTrait.INQUISITIVE,
-		AIPersonalityTrait.NAIVE,
-		AIPersonalityTrait.EXPERIENCED,
-		AIPersonalityTrait.ANALYTICAL,
-		AIPersonalityTrait.CURIOUS,
-		AIPersonalityTrait.CREATIVE,
-		AIPersonalityTrait.LOGICAL,
-		AIPersonalityTrait.IMAGINATIVE,
-	],
-	"Core Traits": [
+	"Social Behavior": [
 		AIPersonalityTrait.CONFIDENT,
 		AIPersonalityTrait.SHY,
-		AIPersonalityTrait.AMBITIOUS,
+		AIPersonalityTrait.FLIRTATIOUS,
+		AIPersonalityTrait.GUARDED,
+		AIPersonalityTrait.EMPATHETIC,
 		AIPersonalityTrait.HUMBLE,
-		AIPersonalityTrait.UNCONVENTIONAL,
-		AIPersonalityTrait.UNEMOTIONAL,
+		AIPersonalityTrait.AMBITIOUS,
 		AIPersonalityTrait.IMPULSIVE,
-		AIPersonalityTrait.SUPPORTIVE,
-		AIPersonalityTrait.ASSERTIVE,
+	],
+	"Communication Style": [
+		AIPersonalityTrait.TALKATIVE,
+		AIPersonalityTrait.QUIET,
 		AIPersonalityTrait.DIRECT,
 		AIPersonalityTrait.SARCASTIC,
+		AIPersonalityTrait.FORMAL,
+		AIPersonalityTrait.INFORMAL,
 		AIPersonalityTrait.WITTY,
-		AIPersonalityTrait.CHALLENGING,
-		AIPersonalityTrait.SKEPTICAL,
+		AIPersonalityTrait.ASSERTIVE,
+	],
+	"General Mood": [
+		AIPersonalityTrait.CHEERFUL,
+		AIPersonalityTrait.GRUMPY,
+		AIPersonalityTrait.ANXIOUS,
+		AIPersonalityTrait.CALM,
+		AIPersonalityTrait.SERIOUS,
+		AIPersonalityTrait.PLAYFUL,
+		AIPersonalityTrait.SAD,
+		AIPersonalityTrait.ENTHUSIASTIC,
+	],
+	"Attitude / Outlook": [
 		AIPersonalityTrait.OPTIMISTIC,
 		AIPersonalityTrait.PESSIMISTIC,
+		AIPersonalityTrait.SUPPORTIVE,
+		AIPersonalityTrait.CHALLENGING,
+		AIPersonalityTrait.CURIOUS,
+		AIPersonalityTrait.SKEPTICAL,
+		AIPersonalityTrait.CREATIVE,
+		AIPersonalityTrait.LOGICAL,
 	],
 };
 
-// Define the desired display order for categories
 const orderedPersonalityCategories = [
-	"Social Style",
-	"Core Traits",
-	"Emotional Tone",
-	"Intellectual Style",
+	"Social Behavior",
+	"Communication Style",
+	"General Mood",
+	"Attitude / Outlook",
 ];
 
 interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
@@ -310,7 +299,10 @@ const generateRandomAiName = (gender: AIGender): string => {
 	return `${firstName} ${lastName}`;
 };
 
-export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
+export const SetupScreen: React.FC<SetupScreenProps> = ({
+	onStart,
+	onBack,
+}) => {
 	const [environment, setEnvironment] = useState<SocialEnvironment>(
 		SocialEnvironment.CASUAL
 	);
@@ -535,14 +527,21 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 
 	return (
 		<div className="w-full max-w-3xl p-6 md:p-10 bg-slate-800 rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
-			<h1
-				className="text-4xl md:text-5xl font-bold text-center text-teal-400 mb-6 drop-shadow-md opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
-				style={{ animationDelay: "0.1s" }}>
-				Advanced Interaction Setup
-			</h1>
+			<div className="flex items-center gap-4 mb-4">
+				<button
+					type="button"
+					onClick={onBack}
+					className="p-2 rounded-full hover:bg-slate-700 transition-colors">
+					<ArrowLeftIcon className="h-6 w-6 text-slate-300" />
+				</button>
+				<h1 className="text-3xl md:text-4xl font-bold text-center text-teal-400 drop-shadow-md">
+					Advanced Interaction Setup
+				</h1>
+			</div>
+
 			<p
-				className="text-center text-gray-400 mb-10 text-lg opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
-				style={{ animationDelay: "0.2s" }}>
+				className="text-center text-gray-400 mb-6 text-lg opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
+				style={{ animationDelay: "0.1s" }}>
 				Fine-tune every aspect of the AI's persona and scenario.
 			</p>
 			<form onSubmit={handleSubmit} className="space-y-6">
@@ -869,17 +868,25 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onStart }) => {
 					/>
 				</Section>
 
-				<button
-					type="submit"
-					className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg 
-                     transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-xl 
-                     focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-50
-                     opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
+				<div
+					className="flex flex-col sm:flex-row gap-4 mt-8 opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
 					style={{
 						animationDelay: `${sectionBaseDelay + sectionDelayIncrement * 8}s`,
 					}}>
-					Start Interaction
-				</button>
+					<button
+						type="button"
+						onClick={onBack}
+						className="w-full sm:w-auto flex-grow sm:flex-grow-0 px-8 py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-lg shadow-md transition-transform duration-150 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-opacity-75">
+						Back
+					</button>
+					<button
+						type="submit"
+						className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg 
+										transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-xl 
+										focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-50">
+						Start Interaction
+					</button>
+				</div>
 			</form>
 		</div>
 	);

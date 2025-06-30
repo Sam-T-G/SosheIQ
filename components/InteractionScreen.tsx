@@ -2,13 +2,9 @@ import React, { useState, useEffect } from "react";
 import type { ScenarioDetails, ChatMessage, ActiveAction } from "../types";
 import { ProgressBar } from "./ProgressBar";
 import { AIVisualCue } from "./AIVisualCue";
-import {
-	ChatBubbleIcon,
-	TargetIcon,
-	CheckCircleIcon,
-	FastForwardIcon,
-} from "./Icons";
+import { ChatBubbleIcon, CheckCircleIcon } from "./Icons";
 import { RenderChatInterface } from "./RenderChatInterface";
+import { TopBannerContainer } from "./TopBannerContainer";
 
 interface InteractionScreenProps {
 	scenarioDetails: ScenarioDetails;
@@ -17,11 +13,14 @@ interface InteractionScreenProps {
 	displayedGoal: { text: string; progress: number } | null;
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
+	isPinnable: boolean;
 	isContinueActionSuggested: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
+	onPinGoal: (goalText: string) => void;
 	onContinueWithoutSpeaking: () => void;
+	onRetryMessage: (messageText: string) => void;
 	aiImageBase64: string | null;
 	isLoadingAI: boolean; // True when AI is fetching new image/text
 	onToggleHelpOverlay: () => void;
@@ -65,72 +64,6 @@ const formatPersonalityForDisplay = (details: ScenarioDetails): string => {
 	return personalityDisplay;
 };
 
-const TopBanner: React.FC<{
-	goal: { text: string; progress: number } | null;
-	action: ActiveAction | null;
-	isPaused: boolean;
-	isGlowing?: boolean;
-	onFastForward: () => void;
-	isLoading: boolean;
-}> = ({ goal, action, isPaused, isGlowing, onFastForward, isLoading }) => {
-	if (action) {
-		return (
-			<div className="bg-sky-900/80 backdrop-blur-sm border-t-2 border-sky-500/50 p-3 shadow-lg animate-fadeIn rounded-md">
-				<div className="flex items-center gap-3 mb-1.5">
-					<div className="flex-grow">
-						<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
-							Active Action
-						</p>
-						<p
-							className="text-sm text-sky-100 break-words"
-							title={action.description}>
-							{action.description}
-						</p>
-						{isPaused && (
-							<p className="text-red-400 font-bold text-xs animate-pulse mt-1">
-								ACTIVE PAUSE
-							</p>
-						)}
-					</div>
-					<button
-						onClick={onFastForward}
-						disabled={isLoading}
-						className="p-2 rounded-full bg-sky-700/80 hover:bg-sky-600 text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
-						title="Fast Forward to the end of this action">
-						<FastForwardIcon className="h-5 w-5" />
-					</button>
-				</div>
-				<ProgressBar percentage={action.progress} />
-			</div>
-		);
-	}
-
-	if (goal) {
-		return (
-			<div
-				className={`bg-teal-900/80 backdrop-blur-sm border-t-2 border-teal-500/50 p-3 shadow-lg animate-fadeIn rounded-md ${
-					isGlowing ? "animate-glow-pulse" : ""
-				}`}>
-				<div className="flex items-center gap-3 mb-1.5">
-					<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
-					<div className="flex-grow">
-						<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
-							Conversation Goal
-						</p>
-						<p className="text-sm text-teal-100 break-words" title={goal.text}>
-							{goal.text}
-						</p>
-					</div>
-					<span className="text-lg font-bold text-white">{goal.progress}%</span>
-				</div>
-				<ProgressBar percentage={goal.progress} />
-			</div>
-		);
-	}
-
-	return null;
-};
-
 const GoalAchievedToast: React.FC<{ message: string }> = ({ message }) => (
 	<div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-md p-4 bg-green-600 border-2 border-green-400 rounded-xl shadow-2xl animate-goal-toast">
 		<div className="flex items-center gap-3">
@@ -150,11 +83,14 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	displayedGoal,
 	activeAction,
 	isActionPaused,
+	isPinnable,
 	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
 	onFastForwardAction,
+	onPinGoal,
 	onContinueWithoutSpeaking,
+	onRetryMessage,
 	aiImageBase64,
 	isLoadingAI,
 	onToggleHelpOverlay,
@@ -240,16 +176,16 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						isLoading={isLoadingAI && !aiImageBase64} // Show placeholder only if loading AND no image yet
 					/>
 					{/* Desktop Banner Area */}
-					<div className="hidden md:block">
-						<TopBanner
-							goal={displayedGoal}
-							action={activeAction}
-							isPaused={isActionPaused}
-							isGlowing={goalJustChanged}
-							onFastForward={onFastForwardAction}
-							isLoading={isLoadingAI}
-						/>
-					</div>
+					<TopBannerContainer
+						activeAction={activeAction}
+						isActionPaused={isActionPaused}
+						displayedGoal={displayedGoal}
+						isPinnable={isPinnable}
+						onPinGoal={onPinGoal}
+						onFastForwardAction={onFastForwardAction}
+						isLoadingAI={isLoadingAI}
+						goalJustChanged={goalJustChanged}
+					/>
 				</div>
 
 				{/* Progress bar for desktop, hidden on mobile where it's in the chat overlay */}
@@ -286,8 +222,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						displayedGoal={displayedGoal}
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
+						isPinnable={isPinnable}
+						onPinGoal={onPinGoal}
 						isContinueActionSuggested={isContinueActionSuggested}
 						onSendMessage={onSendMessage}
+						onRetryMessage={onRetryMessage}
 						onEndConversation={onEndConversation}
 						onFastForwardAction={onFastForwardAction}
 						onContinueWithoutSpeaking={onContinueWithoutSpeaking}
@@ -343,8 +282,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							displayedGoal={displayedGoal}
 							activeAction={activeAction}
 							isActionPaused={isActionPaused}
+							isPinnable={isPinnable}
+							onPinGoal={onPinGoal}
 							isContinueActionSuggested={isContinueActionSuggested}
 							onSendMessage={onSendMessage}
+							onRetryMessage={onRetryMessage}
 							onEndConversation={onEndConversation}
 							onFastForwardAction={onFastForwardAction}
 							onContinueWithoutSpeaking={onContinueWithoutSpeaking}

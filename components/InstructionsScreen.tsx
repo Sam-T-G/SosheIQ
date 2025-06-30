@@ -317,7 +317,7 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 								transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none
 								focus:ring-4 focus:ring-green-400 focus:ring-opacity-50 flex items-center justify-center space-x-2">
 							<PlayIcon className="h-5 w-5" />
-							<span>Start Interaction Setup</span>
+							<span>Start</span>
 						</button>
 					</div>
 				</div>

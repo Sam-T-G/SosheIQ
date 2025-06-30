@@ -9,15 +9,13 @@ import {
 	CloseIcon,
 	InfoIcon,
 	QuestionMarkIcon,
-	StarIcon,
-	TargetIcon,
 	ChevronDownIcon,
 	ChevronUpIcon,
-	FastForwardIcon,
 	PlayIcon,
 	GestureIcon,
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
+import { TopBannerContainer } from "./TopBannerContainer";
 
 interface RenderChatInterfaceProps {
 	conversationHistory: ChatMessage[];
@@ -25,11 +23,14 @@ interface RenderChatInterfaceProps {
 	displayedGoal: { text: string; progress: number } | null;
 	activeAction: ActiveAction | null;
 	isActionPaused: boolean;
+	isPinnable: boolean;
 	isContinueActionSuggested: boolean;
 	onSendMessage: (message: string) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
+	onPinGoal: (goalText: string) => void;
 	onContinueWithoutSpeaking: () => void;
+	onRetryMessage: (messageText: string) => void;
 	isLoadingAI: boolean;
 	scenarioDetailsAiName: string;
 	isMaxEngagement: boolean;
@@ -42,102 +43,6 @@ interface RenderChatInterfaceProps {
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
 }
-
-const GoalBanner: React.FC<{
-	goal: { text: string; progress: number };
-	isGlowing?: boolean;
-}> = ({ goal, isGlowing }) => (
-	<div
-		className={`bg-teal-900/60 p-3 shadow-lg border-b border-teal-800/50 rounded-b-md ${
-			isGlowing ? "animate-glow-pulse" : ""
-		}`}>
-		<div className="flex items-center gap-3 mb-1.5">
-			<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
-			<div className="flex-grow">
-				<p className="text-xs font-semibold text-teal-300 uppercase tracking-wider">
-					Conversation Goal
-				</p>
-				<p className="text-sm text-teal-100 break-words" title={goal.text}>
-					{goal.text}
-				</p>
-			</div>
-			<span className="text-lg font-bold text-white">{goal.progress}%</span>
-		</div>
-		<ProgressBar percentage={goal.progress} />
-	</div>
-);
-
-const ActiveActionBanner: React.FC<{
-	action: ActiveAction;
-	onFastForward: () => void;
-	isLoading: boolean;
-	isPaused: boolean;
-}> = ({ action, onFastForward, isLoading, isPaused }) => (
-	<div className="bg-sky-900/60 p-3 shadow-lg border-b border-sky-800/50 rounded-b-md">
-		<div className="flex items-center gap-3 mb-1.5">
-			<div className="flex-grow">
-				<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
-					Active Action
-				</p>
-				<p
-					className="text-sm text-sky-100 break-words"
-					title={action.description}>
-					{action.description}
-				</p>
-				{isPaused && (
-					<p className="text-red-400 font-bold text-xs animate-pulse mt-1">
-						ACTIVE PAUSE
-					</p>
-				)}
-			</div>
-			<button
-				onClick={onFastForward}
-				disabled={isLoading}
-				className="p-2 rounded-full bg-sky-700/80 hover:bg-sky-600 text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
-				title="Fast Forward to the end of this action">
-				<FastForwardIcon className="h-5 w-5" />
-			</button>
-		</div>
-		<ProgressBar percentage={action.progress} />
-	</div>
-);
-
-const TopBanner: React.FC<{
-	activeAction: ActiveAction | null;
-	isActionPaused: boolean;
-	displayedGoal: { text: string; progress: number } | null;
-	onFastForwardAction: () => void;
-	isLoadingAI: boolean;
-	goalJustChanged: boolean;
-}> = ({
-	activeAction,
-	isActionPaused,
-	displayedGoal,
-	onFastForwardAction,
-	isLoadingAI,
-	goalJustChanged,
-}) => {
-	if (activeAction) {
-		return (
-			<div className="animate-slideDown">
-				<ActiveActionBanner
-					action={activeAction}
-					onFastForward={onFastForwardAction}
-					isLoading={isLoadingAI}
-					isPaused={isActionPaused}
-				/>
-			</div>
-		);
-	}
-	if (displayedGoal) {
-		return (
-			<div className="animate-slideDown">
-				<GoalBanner goal={displayedGoal} isGlowing={goalJustChanged} />
-			</div>
-		);
-	}
-	return null;
-};
 
 // Define InputArea as a standalone component to prevent re-renders from losing focus
 interface InputAreaProps {
@@ -205,14 +110,6 @@ const InputArea: React.FC<InputAreaProps> = ({
 
 	const gesturePlaceholderText =
 		"Describe your action or gesture... e.g., *I lean back and cross my arms*";
-
-	// Auto-resize textarea
-	useEffect(() => {
-		if (dialogueTextareaRef.current) {
-			dialogueTextareaRef.current.style.height = "auto";
-			dialogueTextareaRef.current.style.height = `${dialogueTextareaRef.current.scrollHeight}px`;
-		}
-	}, [dialogueInput]);
 
 	return (
 		<div className={wrapperClasses}>
@@ -359,11 +256,14 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	displayedGoal,
 	activeAction,
 	isActionPaused,
+	isPinnable,
+	onPinGoal,
 	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
 	onFastForwardAction,
 	onContinueWithoutSpeaking,
+	onRetryMessage,
 	isLoadingAI,
 	scenarioDetailsAiName,
 	isMaxEngagement,
@@ -555,13 +455,16 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 				<ChatAreaHeader />
 				{isOverlay && <EngagementBar />}
 				{isOverlay && (
-					<TopBanner
+					<TopBannerContainer
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
 						displayedGoal={displayedGoal}
+						isPinnable={isPinnable}
+						onPinGoal={onPinGoal}
 						onFastForwardAction={onFastForwardAction}
 						isLoadingAI={isLoadingAI}
 						goalJustChanged={goalJustChanged}
+						isOverlay={true}
 					/>
 				)}
 			</div>
@@ -596,6 +499,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 							onThoughtToggle={handleThoughtToggle}
 							scenarioDetailsAiName={scenarioDetailsAiName}
 							onViewImage={onViewImage}
+							onRetryMessage={onRetryMessage}
 						/>
 					))}
 					{isLoadingAI && <ChatMessageViewAIThinking />}

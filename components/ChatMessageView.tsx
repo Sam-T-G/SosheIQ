@@ -1,7 +1,7 @@
 import React from "react";
 import type { ChatMessage } from "../types";
 import { ChatMessageViewAI } from "./ChatMessageViewAI";
-import { StarIcon, SparklesIcon, XCircleIcon } from "./Icons";
+import { StarIcon, SparklesIcon, XCircleIcon, PaperIcon } from "./Icons";
 import { SILENT_USER_ACTION_TOKEN } from "../constants";
 
 interface ChatMessageViewProps {
@@ -11,6 +11,7 @@ interface ChatMessageViewProps {
 	onAnimationComplete?: () => void;
 	onThoughtToggle: () => void;
 	onViewImage: (url: string | null) => void;
+	onRetryMessage: (messageText: string) => void;
 	scenarioDetailsAiName: string;
 }
 
@@ -81,17 +82,40 @@ export const ChatMessageView: React.FC<ChatMessageViewProps> = React.memo(
 		onAnimationComplete,
 		onThoughtToggle,
 		onViewImage,
+		onRetryMessage,
 		scenarioDetailsAiName,
 	}) => {
 		const isUser = message.sender === "user";
 		const isSystem = message.sender === "system";
+		const isBackstory = message.sender === "backstory";
+
+		if (isBackstory) {
+			return (
+				<div className="my-2 p-4 bg-slate-700/80 border border-slate-600/70 rounded-lg shadow-md animate-fadeIn">
+					<h3 className="flex items-center gap-2 text-sm font-semibold text-sky-300 mb-2 uppercase tracking-wider">
+						<PaperIcon className="h-5 w-5" />
+						Scenario Context
+					</h3>
+					<p className="text-sm text-gray-300 italic whitespace-pre-wrap">
+						{message.text}
+					</p>
+				</div>
+			);
+		}
 
 		if (isSystem) {
 			return (
-				<div className="text-center my-2 animate-fadeIn">
-					<p className="text-sm italic text-slate-400 px-4 py-1 bg-slate-700/50 rounded-full inline-block">
+				<div className="flex justify-center items-center gap-2 my-2 animate-fadeIn">
+					<p className="text-sm italic text-slate-400 px-4 py-1 bg-slate-700/50 rounded-full">
 						{message.text}
 					</p>
+					{message.isRetryable && message.originalMessageText && (
+						<button
+							onClick={() => onRetryMessage(message.originalMessageText!)}
+							className="text-xs bg-sky-600 hover:bg-sky-500 text-white font-semibold py-1 px-3 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-sky-400">
+							Retry
+						</button>
+					)}
 				</div>
 			);
 		}
