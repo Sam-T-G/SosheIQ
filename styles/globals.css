@@ -282,3 +282,36 @@ html {
 .animate-goal-toast {
   animation: goal-toast-in-out 7s ease-in-out forwards;
 }
+
+/* Gesture Input Animations */
+@keyframes slide-down-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    grid-template-rows: 0fr;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    grid-template-rows: 1fr;
+  }
+}
+.animate-slide-down-fade-in {
+  animation: slide-down-fade-in 0.3s ease-in-out forwards;
+}
+
+@keyframes slide-up-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    grid-template-rows: 1fr;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+    grid-template-rows: 0fr;
+  }
+}
+.animate-slide-up-fade-out {
+  animation: slide-up-fade-out 0.3s ease-in-out forwards;
+}

@@ -2,7 +2,7 @@
 
 export enum SocialEnvironment {
   CASUAL = "Casual Encounter",
-  DATING = "Dating",
+  DATING = "On a Date",
   WORK = "Work Environment",
   SOCIAL_GATHERING = "Social Gathering",
   FAMILY = "Family Interaction",
@@ -88,9 +88,14 @@ export enum AIAgeBracket {
 export interface EstablishedVisuals {
   characterDescription: string; // "a woman in her late 20s with long, curly brown hair and green eyes"
   clothingDescription: string; // "wearing a simple black t-shirt and blue jeans"
-  environmentDescription: string; // "sitting at a small wooden table in a dimly lit, cozy coffee shop"
-  currentPoseAndAction: string; // "leaning forward slightly, holding a coffee mug, with a curious expression"
+  heldObjects: string; // "holding a coffee mug in her right hand", "hands are free"
+  bodyPosition: string; // "sitting at a small wooden table", "leaning against a wall"
+  gazeDirection: string; // "looking directly at you", "looking out the window"
+  positionRelativeToUser: string; // "sitting across the table from you", "standing a few feet away"
+  environmentDescription: string; // "in a dimly lit, cozy coffee shop"
+  currentPoseAndAction: string; // "leaning forward slightly, with a curious expression" - This is the most immediate action
 }
+
 
 export interface ScenarioDetails {
   environment: SocialEnvironment;
@@ -104,7 +109,8 @@ export interface ScenarioDetails {
   customAiAge?: number;
   customContext?: string;
   conversationGoal?: string;
-  establishedVisuals?: EstablishedVisuals | null; // Replaces aiEstablishedVisualPromptSegment
+  establishedVisuals?: EstablishedVisuals | null;
+  isRandomScenario?: boolean;
 }
 
 export interface DialogueChunk {
@@ -133,16 +139,16 @@ export interface AiTurnResponse {
     achieved: boolean;
     updatedPersonaDetails?: string;
     activeAction?: ActiveAction;
-    updatedEstablishedVisuals?: EstablishedVisuals; // New top-level field for visual state updates
-    newEnvironment?: string; // New top-level field for environment changes
+    updatedEstablishedVisuals?: EstablishedVisuals;
+    newEnvironment?: string;
 }
 
 
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai' | 'system';
-  text: string; // For user/system msgs, or full concatenated text for AI turns
-  dialogueChunks?: DialogueChunk[]; // For AI turns, to allow staged delivery in UI
+  text: string;
+  dialogueChunks?: DialogueChunk[];
   bodyLanguageDescription?: string;
   aiThoughts?: string;
   conversationMomentum?: number;
@@ -163,14 +169,11 @@ export interface ChatMessage {
 }
 
 export interface TurnByTurnAnalysisItem {
-  // AI's part of the exchange
   aiResponse?: string;
   aiBodyLanguage?: string;
   aiThoughts?: string;
   conversationMomentum?: number;
   goalChange?: ChatMessage['goalChange'];
-
-  // User's part of the exchange
   userInput?: string;
   userTurnEffectivenessScore?: number;
   engagementDelta?: number;

@@ -6,7 +6,13 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
-import { PlayIcon, CogIcon, ArrowLeftIcon, TargetIcon } from "./Icons";
+import {
+	PlayIcon,
+	CogIcon,
+	ArrowLeftIcon,
+	TargetIcon,
+	SparklesIcon,
+} from "./Icons";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -308,6 +314,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			aiName: generateRandomAiName(randomGender),
 			aiAgeBracket: ageBrackets[Math.floor(Math.random() * ageBrackets.length)],
 			aiPersonalityTraits: randomTraits,
+			isRandomScenario: true,
 		};
 		onStart(randomScenario);
 	};
@@ -357,17 +364,25 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						<p className="text-lg text-gray-400 mb-8">
 							Configure the AI step-by-step or jump right in.
 						</p>
-						<div className="flex flex-col gap-4 max-w-xs mx-auto sm:flex-row sm:max-w-full">
+						<div className="flex flex-col gap-4 max-w-xs mx-auto sm:max-w-full">
 							<button
 								onClick={handleNext}
 								className="w-full px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg">
-								Start
+								Start Guided Setup
 							</button>
-							<button
-								onClick={randomizeAndStart}
-								className="w-full px-6 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105">
-								Random Scenario
-							</button>
+							<div className="text-center">
+								<button
+									onClick={randomizeAndStart}
+									className="w-full px-6 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105">
+									I'm Feeling Lucky
+								</button>
+								<p className="text-xs text-gray-500 mt-2 px-4">
+									Let the AI create a completely random scenario for you. It
+									will invent the environment, your relationship to the
+									character, and a potential conflict or challenge to get you
+									started immediately.
+								</p>
+							</div>
 						</div>
 					</div>
 				);
@@ -427,19 +442,26 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								{SocialEnvironment.CUSTOM}
 							</h3>
 
-							{scenario.environment === SocialEnvironment.CUSTOM && (
+							{scenario.environment === SocialEnvironment.CUSTOM ? (
 								<div className="mt-4 animate-fadeIn">
+									<p className="text-sm text-center text-gray-400 mb-3">
+										Describe a unique place or situation below.
+									</p>
 									<textarea
 										value={scenario.customEnvironment || ""}
 										onChange={(e) =>
 											updateScenario({ customEnvironment: e.target.value })
 										}
 										onClick={(e) => e.stopPropagation()} // Prevent outer div's onClick from firing
-										placeholder="Describe a unique place or situation... e.g., A quiet library, A parent-teacher conference"
+										placeholder="e.g., A quiet library, a parent-teacher conference, on a ski lift..."
 										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
 										autoFocus
 									/>
 								</div>
+							) : (
+								<p className="text-sm text-center text-gray-400 mt-2">
+									Click here to describe any situation you can imagine.
+								</p>
 							)}
 						</div>
 					</div>
@@ -556,6 +578,15 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						</p>
 
 						<div className="space-y-4">
+							<textarea
+								value={scenario.customAiPersonality || ""}
+								onChange={(e) =>
+									updateScenario({ customAiPersonality: e.target.value })
+								}
+								placeholder="Describe their personality or add unlisted traits here first..."
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mb-4"
+							/>
+
 							{orderedPersonalityCategories.map((category) => (
 								<div key={category}>
 									<h3 className="text-md font-semibold text-teal-300 mb-2 border-b border-slate-600 pb-1">
@@ -601,15 +632,6 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								</div>
 							))}
 						</div>
-
-						<textarea
-							value={scenario.customAiPersonality || ""}
-							onChange={(e) =>
-								updateScenario({ customAiPersonality: e.target.value })
-							}
-							placeholder="You can also add unlisted traits or a detailed description here."
-							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mt-6"
-						/>
 					</div>
 				);
 			case 4:

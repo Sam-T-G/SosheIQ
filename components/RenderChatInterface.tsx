@@ -15,6 +15,7 @@ import {
 	ChevronUpIcon,
 	FastForwardIcon,
 	PlayIcon,
+	GestureIcon,
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 
@@ -138,9 +139,7 @@ const TopBanner: React.FC<{
 
 // Define InputArea as a standalone component to prevent re-renders from losing focus
 interface InputAreaProps {
-	userInput: string;
-	setUserInput: (value: string) => void;
-	handleSend: () => void;
+	onSend: (gesture: string, dialogue: string) => void;
 	handleEndOrFinish: () => void;
 	handleContinue: () => void;
 	isLoadingAI: boolean;
@@ -150,9 +149,7 @@ interface InputAreaProps {
 }
 
 const InputArea: React.FC<InputAreaProps> = ({
-	userInput,
-	setUserInput,
-	handleSend,
+	onSend,
 	handleEndOrFinish,
 	handleContinue,
 	isLoadingAI,
@@ -160,13 +157,33 @@ const InputArea: React.FC<InputAreaProps> = ({
 	hasBlurredBackground,
 	isUserStart,
 }) => {
+	const [dialogueInput, setDialogueInput] = useState("");
+	const [gestureInput, setGestureInput] = useState("");
+	const [showGestureInput, setShowGestureInput] = useState(false);
 	const [isMaxEngagementBannerOpen, setIsMaxEngagementBannerOpen] =
 		useState(true);
+	const dialogueTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+	const handleGestureButtonClick = () => {
+		setShowGestureInput((prev) => !prev);
+	};
+
+	const handleSendClick = () => {
+		if (gestureInput.trim() || dialogueInput.trim()) {
+			onSend(gestureInput.trim(), dialogueInput.trim());
+			setGestureInput("");
+			setDialogueInput("");
+			// Optionally close gesture input on send
+			if (showGestureInput) {
+				setShowGestureInput(false);
+			}
+		}
+	};
 
 	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
-			handleSend();
+			handleSendClick();
 		}
 	};
 
@@ -175,12 +192,23 @@ const InputArea: React.FC<InputAreaProps> = ({
 		: "flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700";
 
 	const textareaClasses = hasBlurredBackground
-		? `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-800/50 placeholder-gray-300`
-		: `flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`;
+		? `w-full text-base flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-800/50 placeholder-gray-300`
+		: `w-full text-base flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`;
 
 	const placeholderText = isUserStart
 		? "The scene is set. What's your opening line?"
 		: "Type your response...";
+
+	const gesturePlaceholderText =
+		"Describe your action or gesture... e.g., *I lean back and cross my arms*";
+
+	// Auto-resize textarea
+	useEffect(() => {
+		if (dialogueTextareaRef.current) {
+			dialogueTextareaRef.current.style.height = "auto";
+			dialogueTextareaRef.current.style.height = `${dialogueTextareaRef.current.scrollHeight}px`;
+		}
+	}, [dialogueInput]);
 
 	return (
 		<div className={wrapperClasses}>
@@ -224,60 +252,96 @@ const InputArea: React.FC<InputAreaProps> = ({
 					</div>
 				</div>
 			)}
-			<div className="flex items-start sm:items-center space-x-2">
-				<button
-					onClick={handleEndOrFinish}
-					disabled={isLoadingAI}
-					className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 min-h-[48px] sm:min-h-0
-						${
-							isMaxEngagement
-								? "bg-green-600 hover:bg-green-700 animate-pulse-glow"
-								: "bg-red-600 hover:bg-red-700"
+			<div className="flex flex-col gap-2">
+				{/* Gesture Input Area - Conditionally rendered with animation */}
+				<div
+					className={`grid transition-all duration-300 ease-in-out ${
+						showGestureInput
+							? "grid-rows-[1fr] opacity-100"
+							: "grid-rows-[0fr] opacity-0"
+					}`}>
+					<div className="overflow-hidden">
+						<label
+							htmlFor="gesture-input"
+							className="text-xs font-semibold text-sky-300 mb-1 ml-1 block">
+							Your Action/Gesture
+						</label>
+						<textarea
+							id="gesture-input"
+							value={gestureInput}
+							onChange={(e) => setGestureInput(e.target.value)}
+							placeholder={gesturePlaceholderText}
+							className={`${textareaClasses} min-h-[50px]`}
+							rows={1}
+							aria-label="Your gesture or action input"
+						/>
+					</div>
+				</div>
+
+				<div className="flex items-end sm:items-center space-x-2">
+					<button
+						onClick={handleEndOrFinish}
+						disabled={isLoadingAI}
+						className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 min-h-[52px] sm:min-h-0
+							${
+								isMaxEngagement
+									? "bg-green-600 hover:bg-green-700 animate-pulse-glow"
+									: "bg-red-600 hover:bg-red-700"
+							}`}
+						aria-label={
+							isMaxEngagement ? "Finish conversation" : "End conversation"
+						}>
+						{isMaxEngagement ? (
+							<CheckCircleIcon className="h-5 w-5" />
+						) : (
+							<StopCircleIcon className="h-5 w-5" />
+						)}
+						<span className="hidden sm:inline">
+							{isMaxEngagement ? "Finish" : "End"}
+						</span>
+					</button>
+					<button
+						onClick={handleGestureButtonClick}
+						disabled={isLoadingAI}
+						className={`p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0 ${
+							showGestureInput
+								? "bg-sky-700 text-white"
+								: "bg-slate-600 hover:bg-slate-500 text-white"
 						}`}
-					aria-label={
-						isMaxEngagement ? "Finish conversation" : "End conversation"
-					}>
-					{isMaxEngagement ? (
-						<CheckCircleIcon className="h-5 w-5" />
-					) : (
-						<StopCircleIcon className="h-5 w-5" />
-					)}
-					<span className="hidden sm:inline">
-						{isMaxEngagement ? "Finish" : "End"}
-					</span>
-				</button>
-				<textarea
-					value={userInput}
-					onChange={(e) => setUserInput(e.target.value)}
-					onKeyPress={handleKeyPress}
-					placeholder={placeholderText}
-					className={textareaClasses}
-					rows={
-						userInput.split("\n").length > 2
-							? 3
-							: userInput.split("\n").length > 1
-							? 2
-							: 1
-					}
-					style={{ maxHeight: "calc(3 * 1.5rem + 2 * 0.75rem + 2 * 0.125rem)" }}
-					aria-label="Your response input"
-				/>
-				<button
-					onClick={handleContinue}
-					disabled={isLoadingAI}
-					className="p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[48px] sm:min-h-0"
-					aria-label="Continue without speaking"
-					title="Continue without speaking (pass your turn)">
-					<PlayIcon className="h-5 w-5" />
-				</button>
-				<button
-					onClick={handleSend}
-					disabled={!userInput.trim() || isLoadingAI}
-					className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[48px] sm:min-h-0"
-					aria-label="Send message">
-					<SendIcon className="h-5 w-5" />
-					<span className="hidden sm:inline">Send</span>
-				</button>
+						aria-label="Add a gesture or action"
+						title="Add a gesture or action"
+						aria-pressed={showGestureInput}>
+						<GestureIcon className="h-5 w-5" />
+					</button>
+					<textarea
+						ref={dialogueTextareaRef}
+						value={dialogueInput}
+						onChange={(e) => setDialogueInput(e.target.value)}
+						onKeyPress={handleKeyPress}
+						placeholder={placeholderText}
+						className={`${textareaClasses} max-h-32`}
+						rows={1}
+						aria-label="Your response input"
+					/>
+					<button
+						onClick={handleContinue}
+						disabled={isLoadingAI}
+						className="p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0"
+						aria-label="Continue without speaking"
+						title="Continue without speaking (pass your turn)">
+						<PlayIcon className="h-5 w-5" />
+					</button>
+					<button
+						onClick={handleSendClick}
+						disabled={
+							(!dialogueInput.trim() && !gestureInput.trim()) || isLoadingAI
+						}
+						className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0"
+						aria-label="Send message">
+						<SendIcon className="h-5 w-5" />
+						<span className="hidden sm:inline">Send</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	);
@@ -304,7 +368,6 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	goalJustChanged,
 	onAnimationComplete,
 }) => {
-	const [userInput, setUserInput] = useState("");
 	const chatContainerRef = useRef<HTMLDivElement>(null);
 	const chatEndRef = useRef<HTMLDivElement>(null);
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
@@ -374,10 +437,21 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		return () => observer.disconnect();
 	}, [scrollToBottom]);
 
-	const handleSend = () => {
-		if (userInput.trim()) {
-			onSendMessage(userInput.trim());
-			setUserInput("");
+	const handleSend = (gesture: string, dialogue: string) => {
+		let combinedMessage = dialogue;
+		if (gesture) {
+			// Wrap gesture in markdown-style asterisks if it's not already
+			const formattedGesture =
+				gesture.startsWith("*") && gesture.endsWith("*")
+					? gesture
+					: `*${gesture}*`;
+			combinedMessage = dialogue
+				? `${formattedGesture}\n${dialogue}`
+				: formattedGesture;
+		}
+
+		if (combinedMessage.trim()) {
+			onSendMessage(combinedMessage.trim());
 		}
 	};
 
@@ -449,9 +523,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const isUserStart = conversationHistory.length === 0;
 
 	const inputAreaProps = {
-		userInput,
-		setUserInput,
-		handleSend,
+		onSend: handleSend,
 		handleEndOrFinish,
 		handleContinue: onContinueWithoutSpeaking,
 		isLoadingAI,

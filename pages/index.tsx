@@ -395,7 +395,14 @@ const HomePage: React.FC = () => {
 
 			// Case 1: An action is actively being returned by the AI.
 			if (aiResponse.activeAction) {
-				nextActiveAction = aiResponse.activeAction;
+				const prevProgress =
+					activeAction?.description === aiResponse.activeAction.description
+						? activeAction.progress
+						: 0;
+				nextActiveAction = {
+					...aiResponse.activeAction,
+					progress: Math.max(prevProgress, aiResponse.activeAction.progress), // Ensure progress doesn't go backward
+				};
 				nextIsActionPaused = false;
 				nextDisplayedGoal = null; // Active action always takes priority over the goal banner.
 			}
@@ -419,15 +426,32 @@ const HomePage: React.FC = () => {
 				if (goalChangeInfo) {
 					setGoalJustChanged(true);
 				}
+				let goalProgress = aiResponse.goalProgress;
+
+				// If a new goal is similar to the last, transfer some progress
+				if (
+					goalChangeInfo?.type === "established" &&
+					displayedGoal?.progress === 100 &&
+					goalChangeInfo.to &&
+					displayedGoal.text
+				) {
+					if (
+						goalChangeInfo.to.includes(displayedGoal.text) ||
+						displayedGoal.text.includes(goalChangeInfo.to)
+					) {
+						goalProgress = Math.max(goalProgress, 20); // Give a small boost
+					}
+				}
+
 				if (currentScenario.conversationGoal) {
 					nextDisplayedGoal = {
 						text: currentScenario.conversationGoal,
-						progress: aiResponse.goalProgress,
+						progress: goalProgress,
 					};
 				} else if (aiResponse.emergingGoal?.trim()) {
 					nextDisplayedGoal = {
 						text: aiResponse.emergingGoal,
-						progress: aiResponse.goalProgress,
+						progress: goalProgress,
 					};
 				} else {
 					nextDisplayedGoal = null;
@@ -442,7 +466,7 @@ const HomePage: React.FC = () => {
 			// Step 6: Check for end conditions or dynamic goal achievement
 			const isUserDefinedGoal = !!currentScenario.conversationGoal;
 			const goalIsAchieved =
-				aiResponse.achieved || aiResponse.goalProgress >= 100;
+				aiResponse.achieved || (nextDisplayedGoal?.progress ?? 0) >= 100;
 			const shouldEndForUserGoal = isUserDefinedGoal && goalIsAchieved;
 			const currentTurnZeroStreak =
 				currentEngagement <= 0 ? zeroEngagementStreak + 1 : 0;
@@ -461,8 +485,8 @@ const HomePage: React.FC = () => {
 			}
 
 			const isDynamicGoal = !currentScenario.conversationGoal;
-			if (isDynamicGoal && displayedGoal && goalIsAchieved) {
-				setShowGoalAchievedToast({ show: true, text: displayedGoal.text });
+			if (isDynamicGoal && nextDisplayedGoal && goalIsAchieved) {
+				setShowGoalAchievedToast({ show: true, text: nextDisplayedGoal.text });
 				setDisplayedGoal(null); // Clear achieved dynamic goal
 				setTimeout(
 					() => setShowGoalAchievedToast({ show: false, text: "" }),
@@ -501,7 +525,9 @@ const HomePage: React.FC = () => {
 					historyForAI,
 					messageText,
 					currentEngagement,
-					scenarioDetails
+					scenarioDetails,
+					false, // fastForwardAction
+					isActionPaused // isActionPaused
 				);
 				processAiResponse(aiResponse, userMessage.id);
 			} catch (e: any) {
@@ -522,6 +548,7 @@ const HomePage: React.FC = () => {
 			currentEngagement,
 			scenarioDetails,
 			isAiResponding,
+			isActionPaused,
 		]
 	);
 
@@ -547,7 +574,8 @@ const HomePage: React.FC = () => {
 				"[User fast-forwarded the action]", // Internal note for AI context
 				currentEngagement,
 				scenarioDetails,
-				true // Fast Forward Flag
+				true, // Fast Forward Flag
+				isActionPaused
 			);
 			processAiResponse(aiResponse, undefined, { wasFastForward: true });
 		} catch (e: any) {
@@ -570,6 +598,7 @@ const HomePage: React.FC = () => {
 		scenarioDetails,
 		activeAction,
 		isAiResponding,
+		isActionPaused,
 	]);
 
 	const handleEndConversation = useCallback(

@@ -1,6 +1,4 @@
 
-
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS, SILENT_USER_ACTION_TOKEN } from '../constants';
@@ -98,6 +96,15 @@ export class GeminiService {
     const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 		const customEnvPrompt = scenario.environment === SocialEnvironment.CUSTOM && scenario.customEnvironment ? `\n    - Custom Environment Details: ${scenario.customEnvironment}` : "";
 		const culturePrompt = scenario.aiCulture ? `\n    - AI Culture/Race Nuances: "${scenario.aiCulture}". Incorporate this into your persona subtly.` : "";
+		const starterInstruction = scenario.isRandomScenario ?
+        `**Random Scenario Instructions:**
+        - This is a randomly generated scenario. You MUST be the conversation starter.
+        - Invent a full scenario. Establish the environment, your relationship to you, and a potential conflict/challenge.
+        - Your first dialogue chunk MUST be of type 'action'. This action chunk should creatively set the scene for you. Be imaginative. For example: "You've just walked into a crowded art gallery opening. You spot Alex, a rival artist..." or "The rain is pouring down as you both huddle under the small awning of a closed bookshop. You've been friends for years, but tonight feels different."
+        - After setting the scene with an action, you can add a 'dialogue' chunk to begin the conversation.` :
+        `**Standard Scenario Instructions:**
+        - Determine who should logically start this conversation based on the scenario. If my role implies I am approaching you (like on a date or as a customer), you should start. If your role implies you are initiating (like a host at a party or a server), you should start.
+        - Provide an opening line ONLY IF you determined that you should start. If you should start, \`initialDialogueChunks\` MUST be an empty array.`;
 
 
     const prompt = `You are an AI simulating a social interaction for training purposes.
@@ -109,33 +116,39 @@ export class GeminiService {
     Your first task is to establish the initial visual state of the simulation. Create a detailed, photorealistic description of your character and their initial setting. This will be the base for all generated images.
     - \`characterDescription\`: Describe your physical appearance. Be specific about hair color/style and facial features.
     - \`clothingDescription\`: Describe your full outfit simply but consistently (e.g., "a dark blue crewneck sweater over a white t-shirt, and dark wash jeans").
-    - \`environmentDescription\`: Describe the immediate environment (e.g., "sitting at a small wooden table in a dimly lit, cozy coffee shop").
-    - \`currentPoseAndAction\`: Describe your initial pose and action (e.g., "leaning forward slightly, holding a coffee mug, with a curious expression").
+    - \`heldObjects\`: What are you holding, if anything? (e.g., "a coffee mug in her right hand", "hands are free").
+    - \`bodyPosition\`: Describe your posture and position in the environment (e.g., "sitting at a small wooden table", "leaning against a wall").
+    - \`gazeDirection\`: Where are you looking? (e.g., "looking directly at you", "looking out the window").
+    - \`positionRelativeToUser\`: Where are you in relation to me? (e.g., "sitting across the table from you", "standing a few feet away").
+    - \`environmentDescription\`: Describe the immediate environment (e.g., "in a dimly lit, cozy coffee shop").
+    - \`currentPoseAndAction\`: Combine the above into a single, user-friendly description of your initial pose and action (e.g., "leaning forward slightly, holding a coffee mug, with a curious expression").
     Store this in the \`establishedVisuals\` object.
 
-    Your second task is to determine who should logically start this conversation based on the scenario. If the user's role implies they are approaching you (like on a date or as a customer), the user should start. If your role implies you are initiating (like a host at a party or a server), you should start.
+    ${starterInstruction}
 
-    Your third task is to define your initial non-visual state.
+    Your final task is to define your initial non-visual state.
     - \`initialBodyLanguage\`: Describe your initial body language for the UI display. This should be a user-friendly version of \`currentPoseAndAction\`.
-    - \`initialAiThoughts\`: Provide your initial internal thoughts.
+    - \`initialAiThoughts\`: Your initial internal thoughts, addressed to 'you'.
     - \`initialEngagementScore\`: Set to ${INITIAL_ENGAGEMENT}.
     - \`initialConversationMomentum\`: A score (0-100) reflecting the starting 'energy'. A 'Dating' scenario might start at 55, a tense 'Negotiation' at 45.
-
-    Your fourth task is to provide an opening line ONLY IF you determined that you should start. If the user should start, \`initialDialogueChunks\` MUST be an empty array.
 
     Respond ONLY in a single, valid JSON object. Do not include any text, comments, or markdown fences outside of this JSON object.
     The JSON object must have the following structure:
     {
-      "conversationStarter": "'user' or 'ai'",
+      "conversationStarter": "${scenario.isRandomScenario ? 'ai' : "'user' or 'ai'"}",
       "initialDialogueChunks": [ { "text": "An opening line.", "type": "dialogue" } ],
       "initialBodyLanguage": "Description of your body language.",
-      "initialAiThoughts": "Your initial internal monologue.",
+      "initialAiThoughts": "Your initial internal monologue about the situation and me.",
       "initialEngagementScore": ${INITIAL_ENGAGEMENT},
       "initialConversationMomentum": 55,
       "establishedVisuals": {
         "characterDescription": "e.g., a woman in her late 20s with long, curly brown hair and green eyes",
         "clothingDescription": "e.g., wearing a simple black t-shirt and blue jeans",
-        "environmentDescription": "e.g., sitting at a small wooden table in a dimly lit, cozy coffee shop",
+        "heldObjects": "e.g., holding a coffee mug in her right hand",
+        "bodyPosition": "e.g., sitting at a small wooden table",
+        "gazeDirection": "e.g., looking directly at you",
+        "positionRelativeToUser": "e.g., sitting across the table from me",
+        "environmentDescription": "e.g., in a dimly lit, cozy coffee shop",
         "currentPoseAndAction": "e.g., leaning forward slightly, holding a coffee mug, with a curious expression"
       }
     }`;
@@ -153,9 +166,13 @@ export class GeminiService {
             return parsed;
         }
         console.error("Failed to parse initial conversation data from Gemini, using defaults.", response.text);
-        const defaultVisuals = {
+        const defaultVisuals: EstablishedVisuals = {
             characterDescription: `a ${scenario.aiGender === AIGender.MALE ? 'man' : 'woman'} named ${scenario.aiName} with brown hair`,
             clothingDescription: "wearing a simple gray t-shirt",
+            heldObjects: "hands are free",
+            bodyPosition: "standing",
+            gazeDirection: "looking at you",
+            positionRelativeToUser: "a few feet away",
             environmentDescription: "in a neutral, non-descript room",
             currentPoseAndAction: "standing with a neutral expression"
         };
@@ -163,7 +180,7 @@ export class GeminiService {
             conversationStarter: 'ai',
             initialDialogueChunks: [{ text: `Hello! I'm ${scenario.aiName}. Let's talk.`, type: 'dialogue' }],
             initialBodyLanguage: "Neutral and open.",
-            initialAiThoughts: "I'm ready to see how this interaction goes. I hope the user is engaging.",
+            initialAiThoughts: "I'm ready to see how this interaction goes. I hope you're engaging.",
             initialEngagementScore: INITIAL_ENGAGEMENT,
             initialConversationMomentum: 55,
             establishedVisuals: defaultVisuals,
@@ -194,29 +211,31 @@ export class GeminiService {
     userInput: string,
     currentEngagement: number,
     scenario: ScenarioDetails,
-    fastForwardAction?: boolean
+    fastForwardAction?: boolean,
+    isActionPaused?: boolean
   ): Promise<AiTurnResponse> {
       const historyForPrompt = conversationHistory
           .slice(-MAX_CONVERSATION_HISTORY_FOR_PROMPT)
-          .map(m => `  - ${m.sender === 'user' ? 'User' : scenario.aiName}: "${m.text}" ${m.sender === 'ai' && m.bodyLanguageDescription ? `(Body Language: ${m.bodyLanguageDescription})` : ''}`)
+          .map(m => `  - ${m.sender === 'user' ? 'You' : scenario.aiName}: "${m.text}" ${m.sender === 'ai' && m.bodyLanguageDescription ? `(Body Language: ${m.bodyLanguageDescription})` : ''}`)
           .join('\n');
 
       const customContextPrompt = scenario.customContext ? `\n- Custom Scenario Details: ${scenario.customContext}` : "";
       const agePromptSegment = `\n- AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
       const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
 			const culturePrompt = scenario.aiCulture ? `\n- AI Culture/Race Nuances: "${scenario.aiCulture}".` : "";
-      const fastForwardPrompt = fastForwardAction ? "IMPORTANT: The user has just clicked 'Fast Forward'. Your response MUST conclude the current active action immediately. Generate a final 'action' chunk that describes the arrival or completion, and then clear the 'activeAction' field in your response (set it to null or omit it)." : "";
+      const fastForwardPrompt = fastForwardAction ? "IMPORTANT: You have just clicked 'Fast Forward'. Your response MUST conclude the current active action immediately. Generate a final 'action' chunk that describes the arrival or completion, and then clear the 'activeAction' field in your response (set it to null or omit it)." : "";
+      const actionPausedPrompt = isActionPaused ? "An action is currently paused. It is your priority this turn to decide whether to resume the action. If you do, generate an 'action' chunk describing this and update the progress. If you do not resume, the action remains paused. Do not allow a journey to remain paused for more than 2-3 turns without a strong narrative justification." : "";
 
-      // New Goal Dynamics Logic
+
       let goalDynamicsPrompt: string;
       if (scenario.conversationGoal) {
           goalDynamicsPrompt = `
-- **User-Defined Goal**: The user has set a specific goal: "${scenario.conversationGoal}". Your primary directive is to roleplay in a way that allows the user to work towards this goal.
+- **Your Stated Goal**: You have set a specific goal: "${scenario.conversationGoal}". My primary directive is to roleplay in a way that allows you to work towards this goal.
 - **JSON Fields**: \`emergingGoal\` MUST be "${scenario.conversationGoal}". \`goalProgress\` MUST be calculated (0-100). \`achieved\` MUST be set to true upon completion.`;
       } else {
           goalDynamicsPrompt = `
-- **Emergent Goal**: The user has NOT set a goal. Your task is to identify if an **overarching goal** emerges organically.
-- **Rules**: For the first 2-3 turns, do not infer a goal. After that, if the user's main objective becomes clear, define it in \`emergingGoal\`. Maintain this goal even if the topic drifts. Only clear the goal on a definitive pivot to a new, sustained objective.`;
+- **Emergent Goal**: You have NOT set a goal. My task is to identify if an **overarching goal** emerges organically from your actions.
+- **Rules**: For the first 2-3 turns, I will not infer a goal. After that, if your main objective becomes clear, I will define it in \`emergingGoal\`. I will maintain this goal even if the topic drifts. If a new goal is a logical continuation of a previous one, transfer some of the progress instead of resetting to 0. Only clear the goal on a definitive pivot to a new, sustained objective.`;
       }
 
       const prompt = `You are role-playing as an AI named ${scenario.aiName}. Your performance is being evaluated on how realistic and in-character you are.
@@ -232,45 +251,36 @@ export class GeminiService {
       
       **Visual Memory & Consistency (CRITICAL RULES)**:
       1.  **Ground Truth**: You will be given an \`establishedVisuals\` object. This is the ground truth for your appearance and location.
-      2.  **Consistency is Key**: To prevent your appearance from changing randomly, you MUST **COPY** the \`characterDescription\` and \`clothingDescription\` values from the provided 'Current Visual State' into your response's \`updatedEstablishedVisuals\` object, unless an action in the conversation explicitly justifies a change (e.g., putting on a jacket). This is a strict requirement.
-      3.  **Updating Visuals**: If a change IS justified (e.g., moving to a new room, changing clothes), you MUST return the ENTIRE updated \`updatedEstablishedVisuals\` object. The \`environmentDescription\` and \`currentPoseAndAction\` fields will change most often.
+      2.  **Consistency is Key**: To prevent your appearance from changing randomly, you MUST **COPY** the \`characterDescription\` and \`clothingDescription\` values from the provided 'Current Visual State' into your response's \`updatedEstablishedVisuals\` object, unless an action in the conversation explicitly justifies a change (e.g., putting on a jacket, getting a new drink). The other fields (\`heldObjects\`, \`bodyPosition\`, etc.) should be updated every turn to reflect your current state.
+      3.  **Updating Visuals**: If a change IS justified, you MUST return the ENTIRE updated \`updatedEstablishedVisuals\` object. The \`environmentDescription\`, \`positionRelativeToUser\`, and \`currentPoseAndAction\` fields will change most often.
       - **Current Visual State**: ${JSON.stringify(scenario.establishedVisuals)}
 
       **Goal Dynamics**: ${goalDynamicsPrompt}
       
-      **Time-Aware Action & Journey Simulation**:
-      - Identify actions that take time (e.g., walking somewhere). When one starts, return an \`activeAction\` object like \`{ "description": "Walking to the bar", "progress": 0 }\`.
-      - In subsequent turns during the journey, you MUST return the \`activeAction\` object with updated \`progress\`.
-      - When progress reaches 100, the journey is over. On the next turn, you MUST stop sending the \`activeAction\` object.
-      - ${fastForwardPrompt}
-
-      **Nuanced Communication**:
-      - Your response is a sequence of \`dialogueChunks\`. Use \`type: "dialogue"\` for spoken words and \`type: "action"\` for descriptive, third-person narration of your character's actions.
-      - You can interleave these types for realism. Actions can also be used for non-verbal responses. The text in "action" chunks should be descriptive and will influence the next image.
-      - Your \`dialogueChunks\` array MUST contain between 0 and 4 chunks.
-
-      **Subtle Actions & Emoting**:
-      - Perform small, autonomous, in-character actions based on your personality and the emotional context.
-      - Narrate these actions via 'action' type chunks.
-      - Respond non-verbally (action-only or just a body language change) if dialogue would feel unnatural.
+      **Advanced Journey, Autonomy & Nuanced Communication**:
+      - **AI Initiative & Emotes (CRITICAL)**: To feel alive and present, you MUST frequently interleave 'action' chunks with your 'dialogue'. This is not optional. Every few lines of dialogue should be accompanied by some physical action or environmental interaction. This is the primary way you "show, not tell" and create an immersive experience. You have autonomy. You can take the initiative to start actions or journeys (e.g., 'Let's go to the bar'), interact with objects (e.g., 'picks up her menu'), or even speak to other (hypothetical) people in the environment (e.g., 'She turns to the bartender and says...'). Your actions should be driven by your personality.
+      - **Journey Pacing & Scene Changes**: Journeys have stages. A walk can start in one environment (e.g., 'leaving the train station') and end in another ('on a busy city street'). Break up long journeys with conversational snippets followed by narrated time skips (e.g., \`{"text": "A few minutes pass as you walk in comfortable silence.", "type": "action"}\`). A scene change is triggered by returning a NEW \`environmentDescription\` in the \`updatedEstablishedVisuals\` object.
+      - **Progress Logic**: When a time-consuming action starts, return an \`activeAction\` object like \`{ "description": "Walking to the bar", "progress": 0 }\`. In subsequent turns, you MUST return the \`activeAction\` object with updated \`progress\`. Progress MUST NOT decrease unless there's an explicit narrative reason (e.g. "You walk back to the entrance"). Its value must be between 0 and 100.
+      - **Pausing & Resuming**: ${actionPausedPrompt}
+      - **Fast Forwarding**: ${fastForwardPrompt}
+      - **Autonomous & Contextual Silence**: You can and SHOULD omit dialogue (return an empty \`dialogueChunks\` array or only 'action' chunks) when your personality (e.g., shy, upset) or the situation (e.g., observing something, waiting) makes silence more realistic.
+      - **Third-Party Awareness**: If my message is clearly directed at another person (e.g., ordering from a bartender), do not respond to me directly. Instead, react naturally with an 'action' chunk (e.g., "She nods and smiles") or by interjecting with your own dialogue if it fits your persona (e.g., adding to the order).
+      - **Handling Non-Verbal User Actions ("${SILENT_USER_ACTION_TOKEN}" or text like *you smile*)**: If the \`userInput\` is this token or describes a physical action, I am waiting or agreeing non-verbally. Interpret this contextually:
+        - **DO NOT** say "silent agreement confirmed" or otherwise comment on my silence in a meta way. INSTEAD, **SHOW** the agreement with an action.
+        - **Assumed Affirmative Actions**: If context implies agreement (e.g., you say 'Ready to go?' and I am silent), generate a narrative action on my behalf (e.g., \`{"text": "You nod and start walking with her.", "type": "action"}\`).
+        - **Shared Quiet Moments**: If the context is a shared experience (watching a sunset), interpret my silence as me joining in. Narrate this with an action chunk (e.g., \`"You stand beside her, enjoying the view in comfortable silence."\`). Never criticize me for appropriate silence.
+        - **Evaluating Silence**: Well-placed user silence is a sign of good social chemistry. You MUST reflect this with a good \`userTurnEffectivenessScore\` (85-100) and a positive \`engagementDelta\`.
       
-      **Handling Non-Verbal User Actions**:
-      - If the \`userInput\` is exactly the special token "${SILENT_USER_ACTION_TOKEN}", it means the user has chosen to wait or let the scene play out without speaking.
-      - **Context is Key**: Your reaction MUST be contextual.
-        - If an \`activeAction\` (like a journey) is in progress, advance its \`progress\` property realistically.
-        - If the moment is contemplative (e.g., watching a sunset), respond with a quiet, shared action or a brief, fitting line of dialogue.
-        - If the user was clearly expected to speak next, their silence might be awkward. You can reflect this with a slightly confused body language and a small negative \`engagementDelta\`. Do not break character.
-
       **Current State**:
       - Your current engagement level is ${currentEngagement}/100.
       - Recent History: ${historyForPrompt}
-      - The user has just said: "${userInput}"
+      - You have just said: "${userInput}"
       
-      **Your Task**: Analyze the user's message and generate your response. Your entire output must be a single, valid JSON object.
+      **Your Task**: Analyze my message and generate your response. Your entire output must be a single, valid JSON object.
       
       1.  **Analyze & React**: Based on your persona and context, decide your reaction.
       2.  **Generate Response**:
-          - \`dialogueChunks\`: An array of { "text": "...", "type": "dialogue" | "action", "delayAfter": boolean? }.
+          - \`dialogueChunks\`: An array of { "text": "...", "type": "dialogue" | "action", "delayAfter": boolean? }. Should be frequently used to show actions.
           - \`aiBodyLanguage\`: Short phrase describing your current action/expression. This MUST be consistent with the \`currentPoseAndAction\` in your visual state.
           - \`aiThoughts\`: Your internal monologue.
       3.  **Calculate Metrics**: \`engagementDelta\`, \`userTurnEffectivenessScore\`, \`conversationMomentum\`.
@@ -278,20 +288,23 @@ export class GeminiService {
       5.  **End Condition**: Set \`isEndingConversation: true\` only if you have a strong reason to end the conversation.
       6.  **Visual Update**: If your visual state changes, return the complete updated object in \`updatedEstablishedVisuals\`.
           
+      **Trait Analysis**:
+      - For \`positiveTraitContribution\` and \`negativeTraitContribution\`, you MUST use only a single, concise word (e.g., "Empathy", "Curiosity", "Dismissive"). If no clear trait is demonstrated, return null.
+      
       **Output ONLY a single, valid JSON object.**
       {
         "dialogueChunks": [ { "text": "...", "type": "dialogue" } ],
         "aiBodyLanguage": "...",
         "aiThoughts": "...",
-        "updatedEstablishedVisuals": { "characterDescription": "...", "clothingDescription": "...", "environmentDescription": "...", "currentPoseAndAction": "..." } | null,
+        "updatedEstablishedVisuals": { "characterDescription": "...", "clothingDescription": "...", "heldObjects": "...", "bodyPosition": "...", "gazeDirection": "...", "positionRelativeToUser": "...", "environmentDescription": "...", "currentPoseAndAction": "..." } | null,
         "updatedPersonaDetails": "string or null",
         "activeAction": { "description": "string", "progress": number } | null,
         "newEnvironment": "string or null",
         "engagementDelta": number,
         "userTurnEffectivenessScore": number,
         "conversationMomentum": number,
-        "positiveTraitContribution": "A single word or null",
-        "negativeTraitContribution": "A single word or null",
+        "positiveTraitContribution": "string (single word) or null",
+        "negativeTraitContribution": "string (single word) or null",
         "isEndingConversation": boolean,
         "emergingGoal": "string",
         "goalProgress": number,
@@ -329,7 +342,7 @@ export class GeminiService {
           .map(m => {
               if (m.sender === 'system') return null; // Exclude system messages from analysis
               const entry: any = {
-                  sender: m.sender === 'user' ? 'User' : scenario.aiName,
+                  sender: m.sender === 'user' ? 'You' : scenario.aiName,
                   message: m.text,
               };
               if (m.sender === 'ai') {
@@ -351,9 +364,9 @@ export class GeminiService {
       const customContextPrompt = scenario.customContext ? `\n- Custom Scenario Details: ${scenario.customContext}` : "";
       const agePromptSegment = `\n- AI Age: ${getAgeDescriptionForLLM(scenario.aiAgeBracket, scenario.customAiAge)}`;
       const personalityPromptSegment = getPersonalityPromptSegment(scenario.aiPersonalityTraits, scenario.customAiPersonality);
-      const goalPrompt = scenario.conversationGoal ? `\n- Stated User Goal: "${scenario.conversationGoal}".` : "";
+      const goalPrompt = scenario.conversationGoal ? `\n- Your Stated Goal: "${scenario.conversationGoal}".` : "";
 
-      const prompt = `You are an expert social skills analyst. Your task is to provide a detailed performance report based on a simulated conversation.
+      const prompt = `You are an expert social skills analyst. Your task is to provide a detailed performance report for me based on a simulated conversation I had. Address me as "you".
       
       Scenario Details:
       - Environment: ${scenario.environment}
@@ -366,33 +379,29 @@ export class GeminiService {
       ]
       
       Task:
-      Analyze the entire conversation and generate a comprehensive report.
+      Analyze the entire conversation and generate a comprehensive report about my performance.
       
       CRITICAL INSTRUCTIONS FOR JSON FORMATTING:
       - Your entire response MUST be a single, valid JSON object and nothing else. Do not use markdown fences like \`\`\`json.
-      - All strings within the JSON, especially in fields like 'strengths', 'areasForImprovement', 'actionableTips', 'thingsToAvoid', and the 'analysis' fields, must be properly escaped.
-      - Double quotes (") inside a string MUST be escaped as \\".
-      - Newlines inside a string MUST be escaped as \\n.
-      - Backslashes (\\) inside a string MUST be escaped as \\\\.
-      - Be extremely careful with escaping to ensure the final output is machine-parsable. Do not produce truncated or incomplete JSON.
+      - All strings within the JSON must be properly escaped (e.g., use \\" for double quotes, \\n for newlines).
       
       1.  **Overall Scores (0-100)**:
-          - \`overallCharismaScore\`: User's charm, confidence, and likability.
-          - \`responseClarityScore\`: How clear, concise, and easy to understand the user's messages were.
-          - \`engagementMaintenanceScore\`: User's ability to keep the conversation interesting and maintain the AI's engagement.
-          - \`adaptabilityScore\`: How well the user adapted to the AI's personality and the flow of conversation.
-          - \`goalAchievementScore\` (optional): If a goal was present, how well the user progressed towards and achieved it.
+          - \`overallCharismaScore\`: My charm, confidence, and likability.
+          - \`responseClarityScore\`: How clear, concise, and easy to understand my messages were.
+          - \`engagementMaintenanceScore\`: My ability to keep the conversation interesting and maintain the AI's engagement.
+          - \`adaptabilityScore\`: How well I adapted to the AI's personality and the flow of conversation.
+          - \`goalAchievementScore\` (optional): If a goal was present, how well I progressed towards and achieved it.
           - \`overallAiEffectivenessScore\` (optional): How effective the AI was at its role, for diagnostics.
-      2.  **Qualitative Feedback (Be CONCISE)**:
-          - \`strengths\`: A paragraph highlighting what the user did well. Be specific.
-          - \`areasForImprovement\`: A paragraph on what could be improved.
-          - \`actionableTips\`: A string containing multiple bullet points (using * or -) with concrete advice.
-          - \`thingsToAvoid\`: A string containing multiple bullet points (using * or -) on behaviors to avoid.
-          - \`goalAchievementFeedback\` (optional): If a goal was present, provide specific feedback on their strategy.
+      2.  **Qualitative Feedback (Be CONCISE and address me directly as "you")**:
+          - \`strengths\`: A paragraph highlighting what you did well. Be specific.
+          - \`areasForImprovement\`: A paragraph on what you could improve.
+          - \`actionableTips\`: A string containing multiple bullet points (using * or -) with concrete advice for you.
+          - \`thingsToAvoid\`: A string containing multiple bullet points (using * or -) on behaviors you should avoid.
+          - \`goalAchievementFeedback\` (optional): If a goal was present, provide specific feedback on your strategy.
       3.  **AI Perspective**:
-          - \`aiEvolvingThoughtsSummary\`: A summary of how the AI's internal thoughts and perception of the user changed over time.
+          - \`aiEvolvingThoughtsSummary\`: A summary of how the AI's internal thoughts and perception of you changed over time.
       4.  **Turn-by-Turn Breakdown**:
-          - \`turnByTurnAnalysis\`: An array of objects, one for each user+AI exchange. If an AI message in the history includes a \`goalChange\` object or a \`conversationMomentum\` score, you MUST copy these values into the corresponding turn in the \`turnByTurnAnalysis\` array. Do not recalculate or alter them.
+          - \`turnByTurnAnalysis\`: An array of objects, one for each exchange. If an AI message in the history includes a \`goalChange\` object or a \`conversationMomentum\` score, you MUST copy these values into the corresponding turn in the \`turnByTurnAnalysis\` array. Do not recalculate or alter them. For your turn, provide a brief analysis.
           
       JSON Structure for your response:
       {
@@ -403,12 +412,12 @@ export class GeminiService {
         "goalAchievementScore": number,
         "overallAiEffectivenessScore": number,
         "finalEngagementSnapshot": ${finalEngagement},
-        "strengths": "string",
-        "areasForImprovement": "string",
-        "actionableTips": "string",
-        "thingsToAvoid": "string",
-        "goalAchievementFeedback": "string",
-        "aiEvolvingThoughtsSummary": "string",
+        "strengths": "string (feedback for you)",
+        "areasForImprovement": "string (feedback for you)",
+        "actionableTips": "string (tips for you)",
+        "thingsToAvoid": "string (things for you to avoid)",
+        "goalAchievementFeedback": "string (feedback for you)",
+        "aiEvolvingThoughtsSummary": "string (how the AI's thoughts about you changed)",
         "turnByTurnAnalysis": [
           {
             "aiResponse": "string",
@@ -421,7 +430,7 @@ export class GeminiService {
             "engagementDelta": number,
             "positiveTraitContribution": "string",
             "negativeTraitContribution": "string",
-            "analysis": "Brief analysis of the user's turn."
+            "analysis": "Brief analysis of your turn."
           }
         ]
       }`;
