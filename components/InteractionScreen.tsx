@@ -187,7 +187,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
 
 	return (
-		<div className="w-full max-w-7xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl relative overflow-hidden">
+		<div className="w-full max-w-7xl h-full flex flex-col md:flex-row bg-slate-900/60 backdrop-blur-xl border border-slate-700/60 shadow-2xl rounded-xl relative overflow-hidden">
 			{/* Goal Achieved Toast */}
 			{showGoalAchievedToast.show && (
 				<GoalAchievedToast
@@ -200,7 +200,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`
-          w-full md:w-1/3 md:flex-shrink-0 flex flex-col p-4 bg-slate-800
+          w-full md:w-1/3 md:flex-shrink-0 flex flex-col p-4
           md:h-full md:border-r md:border-slate-700 md:overflow-y-auto
           flex-grow min-h-0 md:flex-grow-0
         `}>

@@ -212,6 +212,11 @@ export interface AnalysisReport {
 
 export enum GamePhase {
   HERO = "hero",
+  LOGIN = "login",
+  ABOUT = "about",
+  PRIVACY = "privacy",
+  TERMS = "terms",
+  SAFETY = "safety",
   INSTRUCTIONS = "instructions",
   SETUP = "setup",
   INTERACTION = "interaction",

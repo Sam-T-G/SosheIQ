@@ -193,27 +193,31 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		message: ChatMessage,
 		type: "positive" | "negative"
 	) => {
-		// If clicking the same badge that's already open, close it.
-		if (popoverState?.badgeType === type) {
-			setPopoverState(null);
-			return;
-		}
+		let nextState: typeof popoverState = null;
 
-		// Otherwise, open the new popover (this will replace any other open one).
-		if (
-			message.badgeReasoning &&
-			message.nextStepSuggestion &&
-			message.alternativeSuggestion
-		) {
-			setPopoverState({
-				content: {
-					reasoning: message.badgeReasoning,
-					nextStep: message.nextStepSuggestion,
-					alternative: message.alternativeSuggestion,
-				},
-				badgeType: type,
-			});
-			// Scroll into view
+		// If we're not clicking the currently open popover, we intend to open a new one.
+		if (popoverState?.badgeType !== type) {
+			if (
+				message.badgeReasoning &&
+				message.nextStepSuggestion &&
+				message.alternativeSuggestion
+			) {
+				nextState = {
+					content: {
+						reasoning: message.badgeReasoning,
+						nextStep: message.nextStepSuggestion,
+						alternative: message.alternativeSuggestion,
+					},
+					badgeType: type,
+				};
+			}
+		}
+		// If we ARE clicking the currently open one, nextState remains null, effectively closing it.
+
+		setPopoverState(nextState);
+
+		// If we are opening a popover, scroll it into view
+		if (nextState) {
 			setTimeout(() => {
 				messageContainerRef.current?.scrollIntoView({
 					behavior: "smooth",

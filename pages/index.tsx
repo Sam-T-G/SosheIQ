@@ -2,6 +2,11 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import Head from "next/head";
 import { v4 as uuidv4 } from "uuid";
 import { HeroScreen } from "../components/HeroScreen";
+import { AboutScreen } from "../components/AboutScreen";
+import { PrivacyPolicyScreen } from "../components/PrivacyPolicyScreen";
+import { TermsOfServiceScreen } from "../components/TermsOfServiceScreen";
+import { SafetyScreen } from "../components/SafetyScreen";
+import { LoginScreen } from "../components/LoginScreen";
 import { InstructionsScreen } from "../components/InstructionsScreen";
 import { SetupScreen } from "../components/SetupScreen";
 import { GuidedSetup } from "../components/GuidedSetup";
@@ -10,6 +15,7 @@ import { AnalysisScreen } from "../components/AnalysisScreen";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 import { HelpAndTipsOverlay } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
+import { ConfirmationDialog } from "../components/ConfirmationDialog";
 import { ImageViewerOverlay } from "../components/ImageViewerOverlay";
 import { InitialLoadingScreen } from "../components/InitialLoadingScreen";
 import type {
@@ -89,6 +95,10 @@ const HomePage: React.FC = () => {
 
 	const [showHelp, setShowHelp] = useState(false);
 	const [showConfirmEndDialog, setShowConfirmEndDialog] = useState(false);
+	const [showRandomConfirmDialog, setShowRandomConfirmDialog] = useState(false);
+	const [postLoginAction, setPostLoginAction] = useState<
+		"start_guided" | "start_random" | null
+	>(null);
 	const [showGoalAchievedToast, setShowGoalAchievedToast] = useState<{
 		show: boolean;
 		text: string;
@@ -173,6 +183,32 @@ const HomePage: React.FC = () => {
 			resetStateForNewGame();
 		}
 		setCurrentPhase(phase);
+	}, []);
+
+	const handleLoginFlow = (action: "start_guided" | "start_random") => {
+		setPostLoginAction(action);
+		setCurrentPhase(GamePhase.LOGIN);
+	};
+
+	const handleContinueFromLogin = () => {
+		if (postLoginAction === "start_guided") {
+			setSetupMode("guided");
+			handleNavigate(GamePhase.SETUP);
+		} else if (postLoginAction === "start_random") {
+			handleStartRandom();
+		}
+		setPostLoginAction(null); // Reset after action is taken
+	};
+
+	const handleConfirmRandom = () => {
+		setShowRandomConfirmDialog(false);
+		handleLoginFlow("start_random");
+	};
+
+	const handleNavigateToLogin = useCallback(() => {
+		// If user clicks the generic "Sign In" link, default the next action to starting the setup.
+		setPostLoginAction("start_guided");
+		setCurrentPhase(GamePhase.LOGIN);
 	}, []);
 
 	const handleViewImage = useCallback(
@@ -995,14 +1031,35 @@ const HomePage: React.FC = () => {
 			case GamePhase.HERO:
 				return (
 					<HeroScreen
-						onStart={() => {
-							setSetupMode("guided");
-							handleNavigate(GamePhase.SETUP);
-						}}
+						onStart={() => handleLoginFlow("start_guided")}
 						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
-						onStartRandom={handleStartRandom}
+						onStartRandom={() => setShowRandomConfirmDialog(true)}
+						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+						onNavigateToLogin={handleNavigateToLogin}
+						onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
 					/>
 				);
+			case GamePhase.LOGIN:
+				return (
+					<LoginScreen
+						onNavigateToHome={() => handleNavigate(GamePhase.HERO)}
+						onContinueAsGuest={handleContinueFromLogin}
+						onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
+						onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
+					/>
+				);
+			case GamePhase.ABOUT:
+				return <AboutScreen onBack={() => handleNavigate(GamePhase.HERO)} />;
+			case GamePhase.PRIVACY:
+				return (
+					<PrivacyPolicyScreen onBack={() => handleNavigate(GamePhase.HERO)} />
+				);
+			case GamePhase.TERMS:
+				return (
+					<TermsOfServiceScreen onBack={() => handleNavigate(GamePhase.HERO)} />
+				);
+			case GamePhase.SAFETY:
+				return <SafetyScreen onBack={() => handleNavigate(GamePhase.HERO)} />;
 			case GamePhase.INSTRUCTIONS:
 				return <InstructionsScreen onNavigate={handleNavigate} />;
 			case GamePhase.SETUP:
@@ -1080,12 +1137,12 @@ const HomePage: React.FC = () => {
 			default:
 				return (
 					<HeroScreen
-						onStart={() => {
-							setSetupMode("guided");
-							handleNavigate(GamePhase.SETUP);
-						}}
+						onStart={() => handleLoginFlow("start_guided")}
 						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
-						onStartRandom={handleStartRandom}
+						onStartRandom={() => setShowRandomConfirmDialog(true)}
+						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+						onNavigateToLogin={handleNavigateToLogin}
+						onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
 					/>
 				);
 		}
@@ -1107,7 +1164,7 @@ const HomePage: React.FC = () => {
 
 			{/* Outermost div now visible by default */}
 			<div
-				className={`flex flex-col min-h-screen bg-slate-900 text-gray-100 ${
+				className={`flex flex-col min-h-screen ${
 					isAppLoading ? "invisible" : "visible"
 				}`}>
 				<Header
@@ -1118,20 +1175,37 @@ const HomePage: React.FC = () => {
 							handleNavigate(GamePhase.HERO);
 						}
 					}}
-					onToggleHelp={handleToggleHelp}
+					onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+					onNavigateToLogin={handleNavigateToLogin}
 				/>
 
 				{/* Main content area gets a quick, direct fade-in */}
 				<main
-					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] ${
-						currentPhase === GamePhase.HERO || currentPhase === GamePhase.SETUP
+					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] relative overflow-hidden ${
+						currentPhase === GamePhase.HERO ||
+						currentPhase === GamePhase.SETUP ||
+						currentPhase === GamePhase.ABOUT ||
+						currentPhase === GamePhase.PRIVACY ||
+						currentPhase === GamePhase.TERMS ||
+						currentPhase === GamePhase.SAFETY ||
+						currentPhase === GamePhase.LOGIN
 							? "justify-center"
 							: ""
 					}`}>
 					{renderContent()}
 				</main>
 
-				<Footer />
+				{currentPhase !== GamePhase.INTERACTION && (
+					<Footer
+						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+						onNavigateToInstructions={() =>
+							handleNavigate(GamePhase.INSTRUCTIONS)
+						}
+						onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
+						onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
+						onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
+					/>
+				)}
 
 				{imageGalleryConfig.isOpen && (
 					<ImageViewerOverlay
@@ -1141,6 +1215,15 @@ const HomePage: React.FC = () => {
 					/>
 				)}
 				{showHelp && <HelpAndTipsOverlay onClose={handleToggleHelp} />}
+				{showRandomConfirmDialog && (
+					<ConfirmationDialog
+						isOpen={showRandomConfirmDialog}
+						onConfirm={handleConfirmRandom}
+						onCancel={() => setShowRandomConfirmDialog(false)}
+						title="Start a Random Scenario?"
+						description="This will generate a completely random scenario, including the AI's personality and the setting. You will be taken to the login screen first."
+					/>
+				)}
 				{showConfirmEndDialog && (
 					<ConfirmEndInteractionDialog
 						isOpen={showConfirmEndDialog}

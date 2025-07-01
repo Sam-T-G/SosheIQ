@@ -128,13 +128,15 @@ export const InfoIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
 		className={className || "h-5 w-5"}
-		viewBox="0 0 20 20"
-		fill="currentColor">
-		<path
-			fillRule="evenodd"
-			d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-			clipRule="evenodd"
-		/>
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="2"
+		strokeLinecap="round"
+		strokeLinejoin="round">
+		<circle cx="12" cy="12" r="10"></circle>
+		<line x1="12" y1="16" x2="12" y2="12"></line>
+		<line x1="12" y1="8" x2="12.01" y2="8"></line>
 	</svg>
 );
 
@@ -461,14 +463,14 @@ export const UserIcon: React.FC<IconProps> = ({ className }) => (
 export const HeartIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 20 20"
-		fill="currentColor"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="2"
+		strokeLinecap="round"
+		strokeLinejoin="round"
 		className={className || "h-6 w-6"}>
-		<path
-			fillRule="evenodd"
-			d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-			clipRule="evenodd"
-		/>
+		<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
 	</svg>
 );
 
@@ -586,7 +588,7 @@ export const BriefcaseIcon: React.FC<IconProps> = ({ className }) => (
 		viewBox="0 0 24 24"
 		fill="none"
 		stroke="currentColor"
-		strokeWidth="1.5"
+		strokeWidth="2"
 		strokeLinecap="round"
 		strokeLinejoin="round"
 		className={className || "h-6 w-6"}>
@@ -601,15 +603,13 @@ export const CoffeeIcon: React.FC<IconProps> = ({ className }) => (
 		viewBox="0 0 24 24"
 		fill="none"
 		stroke="currentColor"
-		strokeWidth="1.5"
+		strokeWidth="2"
 		strokeLinecap="round"
 		strokeLinejoin="round"
 		className={className || "h-6 w-6"}>
 		<path d="M18 8h1a4 4 0 0 1 0 8h-1" />
 		<path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-		<line x1="6" y1="1" x2="6" y2="4" />
-		<line x1="10" y1="1" x2="10" y2="4" />
-		<line x1="14" y1="1" x2="14" y2="4" />
+		<path d="M6 1v3m4-3v3m4-3v3" />
 	</svg>
 );
 
@@ -619,7 +619,7 @@ export const UsersIcon: React.FC<IconProps> = ({ className }) => (
 		viewBox="0 0 24 24"
 		fill="none"
 		stroke="currentColor"
-		strokeWidth="1.5"
+		strokeWidth="2"
 		strokeLinecap="round"
 		strokeLinejoin="round"
 		className={className || "h-6 w-6"}>
@@ -673,7 +673,7 @@ export const GlobeAltIcon: React.FC<IconProps> = ({ className }) => (
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
-			d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c.506 0 1.007-.034 1.5-.1M12 3c.506 0 1.007.034 1.5.1m0 0a9.005 9.005 0 015.283 2.135m-10.566 0A9.005 9.005 0 0112 3.105m0 0a9.004 9.004 0 01-5.283 2.135m10.566 0c1.392 1.403 2.16 3.29 2.16 5.283m-12.487 0c0-1.993.768-3.88 2.16-5.283"
+			d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
 		/>
 	</svg>
 );
@@ -766,6 +766,168 @@ export const FlagIcon: React.FC<IconProps> = ({ className }) => (
 			strokeLinecap="round"
 			strokeLinejoin="round"
 			d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-2.978 7.22L12 18M3 9.75h1.5M12 9.75h-1.5m-3.75 0h1.5m-1.5 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 00-2.978 7.22L12 18.75m-9-9l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01.278 6.471l-3.278.729a9 9 0 01-6.086-.711l-.108-.054a9 9 0 00-6.208-.682L3 9.75z"
+		/>
+	</svg>
+);
+
+export const AcademicCapIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.627 48.627 0 0 1 12 20.904a48.627 48.627 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.57 50.57 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5"
+		/>
+	</svg>
+);
+
+export const ShieldCheckIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z"
+		/>
+	</svg>
+);
+
+export const LockClosedIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+		/>
+	</svg>
+);
+
+export const ServerIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21.75 17.25v-.228a4.5 4.5 0 00-.12-1.03l-2.268-9.64a3.375 3.375 0 00-3.285-2.602H7.928a3.375 3.375 0 00-3.285 2.602l-2.268 9.64a4.5 4.5 0 00-.12 1.03v.228m19.5 0a3 3 0 01-3 3H5.25a3 3 0 01-3-3m19.5 0a3 3 0 00-3-3H5.25a3 3 0 00-3 3m16.5 0h.008v.008h-.008v-.008zm-3 0h.008v.008h-.008v-.008z"
+		/>
+	</svg>
+);
+
+export const EnvelopeIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
+		/>
+	</svg>
+);
+
+export const DocumentTextIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
+		/>
+	</svg>
+);
+
+export const GoogleIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "w-6 h-6"}
+		viewBox="0 0 48 48">
+		<path
+			fill="#FFC107"
+			d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+		/>
+		<path
+			fill="#FF3D00"
+			d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+		/>
+		<path
+			fill="#4CAF50"
+			d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.655-3.108-11.303-7.514l-6.571,4.819C9.656,39.663,16.318,44,24,44z"
+		/>
+		<path
+			fill="#1976D2"
+			d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.99,35.59,44,28.717,44,20C44,22.659,43.862,21.35,43.611,20.083z"
+		/>
+	</svg>
+);
+
+export const AppleIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "w-6 h-6"}
+		viewBox="0 0 24 24"
+		fill="currentColor">
+		<path d="M16.205 4.781c-.985-.038-1.999.427-2.618 1.078-.654.694-1.141 1.83-1.015 3.012 1.267.063 2.463-.523 3.111-1.214C16.388 6.86 16.822 5.714 16.205 4.781M17.262 10.057c-2.434 0-3.416 1.441-4.262 1.441-.846 0-1.879-1.441-3.355-1.441C7.159 10.057 5 12.627 5 16.193c0 2.441 1.139 5.034 2.913 6.769 1.036 1.018 2.285 1.96 3.87 1.936 1.551-.023 2.099-.963 3.955-.963s2.404.963 3.955.963c1.585.025 2.834-.918 3.87-1.936 1.722-1.696 2.833-4.234 2.833-6.691-.001-3.566-2.253-6.136-4.738-6.136" />
+	</svg>
+);
+
+export const ExclamationTriangleIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+		/>
+	</svg>
+);
+
+export const ScaleIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "w-6 h-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.153.24c-1.06.052-2.112.09-3.168.09a5.988 5.988 0 01-2.153-.24c-.482-.174-.71-.703-.588-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.153.24c-1.06.052-2.112.09-3.168.09a5.989 5.989 0 01-2.153-.24c-.482-.174-.71-.703-.588-1.202L5.25 4.97z"
 		/>
 	</svg>
 );

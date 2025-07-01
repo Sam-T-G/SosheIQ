@@ -1,19 +1,19 @@
 import React from "react";
-import { QuestionMarkIcon } from "./Icons";
-import { SosheIQLogo } from "./SosheIQLogo"; // Import the new SVG Logo component
+import { SosheIQLogo } from "./SosheIQLogo";
 
 interface HeaderProps {
 	onLogoClick: () => void;
-	onToggleHelp: () => void;
+	onNavigateToAbout: () => void;
+	onNavigateToLogin: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
 	onLogoClick,
-	onToggleHelp,
+	onNavigateToAbout,
+	onNavigateToLogin,
 }) => {
 	return (
-		<header className="bg-slate-800 shadow-md">
-			{/* Increased vertical padding and reverted horizontal padding */}
+		<header className="bg-slate-800 shadow-md relative z-20">
 			<div className="container mx-auto px-4 py-4 flex justify-between items-center">
 				<div
 					onClick={onLogoClick}
@@ -23,14 +23,20 @@ export const Header: React.FC<HeaderProps> = ({
 					className="cursor-pointer">
 					<SosheIQLogo className="h-10 w-auto" />
 				</div>
-				<button
-					onClick={onToggleHelp}
-					className="text-sky-300 hover:text-sky-100 font-medium py-2 px-3 rounded-md text-sm
-                     bg-slate-700 hover:bg-slate-600 transition-colors duration-150 flex items-center space-x-1.5"
-					aria-label="View Help & Tips">
-					<QuestionMarkIcon className="h-5 w-5" />
-					<span>Help &amp; Tips</span>
-				</button>
+				<div className="flex items-center space-x-6">
+					<button
+						onClick={onNavigateToAbout}
+						className="text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+						aria-label="About SosheIQ">
+						About
+					</button>
+					<button
+						onClick={onNavigateToLogin}
+						className="text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-md transition-colors"
+						aria-label="Login">
+						Login
+					</button>
+				</div>
 			</div>
 		</header>
 	);

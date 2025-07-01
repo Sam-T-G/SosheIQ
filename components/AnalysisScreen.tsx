@@ -386,7 +386,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
 	if (errorReport) {
 		return (
-			<div className="w-full max-w-3xl p-6 bg-slate-800 rounded-xl shadow-2xl text-center">
+			<div className="w-full max-w-3xl p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl text-center">
 				<h2 className="text-3xl font-bold text-red-500 mb-4">Analysis Error</h2>
 				<p className="text-gray-300 mb-6">{errorReport}</p>
 				<button
@@ -400,7 +400,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
 	if (!report) {
 		return (
-			<div className="w-full max-w-3xl p-6 bg-slate-800 rounded-xl shadow-2xl text-center">
+			<div className="w-full max-w-3xl p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl text-center">
 				<h2 className="text-3xl font-bold text-yellow-500 mb-4">
 					Analysis Not Available
 				</h2>
@@ -431,8 +431,8 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
 
 	return (
-		<div className="w-full max-w-4xl p-6 bg-slate-800 rounded-xl shadow-2xl space-y-8">
-			<div ref={reportContentRef} className="p-4 bg-slate-800 text-gray-100">
+		<div className="w-full max-w-4xl p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-8">
+			<div ref={reportContentRef} className="p-4 bg-transparent text-gray-100">
 				<h1 className="text-4xl font-bold text-center text-sky-400 mb-4">
 					Interaction Analysis
 				</h1>

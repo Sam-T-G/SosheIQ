@@ -21,7 +21,7 @@ interface SetupScreenProps {
 	onBack: () => void;
 }
 
-const MAX_PERSONALITY_TRAITS = 3;
+const MAX_PERSONALITY_TRAITS = 5;
 const MAX_CUSTOM_PERSONALITY_LENGTH = 300;
 const MAX_CONVERSATION_GOAL_LENGTH = 200;
 const MAX_CUSTOM_ENV_LENGTH = 200;
@@ -343,7 +343,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 	};
 
 	return (
-		<div className="w-full max-w-3xl p-6 md:p-8 bg-slate-800 rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
+		<div className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
 			<div className="flex items-center gap-4 mb-4">
 				<button
 					type="button"

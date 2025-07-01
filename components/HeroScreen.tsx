@@ -11,12 +11,18 @@ interface HeroScreenProps {
 	onStart: () => void;
 	onShowInstructions: () => void;
 	onStartRandom: () => void;
+	onNavigateToAbout: () => void;
+	onNavigateToLogin: () => void;
+	onNavigateToSafety: () => void;
 }
 
 export const HeroScreen: React.FC<HeroScreenProps> = ({
 	onStart,
 	onShowInstructions,
 	onStartRandom,
+	onNavigateToAbout,
+	onNavigateToLogin,
+	onNavigateToSafety,
 }) => {
 	return (
 		<div className="relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center p-4 md:p-8 isolate">
@@ -24,12 +30,12 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 			<div
 				aria-hidden="true"
 				className="absolute -z-10 -top-40 -left-20 transform-gpu blur-3xl">
-				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0ea5e9] to-[#14b8a6] opacity-20" />
+				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0369a1] to-[#0f172a] opacity-30" />
 			</div>
 			<div
 				aria-hidden="true"
 				className="absolute -z-10 -bottom-40 -right-20 transform-gpu blur-3xl">
-				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#14b8a6] to-[#0ea5e9] opacity-20" />
+				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0f766e] to-[#0f172a] opacity-30" />
 			</div>
 
 			<SosheIQLogo
@@ -71,13 +77,41 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 					<span>I'm Feeling Lucky</span>
 				</button>
 			</div>
-			<button
-				onClick={onShowInstructions}
-				className="mt-12 text-sm font-semibold text-gray-400 hover:text-white transition-colors opacity-0 animate-[fadeIn_1s_ease-out_forwards]"
-				style={{ animationDelay: "0.9s" }}
-				aria-label="How to Play">
-				How does it work?
-			</button>
+			<div
+				className="flex items-center justify-center gap-x-6 mt-12 opacity-0 animate-[fadeIn_1s_ease-out_forwards]"
+				style={{ animationDelay: "0.9s" }}>
+				<button
+					onClick={onNavigateToAbout}
+					className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+					aria-label="About SosheIQ">
+					About
+				</button>
+				<span className="text-gray-600">|</span>
+				<button
+					onClick={onShowInstructions}
+					className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+					aria-label="How to Play">
+					How it works
+				</button>
+				<span className="text-gray-600">|</span>
+				<button
+					onClick={onNavigateToSafety}
+					className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
+					aria-label="AI Safety Information">
+					Safety
+				</button>
+			</div>
+			<div
+				className="mt-4 text-sm text-gray-400 opacity-0 animate-[fadeIn_1s_ease-out_forwards]"
+				style={{ animationDelay: "1.0s" }}>
+				Have an account?{" "}
+				<button
+					onClick={onNavigateToLogin}
+					className="font-semibold text-sky-400 hover:text-sky-300 transition-colors underline">
+					Sign In
+				</button>{" "}
+				to save your progress (coming soon).
+			</div>
 		</div>
 	);
 };
