@@ -38,12 +38,18 @@ const GoalBanner: React.FC<{
 	onUnpinGoal,
 }) => {
 	const showPinButton = isPinnable || isGoalPinned;
+	const animationClass = isGoalPinned
+		? "animate-pinned-goal-glow"
+		: isGlowing
+		? "animate-glow-pulse"
+		: "";
+	const shapeClass = isGoalPinned
+		? "border rounded-md"
+		: "border-b rounded-b-md";
 
 	return (
 		<div
-			className={`bg-teal-900/60 p-3 shadow-lg border-b border-teal-800/50 rounded-b-md ${
-				isGlowing ? "animate-glow-pulse" : ""
-			}`}>
+			className={`bg-teal-900/60 p-3 shadow-lg border-teal-800/50 ${shapeClass} ${animationClass}`}>
 			<div className="flex items-center gap-3 mb-1.5">
 				<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
 				<div className="flex-grow">

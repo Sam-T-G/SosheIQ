@@ -7,7 +7,7 @@ import type {
 } from "../types";
 import { ProgressBar } from "./ProgressBar";
 import { AIVisualCue } from "./AIVisualCue";
-import { ChatBubbleIcon, CheckCircleIcon } from "./Icons";
+import { ChatBubbleIcon, CheckCircleIcon, ZoomInIcon } from "./Icons";
 import { RenderChatInterface } from "./RenderChatInterface";
 import { TopBannerContainer } from "./TopBannerContainer";
 
@@ -21,7 +21,7 @@ interface InteractionScreenProps {
 	isPinnable: boolean;
 	isGoalPinned: boolean;
 	isContinueActionSuggested: boolean;
-	onSendMessage: (message: string) => void;
+	onSendMessage: (messages: { gesture?: string; dialogue?: string }) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
 	onPinGoal: (goalText: string) => void;
@@ -222,11 +222,21 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 				{/* Wrapper for AIVisualCue and GoalBanner to allow them to grow and be ordered */}
 				<div className="flex-grow min-h-0 flex flex-col gap-4">
-					<AIVisualCue
-						imageBase64={aiImageBase64}
-						bodyLanguageDescription={bodyLanguageForDisplay}
-						isLoading={isLoadingAI && !aiImageBase64} // Show placeholder only if it's loading AND no image yet
-					/>
+					<button
+						onClick={() => aiImageBase64 && onViewImage(aiImageBase64)}
+						disabled={!aiImageBase64}
+						className="group w-full max-w-lg mx-auto md:max-w-none flex-grow min-h-0 rounded-lg shadow-xl overflow-hidden relative focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900/80 disabled:cursor-not-allowed flex flex-col items-stretch"
+						aria-label="View image gallery">
+						<AIVisualCue
+							imageBase64={aiImageBase64}
+							bodyLanguageDescription={bodyLanguageForDisplay}
+							isLoading={isLoadingAI && !aiImageBase64}
+						/>
+						{/* Hover overlay */}
+						<div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+							<ZoomInIcon className="h-12 w-12 text-white opacity-90" />
+						</div>
+					</button>
 					{/* Desktop Banner Area */}
 					<TopBannerContainer
 						activeAction={activeAction}

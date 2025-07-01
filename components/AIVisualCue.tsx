@@ -100,7 +100,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				)}
 			</div>
 
-			{/* Body Language Container - Hidden on Desktop */}
+			{/* Body Language Container - MOBILE */}
 			{currentBodyLanguageText && (
 				<div
 					role="button"
@@ -132,6 +132,21 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 							isBodyLanguageOpen ? "max-h-48" : "max-h-0"
 						}`}>
 						<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words px-2.5 pb-2.5">
+							{currentBodyLanguageText}
+						</p>
+					</div>
+				</div>
+			)}
+
+			{/* Body Language Container - DESKTOP */}
+			{currentBodyLanguageText && (
+				<div className="w-full bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md flex-shrink-0 hidden md:block">
+					<div className="flex items-center text-xs text-yellow-500 p-2.5">
+						<ChatBubbleIcon className="h-4 w-4" />
+						<span className="ml-1.5 font-semibold">Body Language</span>
+					</div>
+					<div className="px-2.5 pb-2.5">
+						<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words">
 							{currentBodyLanguageText}
 						</p>
 					</div>

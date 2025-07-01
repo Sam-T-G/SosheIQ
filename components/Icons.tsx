@@ -178,6 +178,46 @@ export const ChevronUpIcon: React.FC<IconProps> = ({ className }) => (
 	</svg>
 );
 
+export const ChevronLeftIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "h-6 w-6"}
+		fill="none"
+		viewBox="0 0 24 24"
+		stroke="currentColor"
+		strokeWidth={2}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+	</svg>
+);
+
+export const ChevronRightIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "h-6 w-6"}
+		fill="none"
+		viewBox="0 0 24 24"
+		stroke="currentColor"
+		strokeWidth={2}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+	</svg>
+);
+
+export const ZoomInIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "h-6 w-6"}
+		fill="none"
+		viewBox="0 0 24 24"
+		stroke="currentColor"
+		strokeWidth={1.5}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6"
+		/>
+	</svg>
+);
+
 export const ChatBubbleIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
@@ -485,5 +525,37 @@ export const PinSolidIcon: React.FC<IconProps> = ({ className }) => (
 		<path d="M15 4.5l-4 4l-4 1.5l-1.5 1.5l7 7l1.5 -1.5l1.5 -4l4 -4" />
 		<line x1="9" y1="15" x2="4.5" y2="19.5" />
 		<line x1="14.5" y1="4" x2="20" y2="9.5" />
+	</svg>
+);
+
+export const BrainIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "h-6 w-6"}
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor">
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.998 15.998 0 011.622-3.385m5.043.025a15.998 15.998 0 001.622-3.385m0 0a3 3 0 00-5.78-1.128 2.25 2.25 0 01-2.4-2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 00-3.388-1.62m-5.043-.025a15.998 15.998 0 01-1.622-3.385m5.043.025a15.998 15.998 0 00-1.622-3.385"
+		/>
+	</svg>
+);
+
+export const ArrowRightIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		className={className || "h-6 w-6"}
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor">
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+		/>
 	</svg>
 );

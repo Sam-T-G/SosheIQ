@@ -186,7 +186,7 @@ interface RenderChatInterfaceProps {
 	isPinnable: boolean;
 	isGoalPinned: boolean;
 	isContinueActionSuggested: boolean;
-	onSendMessage: (message: string) => void;
+	onSendMessage: (messages: { gesture?: string; dialogue?: string }) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
 	onPinGoal: (goalText: string) => void;
@@ -276,7 +276,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 		: "Type your response...";
 
 	const gesturePlaceholderText =
-		"Describe your action or gesture... e.g., *I lean back and cross my arms*";
+		"Describe a gesture... e.g., *smiles and nods*";
 
 	return (
 		<div className={wrapperClasses}>
@@ -329,11 +329,6 @@ const InputArea: React.FC<InputAreaProps> = ({
 							: "grid-rows-[0fr] opacity-0"
 					}`}>
 					<div className="overflow-hidden">
-						<label
-							htmlFor="gesture-input"
-							className="text-xs font-semibold text-sky-300 mb-1 ml-1 block">
-							Your Action/Gesture
-						</label>
 						<textarea
 							id="gesture-input"
 							value={gestureInput}
@@ -519,20 +514,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	}, [scrollToBottom]);
 
 	const handleSend = (gesture: string, dialogue: string) => {
-		let combinedMessage = dialogue;
-		if (gesture) {
-			// Wrap gesture in markdown-style asterisks if it's not already
-			const formattedGesture =
-				gesture.startsWith("*") && gesture.endsWith("*")
-					? gesture
-					: `*${gesture}*`;
-			combinedMessage = dialogue
-				? `${formattedGesture}\n${dialogue}`
-				: formattedGesture;
-		}
-
-		if (combinedMessage.trim()) {
-			onSendMessage(combinedMessage.trim());
+		if (gesture.trim() || dialogue.trim()) {
+			onSendMessage({ gesture, dialogue });
 		}
 	};
 

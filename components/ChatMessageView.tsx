@@ -1,7 +1,18 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { ChatMessage } from "../types";
 import { ChatMessageViewAI } from "./ChatMessageViewAI";
-import { StarIcon, SparklesIcon, XCircleIcon, PaperIcon } from "./Icons";
+import {
+	StarIcon,
+	SparklesIcon,
+	XCircleIcon,
+	PaperIcon,
+	GestureIcon,
+	BrainIcon,
+	ArrowRightIcon,
+	LightbulbIcon,
+	CloseIcon,
+	CheckCircleIcon,
+} from "./Icons";
 import { SILENT_USER_ACTION_TOKEN } from "../constants";
 
 interface ChatMessageViewProps {
@@ -74,6 +85,85 @@ const NegativeTraitContributionBadge: React.FC<{ trait: string }> = ({
 	);
 };
 
+interface BadgeInfoPopoverProps {
+	content: {
+		reasoning: string;
+		nextStep: string;
+		alternative: string;
+	};
+	badgeType: "positive" | "negative";
+	onClose: () => void;
+}
+
+const BadgeInfoPopover: React.FC<BadgeInfoPopoverProps> = ({
+	content,
+	badgeType,
+	onClose,
+}) => {
+	useEffect(() => {
+		const handleEsc = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleEsc);
+		return () => {
+			window.removeEventListener("keydown", handleEsc);
+		};
+	}, [onClose]);
+
+	const borderColor =
+		badgeType === "positive" ? "border-purple-500" : "border-red-500";
+
+	return (
+		<div
+			className="absolute bottom-full right-0 mb-3 w-72 z-20 animate-fadeIn"
+			onClick={(e) => e.stopPropagation()}>
+			<div
+				className={`bg-slate-800 rounded-lg shadow-xl border ${borderColor} p-4`}>
+				<button
+					onClick={onClose}
+					className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-700 transition-colors"
+					aria-label="Close feedback popover">
+					<CloseIcon className="h-4 w-4" />
+				</button>
+				<div className="space-y-4">
+					{content.reasoning && (
+						<div>
+							<h4 className="flex items-center text-sm font-semibold text-sky-300 mb-1">
+								<CheckCircleIcon className="h-4 w-4 mr-2" /> Reasoning
+							</h4>
+							<p className="text-xs text-slate-300 italic">
+								{content.reasoning}
+							</p>
+						</div>
+					)}
+					{content.nextStep && (
+						<div>
+							<h4 className="flex items-center text-sm font-semibold text-sky-300 mb-1">
+								<ArrowRightIcon className="h-4 w-4 mr-2" /> Next Step Suggestion
+							</h4>
+							<p className="text-xs text-slate-300 italic">
+								{content.nextStep}
+							</p>
+						</div>
+					)}
+					{content.alternative && (
+						<div>
+							<h4 className="flex items-center text-sm font-semibold text-sky-300 mb-1">
+								<LightbulbIcon className="h-4 w-4 mr-2" /> Alternative Approach
+							</h4>
+							<p className="text-xs text-slate-300 italic">
+								{content.alternative}
+							</p>
+						</div>
+					)}
+				</div>
+			</div>
+		</div>
+	);
+};
+
 const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 	message,
 	isLastMessage,
@@ -87,6 +177,67 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 	const isUser = message.sender === "user";
 	const isSystem = message.sender === "system";
 	const isBackstory = message.sender === "backstory";
+	const isUserAction = message.sender === "user_action";
+
+	const [popoverState, setPopoverState] = useState<{
+		content: {
+			reasoning: string;
+			nextStep: string;
+			alternative: string;
+		};
+		badgeType: "positive" | "negative";
+	} | null>(null);
+	const messageContainerRef = useRef<HTMLDivElement>(null);
+
+	const handleBadgeClick = (
+		message: ChatMessage,
+		type: "positive" | "negative"
+	) => {
+		if (popoverState) {
+			setPopoverState(null);
+		} else if (
+			message.badgeReasoning &&
+			message.nextStepSuggestion &&
+			message.alternativeSuggestion
+		) {
+			setPopoverState({
+				content: {
+					reasoning: message.badgeReasoning,
+					nextStep: message.nextStepSuggestion,
+					alternative: message.alternativeSuggestion,
+				},
+				badgeType: type,
+			});
+			setTimeout(() => {
+				messageContainerRef.current?.scrollIntoView({
+					behavior: "smooth",
+					block: "center",
+				});
+			}, 0);
+		}
+	};
+
+	useEffect(() => {
+		if (!popoverState) return;
+
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				messageContainerRef.current &&
+				!messageContainerRef.current.contains(event.target as Node)
+			) {
+				setPopoverState(null);
+			}
+		};
+
+		const timerId = setTimeout(() => {
+			document.addEventListener("mousedown", handleClickOutside);
+		}, 0);
+
+		return () => {
+			clearTimeout(timerId);
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [popoverState]);
 
 	if (isBackstory) {
 		return (
@@ -119,8 +270,18 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		);
 	}
 
+	if (isUserAction) {
+		return (
+			<div className="flex justify-center items-center gap-2 my-2 animate-fadeIn">
+				<GestureIcon className="h-4 w-4 text-slate-400" />
+				<p className="text-sm italic text-slate-400 px-4 py-1 bg-slate-700/50 rounded-full">
+					{message.text}
+				</p>
+			</div>
+		);
+	}
+
 	if (isUser) {
-		// Do not render the user message if it's the silent action token
 		if (message.text === SILENT_USER_ACTION_TOKEN) {
 			return null;
 		}
@@ -128,18 +289,26 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		const badges: React.ReactNode[] = [];
 		if (message.positiveTraitContribution) {
 			badges.push(
-				<TraitContributionBadge
+				<button
 					key="pos-trait"
-					trait={message.positiveTraitContribution}
-				/>
+					onClick={() => handleBadgeClick(message, "positive")}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full"
+					aria-label={`View details for positive trait: ${message.positiveTraitContribution}`}>
+					<TraitContributionBadge trait={message.positiveTraitContribution} />
+				</button>
 			);
 		}
 		if (message.negativeTraitContribution) {
 			badges.push(
-				<NegativeTraitContributionBadge
+				<button
 					key="neg-trait"
-					trait={message.negativeTraitContribution}
-				/>
+					onClick={() => handleBadgeClick(message, "negative")}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full"
+					aria-label={`View details for negative trait: ${message.negativeTraitContribution}`}>
+					<NegativeTraitContributionBadge
+						trait={message.negativeTraitContribution}
+					/>
+				</button>
 			);
 		}
 		if (typeof message.userTurnEffectivenessScore === "number") {
@@ -160,8 +329,17 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		}
 
 		return (
-			<div className="flex justify-end pl-10 sm:pl-20">
+			<div
+				ref={messageContainerRef}
+				className="flex justify-end pl-10 sm:pl-20">
 				<div className="relative">
+					{popoverState && (
+						<BadgeInfoPopover
+							content={popoverState.content}
+							badgeType={popoverState.badgeType}
+							onClose={() => setPopoverState(null)}
+						/>
+					)}
 					<div className="max-w-xl px-4 py-3 rounded-xl shadow-md bg-sky-600 text-white rounded-br-none">
 						<p className="whitespace-pre-wrap break-words">{message.text}</p>
 						<p className="text-xs mt-1 opacity-70 text-right">

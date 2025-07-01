@@ -115,6 +115,9 @@ export interface UserTurnFeedback {
   userTurnEffectivenessScore: number;
   positiveTraitContribution?: string;
   negativeTraitContribution?: string;
+  badgeReasoning?: string;
+  nextStepSuggestion?: string;
+  alternativeSuggestion?: string;
 }
 
 export interface AiTurnResponse {
@@ -128,6 +131,7 @@ export interface AiTurnResponse {
     isEndingConversation: boolean;
     isUserActionSuggested?: boolean;
     shouldGenerateNewImage: boolean;
+    contextualSummary?: string; // New field for gallery text
     emergingGoal?: string;
     goalProgress: number;
     achieved: boolean;
@@ -140,7 +144,7 @@ export interface AiTurnResponse {
 
 export interface ChatMessage {
   id: string;
-  sender: 'user' | 'ai' | 'system' | 'backstory';
+  sender: 'user' | 'ai' | 'system' | 'backstory' | 'user_action';
   text: string;
   dialogueChunks?: DialogueChunk[];
   bodyLanguageDescription?: string;
@@ -150,9 +154,13 @@ export interface ChatMessage {
   engagementDelta?: number;
   positiveTraitContribution?: string;
   negativeTraitContribution?: string;
+  badgeReasoning?: string;
+  nextStepSuggestion?: string;
+  alternativeSuggestion?: string;
   imagePrompt?: string;
   imageUrl?: string; // base64
   fallbackImageUrl?: string; // base64 for previous turn's image
+  contextualSummary?: string; // New field for gallery text
   timestamp: Date;
   isThoughtBubble?: boolean;
   goalChange?: {
