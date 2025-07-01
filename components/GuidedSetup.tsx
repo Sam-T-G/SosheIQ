@@ -17,6 +17,13 @@ import {
 	InfoIcon,
 	FastForwardIcon,
 	HeartIcon,
+	UserCircleIcon,
+	GlobeAltIcon,
+	PencilSquareIcon,
+	TagIcon,
+	MapPinIcon,
+	ChatBubbleBottomCenterTextIcon,
+	FlagIcon,
 } from "./Icons";
 import { InfoCard } from "./InfoCard";
 
@@ -27,6 +34,21 @@ interface GuidedSetupProps {
 
 const MAX_STEPS = 6;
 const MAX_PERSONALITY_TRAITS = 5;
+
+// --- Style constants for UI consistency ---
+const optionButtonBaseClasses =
+	"p-3 rounded-lg text-sm font-semibold transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400";
+const optionButtonSelectedClasses =
+	"bg-teal-500 text-white shadow-lg scale-105";
+const optionButtonUnselectedClasses =
+	"bg-slate-700 hover:bg-slate-600 text-gray-300";
+
+const traitButtonBaseClasses =
+	"px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800";
+const traitButtonSelectedClasses =
+	"bg-teal-500 text-white ring-2 ring-teal-300";
+const traitButtonUnselectedClasses =
+	"bg-slate-600 hover:bg-slate-500 text-gray-300";
 
 const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
 	"Social Behavior": [
@@ -197,6 +219,22 @@ const SegmentedProgressBar: React.FC<{
 	</div>
 );
 
+const SummaryItem: React.FC<{
+	Icon: React.FC<any>;
+	label: string;
+	children: React.ReactNode;
+}> = ({ Icon, label, children }) => (
+	<div className="flex items-start gap-4">
+		<div className="flex-shrink-0 mt-1 p-2 bg-slate-800/60 rounded-lg">
+			<Icon className="h-5 w-5 text-sky-400" />
+		</div>
+		<div>
+			<h4 className="text-sm font-semibold text-gray-400">{label}</h4>
+			<div className="text-white font-medium">{children}</div>
+		</div>
+	</div>
+);
+
 export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	onStart,
 	onSwitchToAdvanced,
@@ -315,26 +353,54 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		switch (step) {
 			case 0:
 				return (
-					<div key={step} className={`${animationClass} text-center`}>
-						<h2 className="text-3xl font-bold text-teal-300 mb-4">
-							Let's craft your scenario.
-						</h2>
-						<p className="text-lg text-gray-400 mb-8 max-w-md mx-auto">
-							Choose a simple, guided setup or dive into advanced options for
-							full control.
-						</p>
-						<div className="flex flex-col gap-4 max-w-sm mx-auto">
+					<div key={step} className={`${animationClass}`}>
+						<div className="text-center mb-10">
+							<h2 className="text-4xl font-bold tracking-tight text-white">
+								Let's craft your scenario
+							</h2>
+							<p className="mt-4 text-lg text-gray-400">
+								How would you like to begin? Choose a path to set up your
+								practice session.
+							</p>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							{/* Guided Setup Card */}
 							<button
 								onClick={handleNext}
-								className="group w-full px-6 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-3">
-								<PlayIcon className="h-5 w-5 transition-transform group-hover:scale-110" />
-								Start Guided Setup
+								className="group relative text-left p-6 bg-slate-700/50 rounded-xl border border-slate-700 hover:border-teal-500/80 transition-all duration-300">
+								<div className="absolute -inset-px rounded-xl border-2 border-transparent transition-all duration-300 group-hover:border-teal-500/50"></div>
+								<div className="relative">
+									<div className="p-3 bg-slate-800 rounded-lg inline-block mb-4">
+										<PlayIcon className="h-6 w-6 text-teal-400" />
+									</div>
+									<h3 className="text-xl font-semibold text-white">
+										Guided Setup
+									</h3>
+									<p className="mt-2 text-gray-400 text-sm">
+										A step-by-step process to quickly define your interaction.
+										Perfect for getting started.
+									</p>
+								</div>
 							</button>
+
+							{/* Advanced Setup Card */}
 							<button
 								onClick={onSwitchToAdvanced}
-								className="group w-full px-6 py-4 bg-sky-700 text-white font-semibold rounded-lg hover:bg-sky-600 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-3">
-								<CogIcon className="h-5 w-5 transition-transform group-hover:rotate-45" />
-								Go to Advanced Setup
+								className="group relative text-left p-6 bg-slate-700/50 rounded-xl border border-slate-700 hover:border-sky-500/80 transition-all duration-300">
+								<div className="absolute -inset-px rounded-xl border-2 border-transparent transition-all duration-300 group-hover:border-sky-500/50"></div>
+								<div className="relative">
+									<div className="p-3 bg-slate-800 rounded-lg inline-block mb-4">
+										<CogIcon className="h-6 w-6 text-sky-400" />
+									</div>
+									<h3 className="text-xl font-semibold text-white">
+										Advanced Setup
+									</h3>
+									<p className="mt-2 text-gray-400 text-sm">
+										Fine-tune every detail of the AI's persona and scenario for
+										a fully customized experience.
+									</p>
+								</div>
 							</button>
 						</div>
 					</div>
@@ -342,10 +408,10 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 1:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-2 text-center">
+						<h2 className="text-3xl font-bold text-teal-400 mb-2 text-center">
 							Where is this conversation taking place?
 						</h2>
-						<p className="text-sm text-gray-400 mb-6 text-center">
+						<p className="text-lg text-gray-400 mb-8 text-center">
 							This sets the scene and social etiquette.
 						</p>
 						<div className="grid grid-cols-2 gap-4">
@@ -357,7 +423,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 										${
 											scenario.environment === name
 												? "bg-teal-500/20 border-teal-400 shadow-lg"
-												: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
+												: "bg-slate-700/60 border-slate-600 hover:border-teal-500 hover:bg-slate-700"
 										}`}>
 									<Icon
 										className={`h-8 w-8 transition-colors ${
@@ -382,7 +448,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									${
 										scenario.environment === SocialEnvironment.CUSTOM
 											? "bg-teal-500/20 border-teal-400 shadow-lg"
-											: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
+											: "bg-slate-700/60 border-slate-600 hover:border-teal-500 hover:bg-slate-700"
 									}`}>
 								<CogIcon
 									className={`h-6 w-6 transition-colors ${
@@ -422,7 +488,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 2:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6 text-center">
+						<h2 className="text-3xl font-bold text-teal-400 mb-8 text-center">
 							Who are you talking to?
 						</h2>
 						<div className="space-y-6">
@@ -431,18 +497,21 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									Gender
 								</h3>
 								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-									{Object.values(AIGender).map((g) => (
-										<button
-											key={g}
-											onClick={() => updateScenario({ aiGender: g })}
-											className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400 ${
-												scenario.aiGender === g
-													? "bg-teal-500 text-white shadow-md"
-													: "bg-slate-700 hover:bg-slate-600 text-gray-300"
-											}`}>
-											{g}
-										</button>
-									))}
+									{Object.values(AIGender).map((g) => {
+										const isSelected = scenario.aiGender === g;
+										return (
+											<button
+												key={g}
+												onClick={() => updateScenario({ aiGender: g })}
+												className={`${optionButtonBaseClasses} ${
+													isSelected
+														? optionButtonSelectedClasses
+														: optionButtonUnselectedClasses
+												}`}>
+												{g}
+											</button>
+										);
+									})}
 								</div>
 							</div>
 							<div>
@@ -450,18 +519,21 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									Age
 								</h3>
 								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-									{Object.values(AIAgeBracket).map((age) => (
-										<button
-											key={age}
-											onClick={() => updateScenario({ aiAgeBracket: age })}
-											className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400 ${
-												scenario.aiAgeBracket === age
-													? "bg-teal-500 text-white shadow-md"
-													: "bg-slate-700 hover:bg-slate-600 text-gray-300"
-											}`}>
-											{age}
-										</button>
-									))}
+									{Object.values(AIAgeBracket).map((age) => {
+										const isSelected = scenario.aiAgeBracket === age;
+										return (
+											<button
+												key={age}
+												onClick={() => updateScenario({ aiAgeBracket: age })}
+												className={`${optionButtonBaseClasses} ${
+													isSelected
+														? optionButtonSelectedClasses
+														: optionButtonUnselectedClasses
+												}`}>
+												{age}
+											</button>
+										);
+									})}
 								</div>
 								{scenario.aiAgeBracket === AIAgeBracket.CUSTOM && (
 									<div className="mt-4">
@@ -491,10 +563,10 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				const selectedCount = scenario.aiPersonalityTraits?.length || 0;
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-2 text-center">
+						<h2 className="text-3xl font-bold text-teal-400 mb-2 text-center">
 							What's their personality like?
 						</h2>
-						<p className="text-gray-400 mb-4 text-center">
+						<p className="text-lg text-gray-400 mb-6 text-center">
 							Choose up to {MAX_PERSONALITY_TRAITS} traits, and/or add your own
 							below.
 						</p>
@@ -552,15 +624,15 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 															});
 														}
 													}}
-													className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400 ${
+													className={`${traitButtonBaseClasses} ${
 														isSelected
-															? "bg-teal-500 text-white"
-															: "bg-slate-700 text-gray-300"
+															? traitButtonSelectedClasses
+															: traitButtonUnselectedClasses
 													} ${
 														!isSelected &&
 														selectedCount >= MAX_PERSONALITY_TRAITS
 															? "opacity-50 cursor-not-allowed"
-															: "hover:bg-slate-600"
+															: ""
 													}`}>
 													{p}
 												</button>
@@ -575,7 +647,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 4:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6 text-center">
+						<h2 className="text-3xl font-bold text-teal-400 mb-6 text-center">
 							Fine-tune their Background (Optional)
 						</h2>
 						<div className="space-y-6 max-w-lg mx-auto">
@@ -648,7 +720,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 5:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-4 text-center">
+						<h2 className="text-3xl font-bold text-teal-400 mb-6 text-center">
 							Set the Scene (Optional)
 						</h2>
 						<div className="space-y-6 max-w-lg mx-auto">
@@ -733,75 +805,76 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						: (environment as string);
 
 				return (
-					<div key={step} className={`${animationClass} text-center`}>
-						<h2 className="text-3xl font-bold text-teal-300 mb-6">
-							Ready to Go?
-						</h2>
-						<div className="p-6 bg-slate-700/50 rounded-lg space-y-3 text-gray-200 text-left max-w-md mx-auto">
-							<p>
-								<strong className="text-sky-300 w-32 inline-block">
-									Environment:
-								</strong>{" "}
+					<div key={step} className={`${animationClass}`}>
+						<div className="text-center mb-8">
+							<h2 className="text-4xl font-bold tracking-tight text-white">
+								Scenario Locked In
+							</h2>
+							<p className="mt-3 text-lg text-gray-400">
+								Review your choices below. Press Start when you're ready to
+								begin the interaction.
+							</p>
+						</div>
+
+						<div className="p-6 bg-slate-700/30 border border-slate-600 rounded-2xl shadow-lg space-y-5">
+							<SummaryItem Icon={UserCircleIcon} label="Persona">
+								A {scenario.aiGender?.toLowerCase()} {ageText}
+								{scenario.aiName && (
+									<span className="text-gray-400">
+										{" "}
+										named {scenario.aiName}
+									</span>
+								)}
+							</SummaryItem>
+
+							<SummaryItem Icon={MapPinIcon} label="Environment">
 								{envText}
-							</p>
-							<p>
-								<strong className="text-sky-300 w-32 inline-block">
-									Persona:
-								</strong>{" "}
-								A {scenario.aiGender?.toLowerCase()} {ageText}.
-							</p>
-							{scenario.aiName && (
-								<p>
-									<strong className="text-sky-300 w-32 inline-block">
-										Name:
-									</strong>{" "}
-									{scenario.aiName}
-								</p>
-							)}
+							</SummaryItem>
+
 							{aiCulture && (
-								<p>
-									<strong className="text-sky-300 w-32 inline-block">
-										Culture:
-									</strong>{" "}
+								<SummaryItem Icon={GlobeAltIcon} label="Culture/Race">
 									{aiCulture}
-								</p>
+								</SummaryItem>
 							)}
+
 							{aiPersonalityTraits && aiPersonalityTraits.length > 0 && (
-								<p>
-									<strong className="text-sky-300 w-32 inline-block">
-										Traits:
-									</strong>{" "}
-									{aiPersonalityTraits.join(", ")}
-								</p>
+								<SummaryItem Icon={TagIcon} label="Personality Traits">
+									<div className="flex flex-wrap gap-2">
+										{aiPersonalityTraits.map((trait) => (
+											<span
+												key={trait}
+												className="px-2.5 py-1 text-xs font-semibold text-teal-200 bg-teal-800/60 rounded-full">
+												{trait}
+											</span>
+										))}
+									</div>
+								</SummaryItem>
 							)}
+
 							{customAiPersonality && (
-								<p>
-									<strong className="text-sky-300 w-32 inline-block">
-										Custom Persona:
-									</strong>{" "}
-									{customAiPersonality}
-								</p>
+								<SummaryItem
+									Icon={PencilSquareIcon}
+									label="Custom Personality Notes">
+									<p className="italic text-gray-300">
+										"{customAiPersonality}"
+									</p>
+								</SummaryItem>
 							)}
+
 							{scenario.conversationGoal && (
-								<p>
-									<strong className="text-sky-300 w-32 inline-block">
-										Your Goal:
-									</strong>{" "}
+								<SummaryItem Icon={FlagIcon} label="Your Goal">
 									{scenario.conversationGoal}
-								</p>
+								</SummaryItem>
 							)}
+
 							{customContext && (
-								<p>
-									<strong className="text-sky-300 w-32 inline-block">
-										Extra Context:
-									</strong>{" "}
-									{customContext}
-								</p>
+								<SummaryItem
+									Icon={ChatBubbleBottomCenterTextIcon}
+									label="Extra Context">
+									<p className="italic text-gray-300">"{customContext}"</p>
+								</SummaryItem>
 							)}
 						</div>
-						<p className="text-sm text-gray-500 mt-4">
-							You can change these settings by going back.
-						</p>
 					</div>
 				);
 			default:
@@ -846,9 +919,11 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					{step === MAX_STEPS && (
 						<button
 							onClick={handleStart}
-							className="px-8 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center gap-2 transition-transform hover:scale-105">
-							<PlayIcon className="h-5 w-5" />
+							className="group w-full bg-teal-500 hover:bg-teal-400 text-white font-bold py-4 px-6 rounded-lg text-lg shadow-lg 
+                       transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
+                       focus:ring-4 focus:ring-teal-300 focus:ring-opacity-50 flex items-center justify-center gap-2">
 							<span>Start</span>
+							<PlayIcon className="h-6 w-6 transition-transform group-hover:translate-x-1" />
 						</button>
 					)}
 				</div>

@@ -1,5 +1,10 @@
 import React from "react";
-import { PlayIcon, PaperIcon, QuestionMarkIcon, SparklesIcon } from "./Icons";
+import {
+	PlayIcon,
+	QuestionMarkIcon,
+	SparklesIcon,
+	ArrowRightIcon,
+} from "./Icons";
 import { SosheIQLogo } from "./SosheIQLogo";
 
 interface HeroScreenProps {
@@ -14,53 +19,65 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 	onStartRandom,
 }) => {
 	return (
-		<div className="flex flex-col items-center justify-center text-center w-full max-w-3xl p-6 md:p-10">
+		<div className="relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center p-4 md:p-8 isolate">
+			{/* Background Gradients */}
+			<div
+				aria-hidden="true"
+				className="absolute -z-10 -top-40 -left-20 transform-gpu blur-3xl">
+				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0ea5e9] to-[#14b8a6] opacity-20" />
+			</div>
+			<div
+				aria-hidden="true"
+				className="absolute -z-10 -bottom-40 -right-20 transform-gpu blur-3xl">
+				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#14b8a6] to-[#0ea5e9] opacity-20" />
+			</div>
+
 			<SosheIQLogo
-				className="h-20 md:h-28 w-auto mb-8 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
+				className="h-24 md:h-32 w-auto mb-6 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
 				style={{ animationDelay: "0.1s" }}
 			/>
-			<p
-				className="text-xl md:text-2xl text-gray-300 mb-12 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
+
+			<h1
+				className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
 				style={{ animationDelay: "0.3s" }}>
-				Your AI-powered coach for mastering social interactions.
+				Master the Art of Conversation
+			</h1>
+			<p
+				className="text-lg md:text-xl text-gray-300 max-w-2xl mb-12 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
+				style={{ animationDelay: "0.5s" }}>
+				Practice scenarios, get instant feedback, and become the most
+				charismatic person in the room with your AI-powered social coach.
 			</p>
-			<div className="w-full max-w-sm space-y-4">
+
+			<div
+				className="flex flex-col sm:flex-row items-center gap-4 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
+				style={{ animationDelay: "0.7s" }}>
 				<button
 					onClick={onStart}
-					className="w-full px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg text-lg shadow-lg 
-                     transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
-                     focus:ring-4 focus:ring-green-400 focus:ring-opacity-50
-                     opacity-0 animate-[heroButtonAppear_0.5s_ease-out_forwards] flex items-center justify-center space-x-2"
-					style={{ animationDelay: "0.6s" }}
+					className="group w-full sm:w-auto px-8 py-4 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-lg text-lg shadow-lg 
+                 transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
+                 focus:ring-4 focus:ring-teal-300 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Start Interaction">
-					<PlayIcon className="h-5 w-5" />
-					<span>Start</span>
+					<span>Get Started</span>
+					<ArrowRightIcon className="h-5 w-5 transition-transform group-hover:translate-x-1" />
 				</button>
 				<button
 					onClick={onStartRandom}
-					className="w-full px-8 py-4 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-lg shadow-lg 
-                     transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
-                     focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50
-                     opacity-0 animate-[heroButtonAppear_0.5s_ease-out_forwards] flex items-center justify-center space-x-2"
-					style={{ animationDelay: "0.7s" }}
+					className="group w-full sm:w-auto px-8 py-4 bg-sky-600/50 hover:bg-sky-600/80 ring-1 ring-inset ring-sky-500 text-white font-semibold rounded-lg text-lg shadow-lg
+                 transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
+                 focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Start a random scenario">
-					<SparklesIcon className="h-5 w-5" />
+					<SparklesIcon className="h-5 w-5 transition-transform group-hover:rotate-12" />
 					<span>I'm Feeling Lucky</span>
 				</button>
-				<button
-					onClick={onShowInstructions}
-					className="w-full px-4 py-3 bg-sky-700/90 hover:bg-sky-700 text-white font-semibold rounded-lg text-base shadow-md 
-									transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
-									focus:ring-4 focus:ring-sky-500 focus:ring-opacity-50
-									opacity-0 animate-[heroButtonAppear_0.5s_ease-out_forwards] flex items-center justify-center space-x-2"
-					style={{ animationDelay: "0.8s" }}
-					aria-label="How to Play">
-					<div className="bg-white rounded-full p-0.5 mr-1">
-						<QuestionMarkIcon className="h-4 w-4 text-sky-800" />
-					</div>
-					<span>How to Play</span>
-				</button>
 			</div>
+			<button
+				onClick={onShowInstructions}
+				className="mt-12 text-sm font-semibold text-gray-400 hover:text-white transition-colors opacity-0 animate-[fadeIn_1s_ease-out_forwards]"
+				style={{ animationDelay: "0.9s" }}
+				aria-label="How to Play">
+				How does it work?
+			</button>
 		</div>
 	);
 };

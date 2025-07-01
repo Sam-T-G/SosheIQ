@@ -6,7 +6,15 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
-import { ArrowLeftIcon, AccordionChevronIcon, InfoIcon } from "./Icons";
+import {
+	ArrowLeftIcon,
+	AccordionChevronIcon,
+	InfoIcon,
+	TargetIcon,
+	FastForwardIcon,
+	PlayIcon,
+} from "./Icons";
+import { InfoCard } from "./InfoCard";
 
 interface SetupScreenProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -590,18 +598,12 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 								rows={2}
 								maxLength={MAX_CONVERSATION_GOAL_LENGTH}
 							/>
-							<div className="flex justify-between items-start">
-								<div className="mt-2 flex items-start gap-2 text-xs text-slate-400 flex-grow">
-									<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-									<p>
-										Give yourself a clear objective. This helps the AI measure
-										your success. Example: 'Convince your boss to give you a
-										raise.'
-									</p>
-								</div>
-								<p className="text-xs text-right text-gray-400 mt-1 flex-shrink-0">
-									{conversationGoal.length}/{MAX_CONVERSATION_GOAL_LENGTH}
-								</p>
+							<div className="mt-3">
+								<InfoCard
+									Icon={TargetIcon}
+									title="Example Goal"
+									description="“Convince your boss, who is feeling stressed, to give you a raise.”"
+								/>
 							</div>
 						</div>
 
@@ -617,13 +619,12 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 								rows={3}
 								maxLength={1000}
 							/>
-							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
-								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-								<p>
-									Provide any background information the AI needs to know before
-									the conversation starts. Example: 'You and the AI are old
-									friends who haven't seen each other in five years.'
-								</p>
+							<div className="mt-3">
+								<InfoCard
+									Icon={FastForwardIcon}
+									title="Example Context for an Action"
+									description="Context like “You are both walking out of the office building” can trigger an ‘Active Action’ banner in the simulation."
+								/>
 							</div>
 						</div>
 					</div>
@@ -638,10 +639,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 					</button>
 					<button
 						type="submit"
-						className="w-full sm:w-auto flex-grow bg-green-600 hover:bg-green-500 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg 
-										transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-xl 
-										focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-50">
-						Start Interaction
+						className="group w-full sm:w-auto flex-grow bg-teal-500 hover:bg-teal-400 text-white font-bold py-4 px-6 rounded-lg text-lg shadow-lg 
+										transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
+										focus:ring-4 focus:ring-teal-300 focus:ring-opacity-50 flex items-center justify-center gap-2">
+						<span>Start Interaction</span>
+						<PlayIcon className="h-6 w-6 transition-transform group-hover:translate-x-1" />
 					</button>
 				</div>
 			</form>
