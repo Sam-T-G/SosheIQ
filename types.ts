@@ -39,6 +39,9 @@ export enum AIPersonalityTrait {
   SKEPTICAL = "Skeptical",
   CREATIVE = "Creative",
   LOGICAL = "Logical",
+  METHODICAL = "Methodical",
+  PRAGMATIC = "Pragmatic",
+  IDEALISTIC = "Idealistic",
 
   // Social Behavior
   CONFIDENT = "Confident",
@@ -49,6 +52,10 @@ export enum AIPersonalityTrait {
   HUMBLE = "Humble",
   AMBITIOUS = "Ambitious",
   IMPULSIVE = "Impulsive",
+  SPONTANEOUS = "Spontaneous",
+  INTROVERTED = "Introverted",
+  EXTROVERTED = "Extroverted",
+  NURTURING = "Nurturing",
 }
 
 

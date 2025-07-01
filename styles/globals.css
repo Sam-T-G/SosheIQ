@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -478,7 +479,24 @@ html {
   z-index: 5;
 }
 
-/* New style for the badge info popover */
+/* New animation for the badge info popover */
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* New Setup Screen Animations */
+@keyframes accordion-slide-down {
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    max-height: 1500px; /* Large enough to not clip content */
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-accordion-slide-down {
+  animation: accordion-slide-down 0.5s ease-in-out forwards;
 }

@@ -30,8 +30,7 @@ interface InteractionScreenProps {
 	onRetryMessage: (messageText: string) => void;
 	aiImageBase64: string | null;
 	isLoadingAI: boolean; // True when AI is fetching new image/text
-	onToggleHelpOverlay: () => void;
-	onToggleQuickTipsOverlay: () => void;
+	onToggleHelp: () => void;
 	onViewImage: (url: string | null) => void;
 	initialAiBodyLanguage: string | null;
 	goalJustChanged: boolean;
@@ -137,8 +136,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	onRetryMessage,
 	aiImageBase64,
 	isLoadingAI,
-	onToggleHelpOverlay,
-	onToggleQuickTipsOverlay,
+	onToggleHelp,
 	onViewImage,
 	initialAiBodyLanguage,
 	goalJustChanged,
@@ -303,8 +301,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						}
 						isOverlay={false}
 						hasBlurredBackground={true}
-						onToggleHelpOverlay={onToggleHelpOverlay}
-						onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+						onToggleHelp={onToggleHelp}
 						onViewImage={onViewImage}
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={onAnimationComplete}
@@ -368,8 +365,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							isOverlay={true}
 							hasBlurredBackground={true}
 							onCloseOverlay={() => setShowChatOverlay(false)}
-							onToggleHelpOverlay={onToggleHelpOverlay}
-							onToggleQuickTipsOverlay={onToggleQuickTipsOverlay}
+							onToggleHelp={onToggleHelp}
 							onViewImage={onViewImage}
 							goalJustChanged={goalJustChanged}
 							onAnimationComplete={onAnimationComplete}

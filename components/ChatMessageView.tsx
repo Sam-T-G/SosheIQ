@@ -193,9 +193,14 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		message: ChatMessage,
 		type: "positive" | "negative"
 	) => {
-		if (popoverState) {
+		// If clicking the same badge that's already open, close it.
+		if (popoverState?.badgeType === type) {
 			setPopoverState(null);
-		} else if (
+			return;
+		}
+
+		// Otherwise, open the new popover (this will replace any other open one).
+		if (
 			message.badgeReasoning &&
 			message.nextStepSuggestion &&
 			message.alternativeSuggestion
@@ -208,6 +213,7 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 				},
 				badgeType: type,
 			});
+			// Scroll into view
 			setTimeout(() => {
 				messageContainerRef.current?.scrollIntoView({
 					behavior: "smooth",
@@ -217,6 +223,7 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		}
 	};
 
+	// Centralized click-outside logic
 	useEffect(() => {
 		if (!popoverState) return;
 
@@ -229,6 +236,7 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 			}
 		};
 
+		// Use a timeout to avoid the handler firing from the same click that opened it.
 		const timerId = setTimeout(() => {
 			document.addEventListener("mousedown", handleClickOutside);
 		}, 0);
@@ -291,7 +299,10 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 			badges.push(
 				<button
 					key="pos-trait"
-					onClick={() => handleBadgeClick(message, "positive")}
+					onClick={(e) => {
+						e.stopPropagation();
+						handleBadgeClick(message, "positive");
+					}}
 					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full"
 					aria-label={`View details for positive trait: ${message.positiveTraitContribution}`}>
 					<TraitContributionBadge trait={message.positiveTraitContribution} />
@@ -302,7 +313,10 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 			badges.push(
 				<button
 					key="neg-trait"
-					onClick={() => handleBadgeClick(message, "negative")}
+					onClick={(e) => {
+						e.stopPropagation();
+						handleBadgeClick(message, "negative");
+					}}
 					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full"
 					aria-label={`View details for negative trait: ${message.negativeTraitContribution}`}>
 					<NegativeTraitContributionBadge

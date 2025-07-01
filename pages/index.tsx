@@ -8,8 +8,7 @@ import { GuidedSetup } from "../components/GuidedSetup";
 import { InteractionScreen } from "../components/InteractionScreen";
 import { AnalysisScreen } from "../components/AnalysisScreen";
 import { LoadingIndicator } from "../components/LoadingIndicator";
-import { HelpOverlay } from "../components/HelpOverlay";
-import { QuickTipsScreen } from "../components/QuickTipsScreen";
+import { HelpAndTipsOverlay } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
 import { ImageViewerOverlay } from "../components/ImageViewerOverlay";
 import { InitialLoadingScreen } from "../components/InitialLoadingScreen";
@@ -88,8 +87,7 @@ const HomePage: React.FC = () => {
 	const geminiService = useRef<GeminiService | null>(null);
 	const imagenService = useRef<ImagenService | null>(null);
 
-	const [showHelpOverlay, setShowHelpOverlay] = useState(false);
-	const [showQuickTipsOverlay, setShowQuickTipsOverlay] = useState(false);
+	const [showHelp, setShowHelp] = useState(false);
 	const [showConfirmEndDialog, setShowConfirmEndDialog] = useState(false);
 	const [showGoalAchievedToast, setShowGoalAchievedToast] = useState<{
 		show: boolean;
@@ -876,9 +874,7 @@ const HomePage: React.FC = () => {
 		setError(null);
 	}, []);
 
-	const handleToggleHelpOverlay = () => setShowHelpOverlay((prev) => !prev);
-	const handleToggleQuickTipsOverlay = () =>
-		setShowQuickTipsOverlay((prev) => !prev);
+	const handleToggleHelp = () => setShowHelp((prev) => !prev);
 
 	const handleConfirmEndInteraction = () => {
 		handleNavigate(GamePhase.HERO);
@@ -1053,8 +1049,7 @@ const HomePage: React.FC = () => {
 						onContinueWithoutSpeaking={handleContinueWithoutSpeaking}
 						aiImageBase64={currentAIImage}
 						isLoadingAI={isAiResponding}
-						onToggleHelpOverlay={handleToggleHelpOverlay}
-						onToggleQuickTipsOverlay={handleToggleQuickTipsOverlay}
+						onToggleHelp={handleToggleHelp}
 						onViewImage={handleViewImage}
 						initialAiBodyLanguage={initialAiBodyLanguage}
 						goalJustChanged={goalJustChanged}
@@ -1123,7 +1118,7 @@ const HomePage: React.FC = () => {
 							handleNavigate(GamePhase.HERO);
 						}
 					}}
-					onToggleQuickTips={handleToggleQuickTipsOverlay}
+					onToggleHelp={handleToggleHelp}
 				/>
 
 				{/* Main content area gets a quick, direct fade-in */}
@@ -1145,10 +1140,7 @@ const HomePage: React.FC = () => {
 						onClose={handleCloseImageGallery}
 					/>
 				)}
-				{showHelpOverlay && <HelpOverlay onClose={handleToggleHelpOverlay} />}
-				{showQuickTipsOverlay && (
-					<QuickTipsScreen onClose={handleToggleQuickTipsOverlay} />
-				)}
+				{showHelp && <HelpAndTipsOverlay onClose={handleToggleHelp} />}
 				{showConfirmEndDialog && (
 					<ConfirmEndInteractionDialog
 						isOpen={showConfirmEndDialog}

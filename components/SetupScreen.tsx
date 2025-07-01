@@ -6,22 +6,19 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
-import { ArrowLeftIcon } from "./Icons";
+import { ArrowLeftIcon, AccordionChevronIcon, InfoIcon } from "./Icons";
 
 interface SetupScreenProps {
 	onStart: (details: ScenarioDetails) => void;
 	onBack: () => void;
 }
 
-type NameInputMode = "manual" | "automatic";
-type AgeConfigMode = "automatic" | "manual_select" | "manual_custom";
 const MAX_PERSONALITY_TRAITS = 3;
 const MAX_CUSTOM_PERSONALITY_LENGTH = 300;
 const MAX_CONVERSATION_GOAL_LENGTH = 200;
 const MAX_CUSTOM_ENV_LENGTH = 200;
 const MAX_AI_CULTURE_LENGTH = 100;
 
-// RETHOUGHT: New, simpler, and more diverse trait categories
 const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
 	"Social Behavior": [
 		AIPersonalityTrait.CONFIDENT,
@@ -72,7 +69,7 @@ const orderedPersonalityCategories = [
 	"Attitude / Outlook",
 ];
 
-interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
+interface OptionButtonProps<T extends string> {
 	value: T;
 	isSelected: boolean;
 	onChange: (value: T) => void;
@@ -82,7 +79,7 @@ interface OptionButtonProps<T extends string | NameInputMode | AgeConfigMode> {
 	title?: string;
 }
 
-const OptionButton = <T extends string | NameInputMode | AgeConfigMode>({
+const OptionButton = <T extends string>({
 	value,
 	isSelected,
 	onChange,
@@ -97,117 +94,90 @@ const OptionButton = <T extends string | NameInputMode | AgeConfigMode>({
 		disabled={disabled}
 		title={title}
 		aria-pressed={isSelected}
-		className={`flex items-center justify-center text-center p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-opacity-75
-                ${
-									disabled
-										? "bg-slate-500 text-gray-400 cursor-not-allowed opacity-70"
-										: isSelected
-										? "bg-teal-500 text-white shadow-lg scale-105 ring-2 ring-teal-300"
-										: "bg-slate-700 hover:bg-slate-600 text-gray-300 hover:shadow-md hover:scale-102"
-								} ${className}`}>
+		className={`flex items-center justify-center text-center p-3 rounded-lg text-sm font-medium transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400
+			${
+				disabled
+					? "bg-slate-500 text-gray-400 cursor-not-allowed opacity-70"
+					: isSelected
+					? "bg-teal-500 text-white shadow-lg scale-105"
+					: "bg-slate-700 hover:bg-slate-600 text-gray-300"
+			} ${className}`}>
 		{children}
 	</button>
 );
 
-interface SectionProps {
+const AccordionSection: React.FC<{
 	title: string;
 	children: React.ReactNode;
-	animationDelay?: string;
-	error?: string | null;
+	defaultOpen?: boolean;
 	id?: string;
-}
+	error?: string | null;
+}> = ({ title, children, defaultOpen = false, id, error }) => {
+	const [isOpen, setIsOpen] = useState(defaultOpen);
 
-const Section: React.FC<SectionProps> = ({
-	title,
-	children,
-	animationDelay,
-	error,
-	id,
-}) => (
-	<div
-		className="mb-8 p-6 bg-slate-700/50 rounded-lg shadow-inner opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
-		style={{ animationDelay }}
-		aria-labelledby={id ? `${id}-title` : undefined}
-		aria-describedby={error && id ? `${id}-error` : undefined}>
-		<label
-			id={id ? `${id}-title` : undefined}
-			className="block text-xl font-semibold mb-4 text-teal-300">
-			{title}:
-		</label>
-		{children}
-		{error && id && (
-			<p id={`${id}-error`} className="text-xs text-red-400 mt-2">
-				{error}
-			</p>
-		)}
-	</div>
-);
+	return (
+		<div
+			className={`border border-slate-600 rounded-xl bg-slate-700/30 transition-shadow hover:shadow-lg ${
+				error ? "border-red-500/50" : ""
+			}`}>
+			<h2>
+				<button
+					type="button"
+					onClick={() => setIsOpen(!isOpen)}
+					className="flex justify-between items-center w-full p-5 font-semibold text-left text-sky-300 bg-slate-700/50 hover:bg-slate-700 transition-colors rounded-t-xl"
+					aria-expanded={isOpen}
+					aria-controls={id}>
+					<span className="text-lg">{title}</span>
+					<div className="flex items-center gap-2">
+						{error && (
+							<span className="text-xs text-red-400 animate-pulse">Error</span>
+						)}
+						<AccordionChevronIcon
+							className={`w-5 h-5 transform transition-transform duration-300 ${
+								isOpen ? "rotate-180" : ""
+							}`}
+						/>
+					</div>
+				</button>
+			</h2>
+			<div
+				id={id}
+				className={`grid transition-all duration-500 ease-in-out ${
+					isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+				}`}>
+				<div className="overflow-hidden">
+					<div className="p-5 border-t border-slate-600">{children}</div>
+				</div>
+			</div>
+		</div>
+	);
+};
 
-const PREDEFINED_AI_MALE_FIRST_NAMES: string[] = [
+const PREDEFINED_AI_MALE_FIRST_NAMES = [
 	"Arthur",
 	"David",
 	"Ethan",
 	"James",
-	"John",
 	"Liam",
 	"Michael",
 	"Noah",
-	"Robert",
-	"William",
-	"Daniel",
-	"Matthew",
 	"Ryan",
-	"Kevin",
-	"Mark",
-	"Christopher",
-	"Joseph",
-	"Anthony",
-	"Paul",
-	"Brian",
-	"Thomas",
-	"Steven",
-	"Andrew",
-	"Edward",
-	"Charles",
-	"George",
-	"Benjamin",
-	"Samuel",
-	"Henry",
-	"Jacob",
+	"Chris",
+	"Ben",
 ];
-const PREDEFINED_AI_FEMALE_FIRST_NAMES: string[] = [
+const PREDEFINED_AI_FEMALE_FIRST_NAMES = [
 	"Anna",
 	"Chloe",
-	"Elizabeth",
 	"Emily",
 	"Emma",
 	"Isabella",
-	"Jennifer",
-	"Linda",
-	"Mary",
 	"Olivia",
 	"Sophia",
 	"Ava",
-	"Mia",
 	"Grace",
 	"Sarah",
-	"Jessica",
-	"Ashley",
-	"Amanda",
-	"Susan",
-	"Karen",
-	"Michelle",
-	"Barbara",
-	"Patricia",
-	"Nancy",
-	"Laura",
-	"Sandra",
-	"Rebecca",
-	"Charlotte",
-	"Amelia",
-	"Evelyn",
 ];
-const PREDEFINED_AI_NEUTRAL_FIRST_NAMES: string[] = [
+const PREDEFINED_AI_NEUTRAL_FIRST_NAMES = [
 	"Alex",
 	"Jordan",
 	"Casey",
@@ -217,27 +187,9 @@ const PREDEFINED_AI_NEUTRAL_FIRST_NAMES: string[] = [
 	"Cameron",
 	"Drew",
 	"Kai",
-	"Phoenix",
-	"River",
-	"Sage",
-	"Blake",
-	"Jamie",
 	"Taylor",
-	"Avery",
-	"Devin",
-	"Emerson",
-	"Parker",
-	"Quinn",
-	"Rowan",
-	"Sawyer",
-	"Dakota",
-	"Logan",
-	"Charlie",
-	"Hayden",
-	"Jesse",
-	"Finley",
 ];
-const PREDEFINED_AI_LAST_NAMES: string[] = [
+const PREDEFINED_AI_LAST_NAMES = [
 	"Smith",
 	"Jones",
 	"Williams",
@@ -245,34 +197,9 @@ const PREDEFINED_AI_LAST_NAMES: string[] = [
 	"Davis",
 	"Miller",
 	"Wilson",
-	"Moore",
-	"Taylor",
 	"Chen",
 	"Lee",
 	"Garcia",
-	"Rodriguez",
-	"Martinez",
-	"Kim",
-	"Patel",
-	"Singh",
-	"Walker",
-	"Hall",
-	"Johnson",
-	"Anderson",
-	"Thomas",
-	"Harris",
-	"Clark",
-	"Lewis",
-	"Robinson",
-	"Perez",
-	"Thompson",
-	"White",
-	"Allen",
-	"Young",
-	"Hernandez",
-	"King",
-	"Wright",
-	"Lopez",
 ];
 
 const generateRandomAiName = (gender: AIGender): string => {
@@ -314,75 +241,72 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 	const [customAiPersonality, setCustomAiPersonality] = useState<string>("");
 	const [aiGender, setAiGender] = useState<AIGender>(AIGender.RANDOM);
 	const [aiName, setAiName] = useState<string>("");
-	const [nameInputMode, setNameInputMode] =
-		useState<NameInputMode>("automatic");
 	const [nameError, setNameError] = useState<string | null>(null);
 	const [personalityError, setPersonalityError] = useState<string | null>(null);
 	const [customContext, setCustomContext] = useState<string>("");
 	const [conversationGoal, setConversationGoal] = useState<string>("");
-
-	const [ageConfigMode, setAgeConfigMode] =
-		useState<AgeConfigMode>("automatic");
 	const [aiAgeBracket, setAiAgeBracket] = useState<AIAgeBracket>(
 		AIAgeBracket.NOT_SPECIFIED
 	);
 	const [customAiAgeString, setCustomAiAgeString] = useState<string>("");
 	const [customAgeError, setCustomAgeError] = useState<string | null>(null);
 
-	const nameInputRef = React.useRef<HTMLInputElement>(null);
-	const customPersonalityRef = React.useRef<HTMLTextAreaElement>(null);
-	const customAgeRef = React.useRef<HTMLInputElement>(null);
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		let finalAiName = aiName.trim();
+		if (!finalAiName) finalAiName = generateRandomAiName(aiGender);
 
-	const handleSuggestName = () => {
-		if (nameInputMode === "manual") {
-			const newName = generateRandomAiName(aiGender);
-			setAiName(newName);
-			if (nameError) setNameError(null);
+		if (finalAiName.length > 50) {
+			setNameError("AI name cannot exceed 50 characters.");
+			return;
 		}
-	};
+		setNameError(null);
 
-	const handleNameInputModeChange = (mode: NameInputMode) => {
-		setNameInputMode(mode);
-		if (mode === "automatic") {
-			setAiName("");
-			setNameError(null);
-		} else {
-			if (nameInputRef.current) {
-				nameInputRef.current.focus();
-			}
+		if (
+			selectedPersonalityTraits.length === 0 &&
+			customAiPersonality.trim() === ""
+		) {
+			setPersonalityError(
+				"Please select at least one personality trait or provide a custom personality description."
+			);
+			document
+				.getElementById("ai-personality-section")
+				?.scrollIntoView({ behavior: "smooth" });
+			return;
 		}
-	};
+		setPersonalityError(null);
 
-	const handleAgeConfigModeChange = (mode: AgeConfigMode) => {
-		setAgeConfigMode(mode);
-		if (mode === "automatic") {
-			setAiAgeBracket(AIAgeBracket.NOT_SPECIFIED);
-			setCustomAiAgeString("");
-			setCustomAgeError(null);
-		} else if (mode === "manual_select") {
-			if (
-				aiAgeBracket === AIAgeBracket.NOT_SPECIFIED ||
-				aiAgeBracket === AIAgeBracket.CUSTOM
-			) {
-				setAiAgeBracket(AIAgeBracket.ADULT_30_39);
+		let finalCustomAiAge: number | undefined = undefined;
+		if (aiAgeBracket === AIAgeBracket.CUSTOM) {
+			if (customAiAgeString.trim() === "") {
+				setCustomAgeError("Custom age cannot be empty.");
+				return;
 			}
-			setCustomAiAgeString("");
-			setCustomAgeError(null);
-		} else {
-			setAiAgeBracket(AIAgeBracket.CUSTOM);
-			if (customAiAgeString.trim() === "" || customAgeError) {
-				setCustomAiAgeString("");
+			const ageNum = parseInt(customAiAgeString, 10);
+			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+				setCustomAgeError("Please enter a valid age (13-100).");
+				return;
 			}
-			if (customAgeRef.current) {
-				customAgeRef.current.focus();
-			}
+			finalCustomAiAge = ageNum;
 		}
-	};
+		if (customAgeError) return;
 
-	const handleAgeBracketSelect = (bracket: AIAgeBracket) => {
-		setAiAgeBracket(bracket);
-		setCustomAiAgeString("");
-		setCustomAgeError(null);
+		onStart({
+			environment,
+			customEnvironment:
+				environment === SocialEnvironment.CUSTOM
+					? customEnvironment.trim() || undefined
+					: undefined,
+			aiCulture: aiCulture.trim() || undefined,
+			aiPersonalityTraits: selectedPersonalityTraits,
+			customAiPersonality: customAiPersonality.trim() || undefined,
+			aiGender,
+			aiName: finalAiName,
+			aiAgeBracket: aiAgeBracket,
+			customAiAge: finalCustomAiAge,
+			customContext: customContext.trim() || undefined,
+			conversationGoal: conversationGoal.trim() || undefined,
+		});
 	};
 
 	const handleCustomAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -402,131 +326,16 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 
 	const handlePersonalityTraitToggle = (trait: AIPersonalityTrait) => {
 		setSelectedPersonalityTraits((prev) => {
-			if (prev.includes(trait)) {
-				return prev.filter((t) => t !== trait);
-			}
-			if (prev.length < MAX_PERSONALITY_TRAITS) {
-				return [...prev, trait];
-			}
-			return prev; // Max reached, do not add
+			const isSelected = prev.includes(trait);
+			if (isSelected) return prev.filter((t) => t !== trait);
+			if (prev.length < MAX_PERSONALITY_TRAITS) return [...prev, trait];
+			return prev;
 		});
-		setPersonalityError(null); // Clear error on interaction
+		setPersonalityError(null);
 	};
-
-	const handleCustomPersonalityChange = (
-		e: React.ChangeEvent<HTMLTextAreaElement>
-	) => {
-		const value = e.target.value;
-		if (value.length <= MAX_CUSTOM_PERSONALITY_LENGTH) {
-			setCustomAiPersonality(value);
-		}
-		setPersonalityError(null); // Clear error on interaction
-	};
-
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		let finalAiName = aiName.trim();
-
-		if (nameInputMode === "automatic") {
-			finalAiName = generateRandomAiName(aiGender);
-		} else {
-			if (!finalAiName) finalAiName = generateRandomAiName(aiGender);
-		}
-
-		if (!finalAiName) {
-			setNameError("AI name is required or could not be generated.");
-			return;
-		}
-		if (finalAiName.length > 50) {
-			setNameError("AI name cannot exceed 50 characters.");
-			return;
-		}
-		if (nameError) setNameError(null);
-
-		if (
-			selectedPersonalityTraits.length === 0 &&
-			customAiPersonality.trim() === ""
-		) {
-			setPersonalityError(
-				"Please select at least one personality trait or provide a custom personality description."
-			);
-			const personalitySection = document.getElementById(
-				"ai-personality-section"
-			);
-			if (personalitySection)
-				personalitySection.scrollIntoView({ behavior: "smooth" });
-			return;
-		}
-		if (personalityError) setPersonalityError(null);
-
-		let finalAiAgeBracket: AIAgeBracket | undefined = aiAgeBracket;
-		let finalCustomAiAge: number | undefined = undefined;
-
-		if (ageConfigMode === "automatic") {
-			finalAiAgeBracket = AIAgeBracket.NOT_SPECIFIED;
-		} else if (ageConfigMode === "manual_custom") {
-			if (customAgeError || customAiAgeString.trim() === "") {
-				setCustomAgeError(
-					customAiAgeString.trim() === ""
-						? "Custom age cannot be empty."
-						: "Please enter a valid age (13-100)."
-				);
-				if (customAgeRef.current) customAgeRef.current.focus();
-				return;
-			}
-			const ageNum = parseInt(customAiAgeString, 10);
-			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-				setCustomAgeError(
-					"Invalid custom age. Please enter between 13 and 100."
-				);
-				if (customAgeRef.current) customAgeRef.current.focus();
-				return;
-			}
-			finalCustomAiAge = ageNum;
-			finalAiAgeBracket = AIAgeBracket.CUSTOM;
-		} else {
-			if (
-				finalAiAgeBracket === AIAgeBracket.NOT_SPECIFIED ||
-				finalAiAgeBracket === AIAgeBracket.CUSTOM
-			) {
-				finalAiAgeBracket = AIAgeBracket.ADULT_30_39;
-			}
-		}
-		if (customAgeError) return;
-
-		onStart({
-			environment,
-			customEnvironment:
-				environment === SocialEnvironment.CUSTOM
-					? customEnvironment.trim() || undefined
-					: undefined,
-			aiCulture: aiCulture.trim() || undefined,
-			aiPersonalityTraits: selectedPersonalityTraits,
-			customAiPersonality: customAiPersonality.trim() || undefined,
-			aiGender,
-			aiName: finalAiName,
-			aiAgeBracket: finalAiAgeBracket,
-			customAiAge: finalCustomAiAge,
-			customContext: customContext.trim() || undefined,
-			conversationGoal: conversationGoal.trim() || undefined,
-		});
-	};
-
-	const sectionBaseDelay = 0.2;
-	const sectionDelayIncrement = 0.1;
-
-	const ageBracketOptions = (
-		Object.values(AIAgeBracket) as AIAgeBracket[]
-	).filter(
-		(age) => age !== AIAgeBracket.NOT_SPECIFIED && age !== AIAgeBracket.CUSTOM
-	);
-
-	const allSocialEnvironments = Object.values(
-		SocialEnvironment
-	) as SocialEnvironment[];
 
 	return (
-		<div className="w-full max-w-3xl p-6 md:p-10 bg-slate-800 rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
+		<div className="w-full max-w-3xl p-6 md:p-8 bg-slate-800 rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
 			<div className="flex items-center gap-4 mb-4">
 				<button
 					type="button"
@@ -534,238 +343,123 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 					className="p-2 rounded-full hover:bg-slate-700 transition-colors">
 					<ArrowLeftIcon className="h-6 w-6 text-slate-300" />
 				</button>
-				<h1 className="text-3xl md:text-4xl font-bold text-center text-teal-400 drop-shadow-md">
-					Advanced Interaction Setup
+				<h1 className="text-3xl md:text-4xl font-bold text-teal-400 drop-shadow-md">
+					Advanced Setup
 				</h1>
 			</div>
 
-			<p
-				className="text-center text-gray-400 mb-6 text-lg opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
-				style={{ animationDelay: "0.1s" }}>
-				Fine-tune every aspect of the AI's persona and scenario.
-			</p>
-			<form onSubmit={handleSubmit} className="space-y-6">
-				<Section
-					title="AI Gender"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 0}s`}>
-					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-						{(Object.values(AIGender) as AIGender[]).map((gender) => (
-							<OptionButton<AIGender>
-								key={gender}
-								value={gender}
-								isSelected={aiGender === gender}
-								onChange={setAiGender}>
-								{gender}
-							</OptionButton>
-						))}
-					</div>
-				</Section>
+			<form onSubmit={handleSubmit} className="space-y-4">
+				<AccordionSection
+					title="AI Persona"
+					defaultOpen={true}
+					error={nameError || customAgeError}>
+					<div className="space-y-6">
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Gender
+							</label>
+							<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+								{(Object.values(AIGender) as AIGender[]).map((g) => (
+									<OptionButton
+										key={g}
+										value={g}
+										isSelected={aiGender === g}
+										onChange={(value) => setAiGender(value)}>
+										{g}
+									</OptionButton>
+								))}
+							</div>
+						</div>
 
-				<Section
-					title="AI Culture/Race (Optional)"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 1}s`}>
-					<input
-						type="text"
-						value={aiCulture}
-						onChange={(e) => {
-							if (e.target.value.length <= MAX_AI_CULTURE_LENGTH)
-								setAiCulture(e.target.value);
-						}}
-						placeholder="E.g., 'Japanese salaryman', 'Italian grandmother', 'Nigerian student abroad'. Leave blank for random."
-						className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500`}
-						maxLength={MAX_AI_CULTURE_LENGTH}
-					/>
-					<p className="text-xs text-gray-400 mt-1">
-						Provide cultural or racial context to add nuance to the AI's
-						persona, communication style, and appearance. ({aiCulture.length}/
-						{MAX_AI_CULTURE_LENGTH})
-					</p>
-				</Section>
-
-				<Section
-					title="AI Name"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 2}s`}
-					error={nameError}
-					id="ai-name-section">
-					<div className="grid grid-cols-2 gap-3 mb-3">
-						<OptionButton<NameInputMode>
-							value="manual"
-							isSelected={nameInputMode === "manual"}
-							onChange={handleNameInputModeChange}>
-							Enter Name Manually
-						</OptionButton>
-						<OptionButton<NameInputMode>
-							value="automatic"
-							isSelected={nameInputMode === "automatic"}
-							onChange={handleNameInputModeChange}>
-							Generate Name on Start
-						</OptionButton>
-					</div>
-					<div className="flex items-start space-x-2">
-						<div className="flex-grow">
-							<input
-								ref={nameInputRef}
-								type="text"
-								value={aiName}
-								onChange={(e) => {
-									if (nameInputMode === "manual") {
-										setAiName(e.target.value);
-										if (nameError && e.target.value.trim()) setNameError(null);
-										if (
-											e.target.value.length <= 50 &&
-											nameError === "AI name cannot exceed 50 characters."
-										)
-											setNameError(null);
-									}
-								}}
-								placeholder={
-									nameInputMode === "manual"
-										? "E.g., Alex, Dr. Evelyn Reed"
-										: "[Name will be auto-generated on start]"
-								}
-								className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 
-                                ${
-																	nameError && nameInputMode === "manual"
-																		? "ring-red-500"
-																		: "focus:ring-teal-500"
-																}
-                                ${
-																	nameInputMode === "automatic"
-																		? "cursor-not-allowed opacity-70"
-																		: ""
-																}`}
-								maxLength={51}
-								aria-describedby={
-									nameError && nameInputMode === "manual"
-										? "name-error-desc"
-										: "name-helper"
-								}
-								aria-invalid={!!nameError && nameInputMode === "manual"}
-								disabled={nameInputMode === "automatic"}
-							/>
-							{nameError && nameInputMode === "manual" && (
-								<p id="name-error-desc" className="text-xs text-red-400 mt-1">
-									{nameError}
-								</p>
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Age
+							</label>
+							<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+								{(Object.values(AIAgeBracket) as AIAgeBracket[]).map((age) => (
+									<OptionButton
+										key={age}
+										value={age}
+										isSelected={aiAgeBracket === age}
+										onChange={(value) => setAiAgeBracket(value)}>
+										{age}
+									</OptionButton>
+								))}
+							</div>
+							{aiAgeBracket === AIAgeBracket.CUSTOM && (
+								<div className="mt-3">
+									<input
+										type="number"
+										value={customAiAgeString}
+										onChange={handleCustomAgeChange}
+										placeholder="Enter age (13-100)"
+										className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 ${
+											customAgeError ? "ring-red-500" : "focus:ring-teal-500"
+										}`}
+									/>
+									<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+										<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+										<p>
+											Provide a specific age for the AI between 13 and 100. This
+											will influence its personality, vocabulary, and
+											perspectives.
+										</p>
+									</div>
+								</div>
 							)}
 						</div>
-						{nameInputMode === "manual" && (
-							<button
-								type="button"
-								onClick={handleSuggestName}
-								className="p-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-sm transition-colors duration-150 h-[48px] flex-shrink-0"
-								title="Suggest a random name (considers selected gender)">
-								Suggest
-							</button>
-						)}
-					</div>
-				</Section>
 
-				<Section
-					title="AI Age"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 3}s`}
-					error={customAgeError}
-					id="ai-age-section">
-					<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-						<OptionButton<AgeConfigMode>
-							value="automatic"
-							isSelected={ageConfigMode === "automatic"}
-							onChange={handleAgeConfigModeChange}
-							title="AI age will be general adult or adapt to context.">
-							Auto-Select Age
-						</OptionButton>
-						<OptionButton<AgeConfigMode>
-							value="manual_select"
-							isSelected={ageConfigMode === "manual_select"}
-							onChange={handleAgeConfigModeChange}
-							title="Choose from predefined age brackets.">
-							Select Bracket
-						</OptionButton>
-						<OptionButton<AgeConfigMode>
-							value="manual_custom"
-							isSelected={ageConfigMode === "manual_custom"}
-							onChange={handleAgeConfigModeChange}
-							title="Enter a specific age for the AI.">
-							Enter Custom Age
-						</OptionButton>
-					</div>
-					{ageConfigMode === "manual_select" && (
-						<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-							{ageBracketOptions.map((ageOpt) => (
-								<OptionButton<AIAgeBracket>
-									key={ageOpt}
-									value={ageOpt}
-									isSelected={aiAgeBracket === ageOpt}
-									onChange={() =>
-										handleAgeBracketSelect(ageOpt as AIAgeBracket)
-									}
-									className="text-xs sm:text-sm py-2 px-2.5"
-									disabled={ageConfigMode !== "manual_select"}>
-									{ageOpt}
-								</OptionButton>
-							))}
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Name
+							</label>
+							<div className="flex items-start space-x-2">
+								<div className="flex-grow">
+									<input
+										type="text"
+										value={aiName}
+										onChange={(e) => setAiName(e.target.value)}
+										placeholder="Leave blank for random"
+										className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 ${
+											nameError ? "ring-red-500" : "focus:ring-teal-500"
+										}`}
+									/>
+								</div>
+								<button
+									type="button"
+									onClick={() => setAiName(generateRandomAiName(aiGender))}
+									className="p-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-sm transition-colors duration-150 h-[48px] flex-shrink-0"
+									title="Suggest a random name">
+									Suggest
+								</button>
+							</div>
 						</div>
-					)}
-					{ageConfigMode === "manual_custom" && (
-						<div className="mt-2">
+
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Culture/Race (Optional)
+							</label>
 							<input
-								ref={customAgeRef}
-								type="number"
-								value={customAiAgeString}
-								onChange={handleCustomAgeChange}
-								placeholder="Enter age (13-100)"
-								className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 
-                            ${
-															customAgeError
-																? "ring-red-500"
-																: "focus:ring-teal-500"
-														}`}
-								min="13"
-								max="100"
-								aria-invalid={!!customAgeError}
-								disabled={ageConfigMode !== "manual_custom"}
+								type="text"
+								value={aiCulture}
+								onChange={(e) => setAiCulture(e.target.value)}
+								placeholder="E.g., Japanese, Italian-American, Nigerian..."
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 							/>
+							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+								<p>
+									Specify a cultural or racial background. This can influence
+									its name, appearance, and communication style. Examples:
+									'Japanese', 'Italian-American', 'Nigerian'.
+								</p>
+							</div>
 						</div>
-					)}
-				</Section>
-
-				<Section
-					title="Social Environment"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 4}s`}>
-					<div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-						{allSocialEnvironments.map((env) => (
-							<OptionButton<SocialEnvironment>
-								key={env}
-								value={env}
-								isSelected={environment === env}
-								onChange={setEnvironment}>
-								{env}
-							</OptionButton>
-						))}
 					</div>
-					{environment === SocialEnvironment.CUSTOM && (
-						<div className="mt-4">
-							<textarea
-								value={customEnvironment}
-								onChange={(e) => {
-									if (e.target.value.length <= MAX_CUSTOM_ENV_LENGTH)
-										setCustomEnvironment(e.target.value);
-								}}
-								placeholder="Describe the custom environment... e.g., 'A quiet library where speaking too loudly is discouraged.'"
-								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[70px] text-sm"
-								rows={2}
-								maxLength={MAX_CUSTOM_ENV_LENGTH}
-							/>
-							<p className="text-xs text-right text-gray-400 mt-1">
-								{customEnvironment.length}/{MAX_CUSTOM_ENV_LENGTH}
-							</p>
-						</div>
-					)}
-				</Section>
+				</AccordionSection>
 
-				<Section
-					title={`AI Personality Traits (Selected ${selectedPersonalityTraits.length}/${MAX_PERSONALITY_TRAITS})`}
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 5}s`}
+				<AccordionSection
+					title={`Personality Traits (Selected ${selectedPersonalityTraits.length}/${MAX_PERSONALITY_TRAITS})`}
 					error={personalityError}
 					id="ai-personality-section">
 					<div className="space-y-4">
@@ -774,27 +468,18 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 								<h3 className="text-md font-semibold text-teal-300 mb-2 border-b border-slate-600 pb-1">
 									{category}
 								</h3>
-								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+								<div className="flex flex-wrap gap-2">
 									{personalityCategories[category].map((p) => {
 										const isSelected = selectedPersonalityTraits.includes(p);
 										return (
 											<button
 												key={p}
 												type="button"
-												onClick={() => {
-													if (isSelected) {
-														handlePersonalityTraitToggle(p);
-													} else if (
-														selectedPersonalityTraits.length <
-														MAX_PERSONALITY_TRAITS
-													) {
-														handlePersonalityTraitToggle(p);
-													}
-												}}
-												className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+												onClick={() => handlePersonalityTraitToggle(p)}
+												className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 ${
 													isSelected
 														? "bg-teal-500 text-white ring-2 ring-teal-300"
-														: "bg-slate-700 hover:bg-slate-600"
+														: "bg-slate-600 hover:bg-slate-500"
 												} ${
 													!isSelected &&
 													selectedPersonalityTraits.length >=
@@ -811,72 +496,144 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 						))}
 					</div>
 					<div className="mt-6">
-						<label
-							htmlFor="customAiPersonality"
-							className="block text-md font-medium text-teal-300 mb-2">
-							Custom AI Personality (Optional, you may also add unlisted traits
-							here)
+						<label className="block text-md font-medium text-teal-300 mb-2">
+							Custom Additions (Optional)
 						</label>
 						<textarea
-							ref={customPersonalityRef}
-							id="customAiPersonality"
 							value={customAiPersonality}
-							onChange={handleCustomPersonalityChange}
-							placeholder="E.g., 'A grumpy old librarian who secretly loves cats', 'A nervous first-time public speaker who stutters a bit', 'An overly enthusiastic salesperson who uses a lot of exclamation marks!!!'"
-							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] text-sm"
-							rows={3}
-							maxLength={MAX_CUSTOM_PERSONALITY_LENGTH + 10}
+							onChange={(e) => {
+								if (e.target.value.length <= MAX_CUSTOM_PERSONALITY_LENGTH)
+									setCustomAiPersonality(e.target.value);
+							}}
+							placeholder="Add unlisted traits or specific behaviors here..."
+							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px] text-sm"
+							rows={2}
+							maxLength={MAX_CUSTOM_PERSONALITY_LENGTH}
 						/>
-						<p className="text-xs text-gray-400 mt-1">
-							({customAiPersonality.length}/{MAX_CUSTOM_PERSONALITY_LENGTH})
-						</p>
+						<div className="flex justify-between items-start">
+							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400 flex-grow">
+								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+								<p>
+									Add nuances not covered by the traits. Be descriptive.
+									Examples: 'has a dry sense of humor', 'is secretly a
+									romantic', 'tends to fidget when nervous'.
+								</p>
+							</div>
+							<p className="text-xs text-right text-gray-400 mt-1 flex-shrink-0">
+								{customAiPersonality.length}/{MAX_CUSTOM_PERSONALITY_LENGTH}
+							</p>
+						</div>
 					</div>
-				</Section>
+				</AccordionSection>
 
-				<Section
-					title="Conversation Goal (Optional)"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 6}s`}>
-					<textarea
-						value={conversationGoal}
-						onChange={(e) => {
-							if (e.target.value.length <= MAX_CONVERSATION_GOAL_LENGTH) {
-								setConversationGoal(e.target.value);
-							}
-						}}
-						placeholder="E.g., 'Ask for a date', 'Convince the AI to agree with my point on a topic', 'Negotiate a lower price for an item', 'Get an extension on a deadline'."
-						className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] text-sm"
-						rows={3}
-						maxLength={MAX_CONVERSATION_GOAL_LENGTH}
-						aria-label="Conversation goal"
-					/>
-					<p className="text-xs text-gray-400 mt-1">
-						({conversationGoal.length}/{MAX_CONVERSATION_GOAL_LENGTH})
-					</p>
-				</Section>
+				<AccordionSection title="Scenario & Goal">
+					<div className="space-y-6">
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Social Environment
+							</label>
+							<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+								{(Object.values(SocialEnvironment) as SocialEnvironment[]).map(
+									(env) => (
+										<OptionButton
+											key={env}
+											value={env}
+											isSelected={environment === env}
+											onChange={(value) => setEnvironment(value)}>
+											{env}
+										</OptionButton>
+									)
+								)}
+							</div>
+							{environment === SocialEnvironment.CUSTOM && (
+								<div className="mt-3">
+									<textarea
+										value={customEnvironment}
+										onChange={(e) => {
+											if (e.target.value.length <= MAX_CUSTOM_ENV_LENGTH)
+												setCustomEnvironment(e.target.value);
+										}}
+										placeholder="Describe the custom environment..."
+										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[70px] text-sm"
+										rows={2}
+										maxLength={MAX_CUSTOM_ENV_LENGTH}
+									/>
+									<div className="flex justify-between items-start">
+										<div className="mt-2 flex items-start gap-2 text-xs text-slate-400 flex-grow">
+											<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+											<p>
+												Describe the specific place where the interaction
+												happens. Example: 'A bustling, noisy airport terminal
+												near the departure gates.'
+											</p>
+										</div>
+										<p className="text-xs text-right text-gray-400 mt-1 flex-shrink-0">
+											{customEnvironment.length}/{MAX_CUSTOM_ENV_LENGTH}
+										</p>
+									</div>
+								</div>
+							)}
+						</div>
 
-				<Section
-					title="Custom Scenario Details (Optional)"
-					animationDelay={`${sectionBaseDelay + sectionDelayIncrement * 7}s`}>
-					<textarea
-						value={customContext}
-						onChange={(e) => setCustomContext(e.target.value)}
-						placeholder="E.g., You are at a company holiday party. You recently received a promotion, and the AI is your direct competitor who also wanted that promotion. Or, you're on a first date set up by a mutual friend, and the AI knows this friend well..."
-						className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] text-sm"
-						rows={4}
-						maxLength={1000}
-						aria-label="Custom scenario details"
-					/>
-				</Section>
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Conversation Goal (Optional)
+							</label>
+							<textarea
+								value={conversationGoal}
+								onChange={(e) => {
+									if (e.target.value.length <= MAX_CONVERSATION_GOAL_LENGTH)
+										setConversationGoal(e.target.value);
+								}}
+								placeholder="E.g., Ask for a date, negotiate a better price..."
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px] text-sm"
+								rows={2}
+								maxLength={MAX_CONVERSATION_GOAL_LENGTH}
+							/>
+							<div className="flex justify-between items-start">
+								<div className="mt-2 flex items-start gap-2 text-xs text-slate-400 flex-grow">
+									<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+									<p>
+										Give yourself a clear objective. This helps the AI measure
+										your success. Example: 'Convince your boss to give you a
+										raise.'
+									</p>
+								</div>
+								<p className="text-xs text-right text-gray-400 mt-1 flex-shrink-0">
+									{conversationGoal.length}/{MAX_CONVERSATION_GOAL_LENGTH}
+								</p>
+							</div>
+						</div>
 
-				<div
-					className="flex flex-col sm:flex-row gap-4 mt-8 opacity-0 animate-[fadeInSlideUp_0.5s_ease-out_forwards]"
-					style={{
-						animationDelay: `${sectionBaseDelay + sectionDelayIncrement * 8}s`,
-					}}>
+						<div>
+							<label className="block text-md font-medium text-gray-300 mb-2">
+								Custom Scenario Details (Optional)
+							</label>
+							<textarea
+								value={customContext}
+								onChange={(e) => setCustomContext(e.target.value)}
+								placeholder="Add specific background details for the AI..."
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] text-sm"
+								rows={3}
+								maxLength={1000}
+							/>
+							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+								<p>
+									Provide any background information the AI needs to know before
+									the conversation starts. Example: 'You and the AI are old
+									friends who haven't seen each other in five years.'
+								</p>
+							</div>
+						</div>
+					</div>
+				</AccordionSection>
+
+				<div className="flex flex-col sm:flex-row gap-4 mt-8 pt-4 border-t border-slate-700/60">
 					<button
 						type="button"
 						onClick={onBack}
-						className="w-full sm:w-auto flex-grow sm:flex-grow-0 px-8 py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-lg shadow-md transition-transform duration-150 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-opacity-75">
+						className="w-full sm:w-auto flex-grow sm:flex-grow-0 px-8 py-4 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-lg text-lg shadow-md transition-transform duration-150 hover:scale-105">
 						Back
 					</button>
 					<button

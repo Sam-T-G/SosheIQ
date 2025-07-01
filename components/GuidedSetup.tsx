@@ -6,7 +6,19 @@ import {
 	AIGender,
 	AIAgeBracket,
 } from "../types";
-import { PlayIcon, CogIcon, ArrowLeftIcon, TargetIcon } from "./Icons";
+import {
+	PlayIcon,
+	CogIcon,
+	ArrowLeftIcon,
+	TargetIcon,
+	BriefcaseIcon,
+	CoffeeIcon,
+	UsersIcon,
+	InfoIcon,
+	FastForwardIcon,
+	HeartIcon,
+} from "./Icons";
+import { InfoCard } from "./InfoCard";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -16,7 +28,6 @@ interface GuidedSetupProps {
 const MAX_STEPS = 6;
 const MAX_PERSONALITY_TRAITS = 5;
 
-// RETHOUGHT: New, simpler, and more diverse trait categories with Social Behavior at the top
 const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
 	"Social Behavior": [
 		AIPersonalityTrait.CONFIDENT,
@@ -27,6 +38,10 @@ const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
 		AIPersonalityTrait.HUMBLE,
 		AIPersonalityTrait.AMBITIOUS,
 		AIPersonalityTrait.IMPULSIVE,
+		AIPersonalityTrait.SPONTANEOUS,
+		AIPersonalityTrait.INTROVERTED,
+		AIPersonalityTrait.EXTROVERTED,
+		AIPersonalityTrait.NURTURING,
 	],
 	"Communication Style": [
 		AIPersonalityTrait.TALKATIVE,
@@ -57,6 +72,9 @@ const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
 		AIPersonalityTrait.SKEPTICAL,
 		AIPersonalityTrait.CREATIVE,
 		AIPersonalityTrait.LOGICAL,
+		AIPersonalityTrait.METHODICAL,
+		AIPersonalityTrait.PRAGMATIC,
+		AIPersonalityTrait.IDEALISTIC,
 	],
 };
 
@@ -68,10 +86,10 @@ const orderedPersonalityCategories = [
 ];
 
 const guidedSocialEnvironments = [
-	SocialEnvironment.CASUAL,
-	SocialEnvironment.DATING,
-	SocialEnvironment.WORK,
-	SocialEnvironment.SOCIAL_GATHERING,
+	{ name: SocialEnvironment.CASUAL, icon: CoffeeIcon },
+	{ name: SocialEnvironment.DATING, icon: HeartIcon },
+	{ name: SocialEnvironment.WORK, icon: BriefcaseIcon },
+	{ name: SocialEnvironment.SOCIAL_GATHERING, icon: UsersIcon },
 ];
 
 const initialScenario: Partial<ScenarioDetails> = {
@@ -80,27 +98,103 @@ const initialScenario: Partial<ScenarioDetails> = {
 	aiName: "",
 	aiAgeBracket: AIAgeBracket.NOT_SPECIFIED,
 	aiPersonalityTraits: [],
+	conversationGoal: "",
+	customContext: "",
+	aiCulture: "",
+	customAiPersonality: "",
+	customEnvironment: "",
 };
 
-const StepButton: React.FC<{
-	onClick: () => void;
-	isSelected: boolean;
-	children: React.ReactNode;
-	title?: string;
-	className?: string;
-}> = ({ onClick, isSelected, children, title, className = "" }) => (
-	<button
-		type="button"
-		onClick={onClick}
-		title={title}
-		className={`w-full text-left p-3 md:p-4 rounded-lg border-2 transition-all duration-200 text-gray-200 text-sm md:text-base
-      ${
-				isSelected
-					? "bg-teal-500/20 border-teal-400 shadow-lg"
-					: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
-			} ${className}`}>
-		{children}
-	</button>
+const PREDEFINED_AI_MALE_FIRST_NAMES = [
+	"Arthur",
+	"David",
+	"Ethan",
+	"James",
+	"Liam",
+	"Michael",
+	"Noah",
+	"Ryan",
+	"Chris",
+	"Ben",
+];
+const PREDEFINED_AI_FEMALE_FIRST_NAMES = [
+	"Anna",
+	"Chloe",
+	"Emily",
+	"Emma",
+	"Isabella",
+	"Olivia",
+	"Sophia",
+	"Ava",
+	"Grace",
+	"Sarah",
+];
+const PREDEFINED_AI_NEUTRAL_FIRST_NAMES = [
+	"Alex",
+	"Jordan",
+	"Casey",
+	"Morgan",
+	"Riley",
+	"Skyler",
+	"Cameron",
+	"Drew",
+	"Kai",
+	"Taylor",
+];
+const PREDEFINED_AI_LAST_NAMES = [
+	"Smith",
+	"Jones",
+	"Williams",
+	"Brown",
+	"Davis",
+	"Miller",
+	"Wilson",
+	"Chen",
+	"Lee",
+	"Garcia",
+];
+
+const generateRandomAiName = (gender: AIGender): string => {
+	let firstNamePool: string[];
+	switch (gender) {
+		case AIGender.MALE:
+			firstNamePool = PREDEFINED_AI_MALE_FIRST_NAMES;
+			break;
+		case AIGender.FEMALE:
+			firstNamePool = PREDEFINED_AI_FEMALE_FIRST_NAMES;
+			break;
+		case AIGender.NON_BINARY:
+		case AIGender.RANDOM:
+		default:
+			firstNamePool = PREDEFINED_AI_NEUTRAL_FIRST_NAMES;
+			break;
+	}
+	const firstName =
+		firstNamePool[Math.floor(Math.random() * firstNamePool.length)];
+	const lastName =
+		PREDEFINED_AI_LAST_NAMES[
+			Math.floor(Math.random() * PREDEFINED_AI_LAST_NAMES.length)
+		];
+	return `${firstName} ${lastName}`;
+};
+
+const SegmentedProgressBar: React.FC<{
+	currentStep: number;
+	totalSteps: number;
+}> = ({ currentStep, totalSteps }) => (
+	<div className="flex w-full max-w-sm mx-auto gap-1.5 mb-8">
+		{Array.from({ length: totalSteps }, (_, i) => (
+			<div
+				key={i}
+				className="flex-1 h-1.5 rounded-full bg-slate-600 overflow-hidden">
+				<div
+					className={`h-full rounded-full bg-teal-400 transition-transform duration-500 ease-out origin-left ${
+						currentStep > i ? "scale-x-100" : "scale-x-0"
+					}`}
+				/>
+			</div>
+		))}
+	</div>
 );
 
 export const GuidedSetup: React.FC<GuidedSetupProps> = ({
@@ -110,38 +204,34 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	const [step, setStep] = useState(0);
 	const [scenario, setScenario] =
 		useState<Partial<ScenarioDetails>>(initialScenario);
+	const [customAiAgeString, setCustomAiAgeString] = useState<string>("");
 	const [exiting, setExiting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	const handleNext = () => {
 		setError(null);
-		// Validation logic
-		if (
-			step === 1 &&
-			scenario.environment === SocialEnvironment.CUSTOM &&
-			!scenario.customEnvironment?.trim()
-		) {
-			setError("Please describe the custom environment before continuing.");
-			return;
+
+		if (step === 2 && scenario.aiAgeBracket === AIAgeBracket.CUSTOM) {
+			if (customAiAgeString.trim() === "") {
+				setError("Custom age cannot be empty.");
+				return;
+			}
+			const ageNum = parseInt(customAiAgeString, 10);
+			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+				setError("Please enter a valid age (13-100).");
+				return;
+			}
 		}
-		if (
-			step === 2 &&
-			scenario.aiAgeBracket === AIAgeBracket.CUSTOM &&
-			(!scenario.customAiAge ||
-				scenario.customAiAge < 13 ||
-				scenario.customAiAge > 100)
-		) {
-			setError("Please enter a valid age between 13 and 100.");
-			return;
-		}
+
 		if (
 			step === 3 &&
 			(!scenario.aiPersonalityTraits ||
 				scenario.aiPersonalityTraits.length === 0) &&
-			!scenario.customAiPersonality?.trim()
+			(!scenario.customAiPersonality ||
+				scenario.customAiPersonality.trim() === "")
 		) {
 			setError(
-				"Please select at least one personality trait or provide a custom description."
+				"Please select at least one trait or provide a custom personality description."
 			);
 			return;
 		}
@@ -151,7 +241,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			setTimeout(() => {
 				setStep(step + 1);
 				setExiting(false);
-			}, 350);
+			}, 300);
 		}
 	};
 
@@ -162,36 +252,59 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			setTimeout(() => {
 				setStep(step - 1);
 				setExiting(false);
-			}, 350);
+			}, 300);
 		}
 	};
 
 	const handleStart = () => {
-		const finalScenario: ScenarioDetails = {
-			environment: scenario.environment || SocialEnvironment.CASUAL,
-			aiGender: scenario.aiGender || AIGender.RANDOM,
-			aiName: scenario.aiName?.trim() || "", // Name is now handled by index.tsx
-			aiPersonalityTraits: scenario.aiPersonalityTraits || [],
-			// carry over optional fields
-			customEnvironment: scenario.customEnvironment,
-			aiCulture: scenario.aiCulture,
-			customAiPersonality: scenario.customAiPersonality,
-			aiAgeBracket: scenario.aiAgeBracket,
-			customAiAge: scenario.customAiAge,
-			customContext: scenario.customContext,
-			conversationGoal: scenario.conversationGoal,
-		};
-
-		if (finalScenario.environment !== SocialEnvironment.CUSTOM) {
-			finalScenario.customEnvironment = undefined;
+		let finalCustomAiAge: number | undefined = undefined;
+		if (scenario.aiAgeBracket === AIAgeBracket.CUSTOM) {
+			const ageNum = parseInt(customAiAgeString, 10);
+			if (!isNaN(ageNum) && ageNum >= 13 && ageNum <= 100) {
+				finalCustomAiAge = ageNum;
+			} else {
+				setError("Please enter a valid age (13-100) before starting.");
+				return;
+			}
 		}
 
+		const finalScenario: ScenarioDetails = {
+			environment: scenario.environment || SocialEnvironment.CASUAL,
+			customEnvironment:
+				scenario.environment === SocialEnvironment.CUSTOM
+					? scenario.customEnvironment?.trim() || undefined
+					: undefined,
+			aiGender: scenario.aiGender || AIGender.RANDOM,
+			aiName: scenario.aiName || "",
+			aiPersonalityTraits: scenario.aiPersonalityTraits || [],
+			aiAgeBracket: scenario.aiAgeBracket || AIAgeBracket.NOT_SPECIFIED,
+			customAiAge: finalCustomAiAge,
+			conversationGoal: scenario.conversationGoal?.trim() || undefined,
+			customContext: scenario.customContext?.trim() || undefined,
+			aiCulture: scenario.aiCulture?.trim() || undefined,
+			customAiPersonality: scenario.customAiPersonality?.trim() || undefined,
+		};
 		onStart(finalScenario);
 	};
 
 	const updateScenario = (updates: Partial<ScenarioDetails>) => {
 		setScenario((prev) => ({ ...prev, ...updates }));
 		setError(null);
+	};
+
+	const handleCustomAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value;
+		setCustomAiAgeString(value);
+		if (value.trim() === "") {
+			setError(null);
+			return;
+		}
+		const ageNum = parseInt(value, 10);
+		if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+			setError("Age must be between 13 and 100.");
+		} else {
+			setError(null);
+		}
 	};
 
 	const renderStepContent = () => {
@@ -204,23 +317,24 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				return (
 					<div key={step} className={`${animationClass} text-center`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-4">
-							Let's get started.
+							Let's craft your scenario.
 						</h2>
-						<p className="text-lg text-gray-400 mb-8">
-							Choose a setup method to create your practice scenario.
+						<p className="text-lg text-gray-400 mb-8 max-w-md mx-auto">
+							Choose a simple, guided setup or dive into advanced options for
+							full control.
 						</p>
 						<div className="flex flex-col gap-4 max-w-sm mx-auto">
 							<button
 								onClick={handleNext}
-								className="w-full px-6 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-2">
-								<PlayIcon className="h-5 w-5" />
+								className="group w-full px-6 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-3">
+								<PlayIcon className="h-5 w-5 transition-transform group-hover:scale-110" />
 								Start Guided Setup
 							</button>
 							<button
 								onClick={onSwitchToAdvanced}
-								className="w-full px-6 py-4 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-2">
-								<CogIcon className="h-5 w-5" />
-								Advanced Setup
+								className="group w-full px-6 py-4 bg-sky-700 text-white font-semibold rounded-lg hover:bg-sky-600 transition-all transform hover:scale-105 text-lg flex items-center justify-center gap-3">
+								<CogIcon className="h-5 w-5 transition-transform group-hover:rotate-45" />
+								Go to Advanced Setup
 							</button>
 						</div>
 					</div>
@@ -228,107 +342,103 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 1:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-4">
+						<h2 className="text-2xl font-semibold text-sky-300 mb-2 text-center">
 							Where is this conversation taking place?
 						</h2>
-						<p className="text-sm text-gray-400 mb-6">
-							Choose a common scenario, or create your own below.
+						<p className="text-sm text-gray-400 mb-6 text-center">
+							This sets the scene and social etiquette.
 						</p>
-
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-							{guidedSocialEnvironments.map((env) => (
-								<StepButton
-									key={env}
-									onClick={() => updateScenario({ environment: env })}
-									isSelected={scenario.environment === env}>
-									<span className="font-bold">{env}</span>
-								</StepButton>
+						<div className="grid grid-cols-2 gap-4">
+							{guidedSocialEnvironments.map(({ name, icon: Icon }) => (
+								<button
+									key={name}
+									onClick={() => updateScenario({ environment: name })}
+									className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center gap-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400
+										${
+											scenario.environment === name
+												? "bg-teal-500/20 border-teal-400 shadow-lg"
+												: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
+										}`}>
+									<Icon
+										className={`h-8 w-8 transition-colors ${
+											scenario.environment === name
+												? "text-teal-300"
+												: "text-slate-400"
+										}`}
+									/>
+									<span className="font-bold text-sm text-center text-gray-200">
+										{name}
+									</span>
+								</button>
 							))}
 						</div>
-
-						<div className="relative my-8">
-							<div
-								className="absolute inset-0 flex items-center"
-								aria-hidden="true">
-								<div className="w-full border-t border-slate-600"></div>
-							</div>
-							<div className="relative flex justify-center">
-								<span className="bg-slate-800 px-3 text-sm font-medium text-gray-400">
-									Or
-								</span>
-							</div>
-						</div>
-
-						<div
-							role="button"
-							tabIndex={0}
-							onClick={() =>
-								updateScenario({ environment: SocialEnvironment.CUSTOM })
-							}
-							onKeyPress={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									e.preventDefault();
-									updateScenario({ environment: SocialEnvironment.CUSTOM });
+						{/* Custom Environment Section */}
+						<div className="mt-6">
+							<button
+								onClick={() =>
+									updateScenario({ environment: SocialEnvironment.CUSTOM })
 								}
-							}}
-							className={`w-full p-4 rounded-lg border-2 transition-all duration-300
-								${
-									scenario.environment === SocialEnvironment.CUSTOM
-										? "bg-slate-700/70 border-teal-400 shadow-lg"
-										: "bg-slate-700/40 border-slate-600 hover:border-sky-500 cursor-pointer"
-								}`}>
-							<h3 className="text-center text-lg font-bold text-teal-300">
-								{SocialEnvironment.CUSTOM}
-							</h3>
+								className={`w-full p-3 rounded-lg border-2 flex items-center justify-center gap-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400
+									${
+										scenario.environment === SocialEnvironment.CUSTOM
+											? "bg-teal-500/20 border-teal-400 shadow-lg"
+											: "bg-slate-700/60 border-slate-600 hover:border-sky-500 hover:bg-slate-700"
+									}`}>
+								<CogIcon
+									className={`h-6 w-6 transition-colors ${
+										scenario.environment === SocialEnvironment.CUSTOM
+											? "text-teal-300"
+											: "text-slate-400"
+									}`}
+								/>
+								<span className="font-bold text-sm text-center text-gray-200">
+									{SocialEnvironment.CUSTOM}
+								</span>
+							</button>
 
-							{scenario.environment === SocialEnvironment.CUSTOM ? (
-								<div className="mt-4 animate-fadeIn">
-									<p className="text-sm text-center text-gray-400 mb-3">
-										Describe a unique place or situation below.
-									</p>
+							{scenario.environment === SocialEnvironment.CUSTOM && (
+								<div className="mt-3 animate-slide-down-fade-in">
 									<textarea
 										value={scenario.customEnvironment || ""}
 										onChange={(e) =>
 											updateScenario({ customEnvironment: e.target.value })
 										}
-										onClick={(e) => e.stopPropagation()} // Prevent outer div's onClick from firing
-										placeholder="e.g., A quiet library, a parent-teacher conference, on a ski lift..."
+										placeholder="Describe your custom environment..."
 										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
-										autoFocus
+										rows={2}
 									/>
+									<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+										<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+										<p>
+											Describe the specific place. Example: 'A bustling airport
+											terminal near the departure gates.'
+										</p>
+									</div>
 								</div>
-							) : (
-								<p className="text-sm text-center text-gray-400 mt-2">
-									Click here to describe any situation you can imagine.
-								</p>
 							)}
 						</div>
 					</div>
 				);
-
 			case 2:
-				const ageBrackets = Object.values(AIAgeBracket).filter(
-					(age) => age !== AIAgeBracket.CUSTOM
-				);
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6">
+						<h2 className="text-2xl font-semibold text-sky-300 mb-6 text-center">
 							Who are you talking to?
 						</h2>
 						<div className="space-y-6">
 							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-3">
-									Gender:
+								<h3 className="text-lg font-medium text-gray-300 mb-3 text-center">
+									Gender
 								</h3>
-								<div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 									{Object.values(AIGender).map((g) => (
 										<button
 											key={g}
 											onClick={() => updateScenario({ aiGender: g })}
-											className={`flex items-center justify-center text-center px-4 py-2 rounded-lg text-sm transition-colors ${
+											className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400 ${
 												scenario.aiGender === g
 													? "bg-teal-500 text-white shadow-md"
-													: "bg-slate-700 hover:bg-slate-600"
+													: "bg-slate-700 hover:bg-slate-600 text-gray-300"
 											}`}>
 											{g}
 										</button>
@@ -336,102 +446,91 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 								</div>
 							</div>
 							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-3">
-									Age Bracket:
+								<h3 className="text-lg font-medium text-gray-300 mb-3 text-center">
+									Age
 								</h3>
-								<div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-									{ageBrackets.map((age) => (
+								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+									{Object.values(AIAgeBracket).map((age) => (
 										<button
 											key={age}
-											onClick={() =>
-												updateScenario({
-													aiAgeBracket: age,
-													customAiAge: undefined,
-												})
-											}
-											className={`flex items-center justify-center text-center px-3 py-2 rounded-lg text-xs md:text-sm transition-colors ${
+											onClick={() => updateScenario({ aiAgeBracket: age })}
+											className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400 ${
 												scenario.aiAgeBracket === age
 													? "bg-teal-500 text-white shadow-md"
-													: "bg-slate-700 hover:bg-slate-600"
+													: "bg-slate-700 hover:bg-slate-600 text-gray-300"
 											}`}>
 											{age}
 										</button>
 									))}
-									<button
-										onClick={() =>
-											updateScenario({ aiAgeBracket: AIAgeBracket.CUSTOM })
-										}
-										className={`flex items-center justify-center text-center px-3 py-2 rounded-lg text-xs md:text-sm transition-colors ${
-											scenario.aiAgeBracket === AIAgeBracket.CUSTOM
-												? "bg-teal-500 text-white shadow-md"
-												: "bg-slate-700 hover:bg-slate-600"
-										}`}>
-										Custom
-									</button>
 								</div>
 								{scenario.aiAgeBracket === AIAgeBracket.CUSTOM && (
-									<div className="mt-4 max-w-sm mx-auto">
+									<div className="mt-4">
 										<input
 											type="number"
-											value={scenario.customAiAge || ""}
-											onChange={(e) =>
-												updateScenario({
-													customAiAge:
-														parseInt(e.target.value, 10) || undefined,
-												})
-											}
+											value={customAiAgeString}
+											onChange={handleCustomAgeChange}
 											placeholder="Enter age (13-100)"
-											className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+											className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 ${
+												error ? "ring-red-500" : "focus:ring-teal-500"
+											}`}
 										/>
+										<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+											<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+											<p>
+												Provide a specific age. This influences vocabulary and
+												perspectives.
+											</p>
+										</div>
 									</div>
 								)}
-							</div>
-							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-3">
-									Culture/Race (Optional):
-								</h3>
-								<input
-									type="text"
-									value={scenario.aiCulture || ""}
-									onChange={(e) =>
-										updateScenario({ aiCulture: e.target.value })
-									}
-									placeholder="e.g., Korean pop star, Italian grandmother"
-									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-								/>
 							</div>
 						</div>
 					</div>
 				);
-
 			case 3:
 				const selectedCount = scenario.aiPersonalityTraits?.length || 0;
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-2">
+						<h2 className="text-2xl font-semibold text-sky-300 mb-2 text-center">
 							What's their personality like?
 						</h2>
-						<p className="text-gray-400 mb-4">
-							Describe them yourself, or choose up to {MAX_PERSONALITY_TRAITS}{" "}
-							traits.
+						<p className="text-gray-400 mb-4 text-center">
+							Choose up to {MAX_PERSONALITY_TRAITS} traits, and/or add your own
+							below.
 						</p>
 
-						<div className="space-y-4">
+						<div className="mb-6">
+							<label
+								htmlFor="guided-custom-personality"
+								className="block text-md font-medium text-gray-300 mb-2">
+								Custom Additions (Optional)
+							</label>
 							<textarea
+								id="guided-custom-personality"
 								value={scenario.customAiPersonality || ""}
 								onChange={(e) =>
 									updateScenario({ customAiPersonality: e.target.value })
 								}
-								placeholder="Describe their personality or add unlisted traits here first..."
-								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 mb-4"
+								placeholder="Add unlisted traits or specific behaviors..."
+								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
+								rows={2}
 							/>
+							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+								<p>
+									Examples: 'has a dry sense of humor', 'is secretly a
+									romantic', 'tends to fidget when nervous'.
+								</p>
+							</div>
+						</div>
 
+						<div className="space-y-4">
 							{orderedPersonalityCategories.map((category) => (
 								<div key={category}>
-									<h3 className="text-md font-semibold text-teal-300 mb-2 border-b border-slate-600 pb-1">
+									<h3 className="text-md font-semibold text-teal-300 mb-2">
 										{category}
 									</h3>
-									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+									<div className="flex flex-wrap gap-2">
 										{personalityCategories[category].map((p) => {
 											const isSelected =
 												scenario.aiPersonalityTraits?.includes(p);
@@ -453,15 +552,15 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 															});
 														}
 													}}
-													className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+													className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400 ${
 														isSelected
-															? "bg-teal-500 text-white ring-2 ring-teal-300"
-															: "bg-slate-700 hover:bg-slate-600"
+															? "bg-teal-500 text-white"
+															: "bg-slate-700 text-gray-300"
 													} ${
 														!isSelected &&
 														selectedCount >= MAX_PERSONALITY_TRAITS
 															? "opacity-50 cursor-not-allowed"
-															: ""
+															: "hover:bg-slate-600"
 													}`}>
 													{p}
 												</button>
@@ -476,138 +575,227 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			case 4:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-4 text-center">
-							Any other specific context? (Optional)
+						<h2 className="text-2xl font-semibold text-sky-300 mb-6 text-center">
+							Fine-tune their Background (Optional)
 						</h2>
-						<p className="text-gray-400 mb-4 text-center">
-							Add details to make the scenario more specific. This will
-							influence the AI's behavior and dialogue.
-						</p>
-						<div className="max-w-lg mx-auto">
-							<textarea
-								value={scenario.customContext || ""}
-								onChange={(e) =>
-									updateScenario({ customContext: e.target.value })
-								}
-								placeholder="Provide background information here..."
-								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[120px]"
-							/>
-							<p className="text-xs text-gray-500 mt-2 text-left">
-								<strong>Examples:</strong>
-								<br />
-								- "You've just met at a friend's party and find them
-								attractive."
-								<br />
-								- "You need to ask your boss, who is known to be strict, for an
-								extension on a deadline."
-								<br />- "You're returning a faulty product to a customer service
-								representative."
-							</p>
+						<div className="space-y-6 max-w-lg mx-auto">
+							<div>
+								<label
+									htmlFor="ai-name"
+									className="block text-md font-medium text-gray-300 mb-2">
+									Name
+								</label>
+								<div className="flex items-start space-x-2">
+									<div className="flex-grow">
+										<input
+											id="ai-name"
+											type="text"
+											value={scenario.aiName || ""}
+											onChange={(e) =>
+												updateScenario({ aiName: e.target.value })
+											}
+											placeholder="Leave blank for random"
+											className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+										/>
+									</div>
+									<button
+										type="button"
+										onClick={() =>
+											updateScenario({
+												aiName: generateRandomAiName(scenario.aiGender!),
+											})
+										}
+										className="p-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-sm transition-colors duration-150 h-[48px] flex-shrink-0"
+										title="Suggest a random name">
+										Suggest
+									</button>
+								</div>
+								<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+									<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+									<p>
+										Give the AI a name, or leave it blank to have one generated
+										based on other selections.
+									</p>
+								</div>
+							</div>
+							<div>
+								<label
+									htmlFor="ai-culture"
+									className="block text-md font-medium text-gray-300 mb-2">
+									Culture/Race
+								</label>
+								<input
+									id="ai-culture"
+									type="text"
+									value={scenario.aiCulture || ""}
+									onChange={(e) =>
+										updateScenario({ aiCulture: e.target.value })
+									}
+									placeholder="E.g., Japanese, Italian-American..."
+									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+								/>
+								<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
+									<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
+									<p>
+										This can influence the AI's name, appearance, and
+										communication style.
+									</p>
+								</div>
+							</div>
 						</div>
 					</div>
 				);
 			case 5:
 				return (
 					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-2xl font-semibold text-sky-300 mb-6 text-center">
-							Set the final details.
+						<h2 className="text-2xl font-semibold text-sky-300 mb-4 text-center">
+							Set the Scene (Optional)
 						</h2>
 						<div className="space-y-6 max-w-lg mx-auto">
 							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-2">
-									AI's Name (Optional):
-								</h3>
+								<label
+									htmlFor="conversation-goal"
+									className="block text-md font-medium text-gray-300 mb-2">
+									What is your goal for this conversation?
+								</label>
 								<input
-									type="text"
-									value={scenario.aiName || ""}
-									onChange={(e) => updateScenario({ aiName: e.target.value })}
-									placeholder="Leave blank for a random name"
-									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-								/>
-							</div>
-							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-2">
-									Conversation Goal (Optional):
-								</h3>
-								<div className="mb-4 bg-teal-900/60 p-3 shadow-md border border-teal-800/50 rounded-md">
-									<div className="flex items-start gap-3">
-										<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0 mt-0.5" />
-										<div>
-											<h4 className="text-sm font-semibold text-teal-300">
-												Dynamic Goals
-											</h4>
-											<p className="text-xs text-teal-200">
-												If you leave this blank, the AI will try to figure out a
-												goal based on how the conversation goes.
-											</p>
-										</div>
-									</div>
-								</div>
-								<input
+									id="conversation-goal"
 									type="text"
 									value={scenario.conversationGoal || ""}
 									onChange={(e) =>
 										updateScenario({ conversationGoal: e.target.value })
 									}
-									placeholder="What do you want to achieve?"
+									placeholder="E.g., Ask for a date, get a discount..."
 									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
 								/>
-								<p className="text-xs text-gray-500 mt-2 text-left">
-									<strong>Examples:</strong>
-									<br />
-									- "Successfully ask for their phone number."
-									<br />
-									- "Convince my boss to give me a two-day extension."
-									<br />- "Get a full refund for a faulty product."
-								</p>
+								<div className="mt-2">
+									<InfoCard
+										Icon={TargetIcon}
+										title="Example Goal"
+										description="“Ask for a date, get a discount, or convince your friend to see your favorite movie.”"
+									/>
+								</div>
+							</div>
+							<div>
+								<label
+									htmlFor="custom-context"
+									className="block text-md font-medium text-gray-300 mb-2">
+									Add any extra scenario details
+								</label>
+								<textarea
+									id="custom-context"
+									value={scenario.customContext || ""}
+									onChange={(e) =>
+										updateScenario({ customContext: e.target.value })
+									}
+									placeholder="E.g., You've met this person once before..."
+									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px]"
+									rows={3}
+								/>
+								<div className="mt-2">
+									<InfoCard
+										Icon={FastForwardIcon}
+										title="Example Context for an Action"
+										description="Context like “You are both walking out of an office building” can trigger an ‘Active Action’ banner in the simulation."
+									/>
+								</div>
 							</div>
 						</div>
 					</div>
 				);
-
 			case 6:
-				const { aiAgeBracket } = scenario;
+				const {
+					aiAgeBracket: finalAgeBracket,
+					aiPersonalityTraits,
+					environment,
+					aiCulture,
+					customAiPersonality,
+					customContext,
+					customEnvironment,
+				} = scenario;
 				let ageText: string;
-				if (scenario.customAiAge) {
-					ageText = `${scenario.customAiAge} year old`;
-				} else if (
-					aiAgeBracket &&
-					aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED &&
-					aiAgeBracket !== AIAgeBracket.CUSTOM
+				if (
+					scenario.aiAgeBracket === AIAgeBracket.CUSTOM &&
+					customAiAgeString
 				) {
-					ageText = aiAgeBracket.toLowerCase();
+					ageText = `of age ${customAiAgeString}`;
+				} else if (
+					finalAgeBracket &&
+					finalAgeBracket !== AIAgeBracket.NOT_SPECIFIED
+				) {
+					ageText = finalAgeBracket.toLowerCase();
 				} else {
-					ageText = "person";
+					ageText = "a person";
 				}
+				const envText: string =
+					environment === SocialEnvironment.CUSTOM && customEnvironment
+						? customEnvironment
+						: (environment as string);
 
 				return (
-					<div key={step} className={`${animationClass}`}>
+					<div key={step} className={`${animationClass} text-center`}>
 						<h2 className="text-3xl font-bold text-teal-300 mb-6">
-							Ready to go?
+							Ready to Go?
 						</h2>
-						<div className="p-4 bg-slate-700/50 rounded-lg space-y-2 text-gray-300">
+						<div className="p-6 bg-slate-700/50 rounded-lg space-y-3 text-gray-200 text-left max-w-md mx-auto">
 							<p>
-								<strong className="text-sky-400">Environment:</strong>{" "}
-								{scenario.environment}
-								{scenario.environment === SocialEnvironment.CUSTOM
-									? ` (${scenario.customEnvironment})`
-									: ""}
+								<strong className="text-sky-300 w-32 inline-block">
+									Environment:
+								</strong>{" "}
+								{envText}
 							</p>
 							<p>
-								<strong className="text-sky-400">AI Persona:</strong> A{" "}
-								{ageText} {scenario.aiGender?.toLowerCase()} who is{" "}
-								{scenario.aiPersonalityTraits?.join(", ") || "neutral"}.
+								<strong className="text-sky-300 w-32 inline-block">
+									Persona:
+								</strong>{" "}
+								A {scenario.aiGender?.toLowerCase()} {ageText}.
 							</p>
-							{scenario.customContext && (
+							{scenario.aiName && (
 								<p>
-									<strong className="text-sky-400">Custom Context:</strong>{" "}
-									{scenario.customContext}
+									<strong className="text-sky-300 w-32 inline-block">
+										Name:
+									</strong>{" "}
+									{scenario.aiName}
+								</p>
+							)}
+							{aiCulture && (
+								<p>
+									<strong className="text-sky-300 w-32 inline-block">
+										Culture:
+									</strong>{" "}
+									{aiCulture}
+								</p>
+							)}
+							{aiPersonalityTraits && aiPersonalityTraits.length > 0 && (
+								<p>
+									<strong className="text-sky-300 w-32 inline-block">
+										Traits:
+									</strong>{" "}
+									{aiPersonalityTraits.join(", ")}
+								</p>
+							)}
+							{customAiPersonality && (
+								<p>
+									<strong className="text-sky-300 w-32 inline-block">
+										Custom Persona:
+									</strong>{" "}
+									{customAiPersonality}
 								</p>
 							)}
 							{scenario.conversationGoal && (
 								<p>
-									<strong className="text-sky-400">Your Goal:</strong>{" "}
+									<strong className="text-sky-300 w-32 inline-block">
+										Your Goal:
+									</strong>{" "}
 									{scenario.conversationGoal}
+								</p>
+							)}
+							{customContext && (
+								<p>
+									<strong className="text-sky-300 w-32 inline-block">
+										Extra Context:
+									</strong>{" "}
+									{customContext}
 								</p>
 							)}
 						</div>
@@ -616,27 +804,18 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 						</p>
 					</div>
 				);
-
 			default:
 				return <div>Setup complete.</div>;
 		}
 	};
 
 	return (
-		<div className="w-full max-w-2xl p-4 md:p-8 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between h-[85vh] md:h-auto md:min-h-[70vh]">
-			<div className="flex-grow overflow-y-auto custom-scrollbar pr-2 -mr-2">
+		<div className="w-full max-w-xl p-4 md:p-6 bg-slate-800 rounded-xl shadow-2xl flex flex-col justify-between min-h-[75vh]">
+			<div className="flex-grow min-h-0 overflow-y-auto custom-scrollbar pr-2 -mr-2">
 				{step > 0 && (
-					<div className="relative h-1 bg-slate-700 rounded-full mb-8">
-						<div
-							className="absolute top-0 left-0 h-1 bg-teal-400 rounded-full transition-all duration-500"
-							style={{
-								width: `${((step - 1) / (MAX_STEPS - 1)) * 100}%`,
-							}}></div>
-					</div>
+					<SegmentedProgressBar currentStep={step} totalSteps={MAX_STEPS} />
 				)}
-				<div className="min-h-[280px] md:min-h-[300px] px-2">
-					{renderStepContent()}
-				</div>
+				<div className="px-2">{renderStepContent()}</div>
 				{error && (
 					<p className="text-red-400 text-sm mt-4 text-center animate-pulse">
 						{error}
@@ -644,12 +823,12 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				)}
 			</div>
 
-			<div className="flex-shrink-0 flex justify-between items-stretch mt-auto pt-4 border-t border-slate-700 gap-2 md:gap-4">
-				<div className="flex-1 text-left">
-					{step > 0 && step <= MAX_STEPS && (
+			<div className="flex-shrink-0 flex items-center mt-6 pt-4 border-t border-slate-700/60">
+				<div className="flex-1">
+					{step > 0 && (
 						<button
 							onClick={handleBack}
-							className="w-full sm:w-auto px-6 py-4 bg-slate-600 text-white font-semibold text-base rounded-lg hover:bg-slate-500 flex items-center justify-center space-x-2 transition-colors">
+							className="px-6 py-3 bg-slate-600/80 text-white font-semibold rounded-lg hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors">
 							<ArrowLeftIcon className="h-5 w-5" />
 							<span>Back</span>
 						</button>
@@ -660,14 +839,14 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					{step > 0 && step < MAX_STEPS && (
 						<button
 							onClick={handleNext}
-							className="w-full sm:w-auto px-8 py-4 bg-green-600 text-white font-bold text-base rounded-lg hover:bg-green-500 transition-colors">
+							className="px-8 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-colors">
 							Next
 						</button>
 					)}
 					{step === MAX_STEPS && (
 						<button
 							onClick={handleStart}
-							className="w-full sm:w-auto px-8 py-4 bg-green-600 text-white font-bold text-base rounded-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center space-x-2 transition-transform hover:scale-105">
+							className="px-8 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 animate-pulse-glow flex items-center justify-center gap-2 transition-transform hover:scale-105">
 							<PlayIcon className="h-5 w-5" />
 							<span>Start</span>
 						</button>

@@ -461,10 +461,14 @@ export const UserIcon: React.FC<IconProps> = ({ className }) => (
 export const HeartIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		viewBox="0 0 24 24"
+		viewBox="0 0 20 20"
 		fill="currentColor"
 		className={className || "h-6 w-6"}>
-		<path d="M12,21.35L10.55,20.03C5.4,15.36,2,12.27,2,8.5C2,5.41,4.42,3,7.5,3C9.24,3,10.91,3.81,12,5.08C13.09,3.81,14.76,3,16.5,3C19.58,3,22,5.41,22,8.5C22,12.27,18.6,15.36,13.45,20.03L12,21.35Z" />
+		<path
+			fillRule="evenodd"
+			d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+			clipRule="evenodd"
+		/>
 	</svg>
 );
 
@@ -556,6 +560,88 @@ export const ArrowRightIcon: React.FC<IconProps> = ({ className }) => (
 			strokeLinecap="round"
 			strokeLinejoin="round"
 			d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+		/>
+	</svg>
+);
+
+export const BookOpenIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "h-6 w-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+		/>
+	</svg>
+);
+
+export const BriefcaseIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		className={className || "h-6 w-6"}>
+		<rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+		<path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+	</svg>
+);
+
+export const CoffeeIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		className={className || "h-6 w-6"}>
+		<path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+		<path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+		<line x1="6" y1="1" x2="6" y2="4" />
+		<line x1="10" y1="1" x2="10" y2="4" />
+		<line x1="14" y1="1" x2="14" y2="4" />
+	</svg>
+);
+
+export const UsersIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="1.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		className={className || "h-6 w-6"}>
+		<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+		<circle cx="9" cy="7" r="4" />
+		<path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+		<path d="M16 3.13a4 4 0 0 1 0 7.75" />
+	</svg>
+);
+
+export const AccordionChevronIcon: React.FC<IconProps> = ({ className }) => (
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		fill="none"
+		viewBox="0 0 24 24"
+		strokeWidth={1.5}
+		stroke="currentColor"
+		className={className || "h-6 w-6"}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="m19.5 8.25-7.5 7.5-7.5-7.5"
 		/>
 	</svg>
 );

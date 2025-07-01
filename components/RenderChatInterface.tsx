@@ -13,7 +13,6 @@ import {
 	StopCircleIcon,
 	CheckCircleIcon,
 	CloseIcon,
-	InfoIcon,
 	QuestionMarkIcon,
 	ChevronDownIcon,
 	ChevronUpIcon,
@@ -22,6 +21,7 @@ import {
 	StarIcon,
 	SparklesIcon,
 	XCircleIcon,
+	BookOpenIcon,
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 import { TopBannerContainer } from "./TopBannerContainer";
@@ -199,8 +199,7 @@ interface RenderChatInterfaceProps {
 	isOverlay: boolean;
 	hasBlurredBackground?: boolean;
 	onCloseOverlay?: () => void;
-	onToggleHelpOverlay: () => void;
-	onToggleQuickTipsOverlay: () => void;
+	onToggleHelp: () => void;
 	onViewImage: (url: string | null) => void;
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
@@ -221,6 +220,7 @@ interface InputAreaProps {
 	hasBlurredBackground: boolean;
 	isContinueActionSuggested: boolean;
 	isUserStart: boolean;
+	onFocus: () => void;
 }
 
 const InputArea: React.FC<InputAreaProps> = ({
@@ -232,6 +232,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 	hasBlurredBackground,
 	isContinueActionSuggested,
 	isUserStart,
+	onFocus,
 }) => {
 	const [dialogueInput, setDialogueInput] = useState("");
 	const [gestureInput, setGestureInput] = useState("");
@@ -241,10 +242,12 @@ const InputArea: React.FC<InputAreaProps> = ({
 	const dialogueTextareaRef = useRef<HTMLTextAreaElement>(null);
 
 	const handleGestureButtonClick = () => {
+		onFocus();
 		setShowGestureInput((prev) => !prev);
 	};
 
 	const handleSendClick = () => {
+		onFocus();
 		if (gestureInput.trim() || dialogueInput.trim()) {
 			onSend(gestureInput.trim(), dialogueInput.trim());
 			setGestureInput("");
@@ -275,8 +278,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 		? "The scene is set. What's your opening line?"
 		: "Type your response...";
 
-	const gesturePlaceholderText =
-		"Describe a gesture... e.g., *smiles and nods*";
+	const gesturePlaceholderText = "e.g., *smiles and nods*";
 
 	return (
 		<div className={wrapperClasses}>
@@ -293,7 +295,6 @@ const InputArea: React.FC<InputAreaProps> = ({
 					}}
 					className="mb-2 bg-green-800/30 border border-green-700/40 rounded-lg cursor-pointer hover:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
 					aria-expanded={isMaxEngagementBannerOpen}
-					aria-controls="max-engagement-content"
 					aria-label={
 						isMaxEngagementBannerOpen
 							? "Collapse max engagement message"
@@ -329,10 +330,16 @@ const InputArea: React.FC<InputAreaProps> = ({
 							: "grid-rows-[0fr] opacity-0"
 					}`}>
 					<div className="overflow-hidden">
+						<label
+							htmlFor="gesture-input"
+							className="block text-xs font-semibold text-sky-400 mb-1">
+							Action/Gesture
+						</label>
 						<textarea
 							id="gesture-input"
 							value={gestureInput}
 							onChange={(e) => setGestureInput(e.target.value)}
+							onFocus={onFocus}
 							placeholder={gesturePlaceholderText}
 							className={`${textareaClasses} min-h-[50px]`}
 							rows={1}
@@ -343,7 +350,10 @@ const InputArea: React.FC<InputAreaProps> = ({
 
 				<div className="flex items-end sm:items-center space-x-2">
 					<button
-						onClick={handleEndOrFinish}
+						onClick={() => {
+							onFocus();
+							handleEndOrFinish();
+						}}
 						disabled={isLoadingAI}
 						className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 min-h-[52px] sm:min-h-0
 							${
@@ -380,6 +390,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 						ref={dialogueTextareaRef}
 						value={dialogueInput}
 						onChange={(e) => setDialogueInput(e.target.value)}
+						onFocus={onFocus}
 						onKeyPress={handleKeyPress}
 						placeholder={placeholderText}
 						className={`${textareaClasses} max-h-32`}
@@ -387,7 +398,10 @@ const InputArea: React.FC<InputAreaProps> = ({
 						aria-label="Your response input"
 					/>
 					<button
-						onClick={handleContinue}
+						onClick={() => {
+							onFocus();
+							handleContinue();
+						}}
 						disabled={isLoadingAI}
 						className={`p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0 ${
 							isContinueActionSuggested ? "animate-pulse-glow-slow" : ""
@@ -434,8 +448,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	isOverlay,
 	hasBlurredBackground = false,
 	onCloseOverlay,
-	onToggleHelpOverlay,
-	onToggleQuickTipsOverlay,
+	onToggleHelp,
 	onViewImage,
 	goalJustChanged,
 	onAnimationComplete,
@@ -446,6 +459,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const chatEndRef = useRef<HTMLDivElement>(null);
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
+	const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 
 	const isScrollingMutedRef = useRef(false);
 
@@ -513,13 +527,26 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		return () => observer.disconnect();
 	}, [scrollToBottom]);
 
+	const handlePopoverSet = useCallback(
+		(messageId: string | null) => {
+			if (messageId && messageId === activePopoverId) {
+				setActivePopoverId(null);
+			} else {
+				setActivePopoverId(messageId);
+			}
+		},
+		[activePopoverId]
+	);
+
 	const handleSend = (gesture: string, dialogue: string) => {
+		setActivePopoverId(null);
 		if (gesture.trim() || dialogue.trim()) {
 			onSendMessage({ gesture, dialogue });
 		}
 	};
 
 	const handleEndOrFinish = () => {
+		setActivePopoverId(null);
 		onEndConversation();
 		if (isOverlay && onCloseOverlay) {
 			setTimeout(() => {
@@ -546,17 +573,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			</h3>
 			<div className="flex items-center space-x-1 sm:space-x-2">
 				<button
-					onClick={onToggleQuickTipsOverlay}
+					onClick={onToggleHelp}
 					className="p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm bg-slate-700/70 hover:bg-slate-600"
-					aria-label="View Quick Tips"
-					title="Quick Tips">
-					<InfoIcon className="h-5 w-5" />
-				</button>
-				<button
-					onClick={onToggleHelpOverlay}
-					className="p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm bg-slate-700/70 hover:bg-slate-600"
-					aria-label="Show help for chat interface"
-					title="Help">
+					aria-label="Show help and tips"
+					title="Help & Tips">
 					<QuestionMarkIcon className="h-5 w-5" />
 				</button>
 				{isOverlay && onCloseOverlay && (
@@ -595,6 +615,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		hasBlurredBackground,
 		isContinueActionSuggested,
 		isUserStart,
+		onFocus: () => setActivePopoverId(null),
 	};
 	const lastMessageIsAi =
 		conversationHistory[conversationHistory.length - 1]?.sender === "ai";
@@ -627,7 +648,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 
 			<div
 				ref={chatContainerRef}
-				className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4">
+				className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4"
+				onClick={() => setActivePopoverId(null)}>
 				<div className="space-y-4">
 					{processedMessagesForDisplay.map((msg, index) => (
 						<ChatMessageView
