@@ -328,15 +328,14 @@ export const ThumbsUpIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
 		className={className || "h-6 w-6"}
-		fill="none"
 		viewBox="0 0 24 24"
+		strokeWidth="1.5"
 		stroke="currentColor"
-		strokeWidth={2}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.085c-.938 0-1.757.46-2.239 1.178L5 8m0 12h-2a2 2 0 01-2-2V8a2 2 0 012-2h2.086a2 2 0 012 2v10a2 2 0 01-2 2z"
-		/>
+		fill="none"
+		strokeLinecap="round"
+		strokeLinejoin="round">
+		<path stroke="none" d="M0 0h24v24H0z" fill="none" />
+		<path d="M7 11v8a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-7a1 1 0 0 1 1 -1h3a4 4 0 0 0 4 -4v-1a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a2 3 0 0 1 -2 2h-7a3 3 0 0 1 -3 -3" />
 	</svg>
 );
 
@@ -344,15 +343,14 @@ export const ThumbsDownIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
 		className={className || "h-6 w-6"}
-		fill="none"
 		viewBox="0 0 24 24"
+		strokeWidth="1.5"
 		stroke="currentColor"
-		strokeWidth={2}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.738 3h4.017c.163 0 .326.02.485.06L17 4m-7 10v5a2 2 0 002 2h.085c.938 0 1.757-.46 2.239-1.178L19 16m0-12h2a2 2 0 012 2v8a2 2 0 01-2 2h-2.086a2 2 0 01-2-2V6a2 2 0 012-2z"
-		/>
+		fill="none"
+		strokeLinecap="round"
+		strokeLinejoin="round">
+		<path stroke="none" d="M0 0h24v24H0z" fill="none" />
+		<path d="M7 13v-8a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v7a1 1 0 0 0 1 1h3a4 4 0 0 1 4 4v1a2 2 0 0 0 4 0v-5h3a2 2 0 0 0 2 -2l-1 -5a2 3 0 0 0 -2 -2h-7a3 3 0 0 0 -3 3" />
 	</svg>
 );
 

@@ -81,32 +81,34 @@ const ActiveActionBanner: React.FC<{
 	isLoading: boolean;
 	isPaused: boolean;
 }> = ({ action, onFastForward, isLoading, isPaused }) => (
-	<div className="bg-sky-900/60 p-3 shadow-lg border-b border-sky-800/50 rounded-b-md">
-		<div className="flex items-center gap-3 mb-1.5">
-			<div className="flex-grow">
-				<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
-					Active Action
-				</p>
-				<p
-					className="text-sm text-sky-100 break-words"
-					title={action.description}>
-					{action.description}
-				</p>
-				{isPaused && (
-					<p className="text-red-400 font-bold text-xs animate-pulse mt-1">
-						ACTIVE PAUSE
+	<div className="relative rounded-b-md active-action-glow overflow-hidden">
+		<div className="relative z-10 bg-sky-900/60 p-3 shadow-lg border-b border-sky-800/50 rounded-b-md">
+			<div className="flex items-center gap-3 mb-1.5">
+				<div className="flex-grow">
+					<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">
+						Active Action
 					</p>
-				)}
+					<p
+						className="text-sm text-sky-100 break-words"
+						title={action.description}>
+						{action.description}
+					</p>
+					{isPaused && (
+						<p className="text-red-400 font-bold text-xs animate-pulse mt-1">
+							ACTIVE PAUSE
+						</p>
+					)}
+				</div>
+				<button
+					onClick={onFastForward}
+					disabled={isLoading}
+					className="p-2 rounded-full bg-sky-700/80 hover:bg-sky-600 text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
+					title="Fast Forward to the end of this action">
+					<FastForwardIcon className="h-5 w-5" />
+				</button>
 			</div>
-			<button
-				onClick={onFastForward}
-				disabled={isLoading}
-				className="p-2 rounded-full bg-sky-700/80 hover:bg-sky-600 text-white transition-colors disabled:opacity-50 disabled:cursor-wait"
-				title="Fast Forward to the end of this action">
-				<FastForwardIcon className="h-5 w-5" />
-			</button>
+			<ProgressBar percentage={action.progress} />
 		</div>
-		<ProgressBar percentage={action.progress} />
 	</div>
 );
 

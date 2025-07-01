@@ -74,22 +74,16 @@ const TraitBadge: React.FC<{
 }> = ({ trait, isPositive }) => {
 	if (isPositive) {
 		return (
-			<div className="p-1.5 bg-purple-800/40 border border-purple-600/50 rounded-md flex items-center justify-between animate-popInAndSettle">
-				<span className="font-semibold text-purple-300">Positive Trait</span>
-				<span className="flex items-center gap-1 font-bold text-purple-200">
-					<SparklesIcon className="h-3 w-3" />
-					{trait}
-				</span>
+			<div className="p-1.5 bg-purple-800/40 border border-purple-600/50 rounded-md flex items-center justify-center gap-1.5 animate-popInAndSettle">
+				<SparklesIcon className="h-3.5 w-3.5 text-purple-300" />
+				<span className="font-bold text-sm text-purple-200">{trait} +</span>
 			</div>
 		);
 	}
 	return (
-		<div className="p-1.5 bg-red-800/40 border border-red-600/50 rounded-md flex items-center justify-between animate-popInAndSettle">
-			<span className="font-semibold text-red-300">Negative Trait</span>
-			<span className="flex items-center gap-1 font-bold text-red-200">
-				<XCircleIcon className="h-3 w-3" />
-				{trait}
-			</span>
+		<div className="p-1.5 bg-red-800/40 border border-red-600/50 rounded-md flex items-center justify-center gap-1.5 animate-popInAndSettle">
+			<XCircleIcon className="h-3.5 w-3.5 text-red-300" />
+			<span className="font-bold text-sm text-red-200">{trait} -</span>
 		</div>
 	);
 };

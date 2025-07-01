@@ -1,5 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import type { ChatMessage, ActiveAction } from "../types";
+import React, {
+	useState,
+	useEffect,
+	useRef,
+	useCallback,
+	forwardRef,
+} from "react";
+import type { ChatMessage, ActiveAction, UserTurnFeedback } from "../types";
 import { ChatMessageView } from "./ChatMessageView";
 import { ProgressBar } from "./ProgressBar"; // Import ProgressBar
 import {
@@ -13,9 +19,163 @@ import {
 	ChevronUpIcon,
 	PlayIcon,
 	GestureIcon,
+	StarIcon,
+	SparklesIcon,
+	XCircleIcon,
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 import { TopBannerContainer } from "./TopBannerContainer";
+
+// --- Badge components, duplicated for use in the animation tray ---
+
+const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
+	const isPositive = delta >= 0;
+	const colorClasses = isPositive
+		? "bg-green-600 text-white ring-green-400"
+		: "bg-red-600 text-white ring-red-400";
+	const sign = isPositive ? "+" : "";
+
+	return (
+		<div
+			className={`px-2 py-0.5 rounded-full text-xs font-bold ring-1 ring-inset ${colorClasses}`}
+			aria-label={`Engagement change: ${sign}${delta}%`}>
+			{sign}
+			{delta}%
+		</div>
+	);
+};
+
+const EffectivenessBadge: React.FC<{ score: number }> = ({ score }) => {
+	const colorClasses =
+		score >= 75
+			? "bg-sky-600 text-white ring-sky-400"
+			: score >= 40
+			? "bg-yellow-600 text-white ring-yellow-400"
+			: "bg-red-600 text-white ring-red-400";
+
+	return (
+		<div
+			className={`px-2 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1 ${colorClasses}`}
+			aria-label={`Effectiveness score: ${score}%`}>
+			<StarIcon className="h-3 w-3" />
+			<span>{score}%</span>
+		</div>
+	);
+};
+
+const TraitContributionBadge: React.FC<{ trait: string }> = ({ trait }) => {
+	return (
+		<div
+			className={`px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1.5 bg-purple-600 text-white ring-purple-400`}
+			aria-label={`Positive Trait: ${trait}`}>
+			<SparklesIcon className="h-3.5 w-3.5" />
+			<span>{trait} +</span>
+		</div>
+	);
+};
+
+const NegativeTraitContributionBadge: React.FC<{ trait: string }> = ({
+	trait,
+}) => {
+	return (
+		<div
+			className={`px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1.5 bg-red-600 text-white ring-red-400`}
+			aria-label={`Negative Trait: ${trait}`}>
+			<XCircleIcon className="h-3.5 w-3.5" />
+			<span>{trait} -</span>
+		</div>
+	);
+};
+
+// --- Animation Phase 1 & 2: Self-contained Tray ---
+
+interface FeedbackAnimationTrayProps {
+	data: { messageId: string; feedback: UserTurnFeedback };
+	onComplete: (messageId: string, feedback: UserTurnFeedback) => void;
+}
+
+const FeedbackAnimationTray: React.FC<FeedbackAnimationTrayProps> = ({
+	data,
+	onComplete,
+}) => {
+	const [isExiting, setIsExiting] = useState(false);
+	const { messageId, feedback } = data;
+
+	// On mount (which happens on new data due to the key), set a timer to trigger the exit animation.
+	useEffect(() => {
+		const holdTimer = setTimeout(() => {
+			setIsExiting(true);
+		}, 2000); // 2-second hold time
+
+		return () => {
+			clearTimeout(holdTimer);
+		};
+	}, []); // Empty dependency array makes this effect run only once on mount
+
+	const badges: React.ReactNode[] = [];
+	if (feedback.positiveTraitContribution) {
+		badges.push(
+			<TraitContributionBadge
+				key="pos-trait"
+				trait={feedback.positiveTraitContribution}
+			/>
+		);
+	}
+	if (feedback.negativeTraitContribution) {
+		badges.push(
+			<NegativeTraitContributionBadge
+				key="neg-trait"
+				trait={feedback.negativeTraitContribution}
+			/>
+		);
+	}
+	if (typeof feedback.userTurnEffectivenessScore === "number") {
+		badges.push(
+			<EffectivenessBadge
+				key="effectiveness"
+				score={feedback.userTurnEffectivenessScore}
+			/>
+		);
+	}
+	if (typeof feedback.engagementDelta === "number") {
+		badges.push(
+			<EngagementDeltaBadge key="engagement" delta={feedback.engagementDelta} />
+		);
+	}
+
+	if (badges.length === 0) return null;
+
+	const lastBadgeIndex = badges.length - 1;
+
+	// This function is called when the last badge finishes its exit animation.
+	const handleAnimationEnd = (e: React.AnimationEvent) => {
+		// Only trigger on the pop-out animation to avoid firing on entry
+		if (isExiting && e.animationName === "badge-pop-out") {
+			onComplete(messageId, feedback);
+		}
+	};
+
+	return (
+		<div
+			className="fixed bottom-[110px] sm:bottom-24 right-4 sm:right-6 z-50 flex flex-row items-center gap-4"
+			role="status"
+			aria-live="polite">
+			{badges.map((badge, index) => (
+				<div
+					key={index}
+					className={
+						isExiting ? "animate-badge-pop-out" : "animate-badge-slide-in-right"
+					}
+					style={{ animationDelay: `${index * 0.15}s` }}
+					onAnimationEnd={
+						index === lastBadgeIndex ? handleAnimationEnd : undefined
+					}>
+					{badge}
+				</div>
+			))}
+		</div>
+	);
+};
 
 interface RenderChatInterfaceProps {
 	conversationHistory: ChatMessage[];
@@ -37,13 +197,18 @@ interface RenderChatInterfaceProps {
 	scenarioDetailsAiName: string;
 	isMaxEngagement: boolean;
 	isOverlay: boolean;
-	hasBlurredBackground?: boolean; // New prop
+	hasBlurredBackground?: boolean;
 	onCloseOverlay?: () => void;
 	onToggleHelpOverlay: () => void;
 	onToggleQuickTipsOverlay: () => void;
 	onViewImage: (url: string | null) => void;
 	goalJustChanged: boolean;
 	onAnimationComplete: () => void;
+	pendingFeedback: { messageId: string; feedback: UserTurnFeedback } | null;
+	onFeedbackAnimationComplete: (
+		messageId: string,
+		feedback: UserTurnFeedback
+	) => void;
 }
 
 // Define InputArea as a standalone component to prevent re-renders from losing focus
@@ -279,6 +444,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	onViewImage,
 	goalJustChanged,
 	onAnimationComplete,
+	pendingFeedback,
+	onFeedbackAnimationComplete,
 }) => {
 	const chatContainerRef = useRef<HTMLDivElement>(null);
 	const chatEndRef = useRef<HTMLDivElement>(null);
@@ -512,6 +679,14 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					<div ref={chatEndRef} />
 				</div>
 			</div>
+
+			{pendingFeedback && (
+				<FeedbackAnimationTray
+					key={pendingFeedback.messageId}
+					data={pendingFeedback}
+					onComplete={onFeedbackAnimationComplete}
+				/>
+			)}
 
 			<div className="flex-shrink-0 z-20">
 				<InputArea {...inputAreaProps} />

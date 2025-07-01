@@ -1,6 +1,7 @@
+
 import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
-import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals } from '../types';
+import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals, UserTurnFeedback } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS, SILENT_USER_ACTION_TOKEN } from '../constants';
 
 // Helper to construct a more informative error message from Google API errors
@@ -181,8 +182,7 @@ export class GeminiService {
                 ...parsed,
                 shouldGenerateNewImage: true, // Always generate an image on the first turn
                 isEndingConversation: false,
-                engagementDelta: 0,
-                userTurnEffectivenessScore: 100, // N/A for first turn
+								feedbackOnUserTurn: { engagementDelta: 0, userTurnEffectivenessScore: 100 },
                 achieved: false,
                 goalProgress: 0
             };
@@ -212,8 +212,7 @@ export class GeminiService {
             dialogueChunks: [{ text: `Hello! I'm ${fallbackName}. Let's talk.`, type: 'dialogue' }],
             aiBodyLanguage: "Neutral and open.",
             aiThoughts: "I'm ready to see how this interaction goes. I hope you're engaging.",
-            engagementDelta: 0,
-            userTurnEffectivenessScore: 100,
+						feedbackOnUserTurn: { engagementDelta: 0, userTurnEffectivenessScore: 100 },
             conversationMomentum: 55,
             isEndingConversation: false,
             shouldGenerateNewImage: true,
@@ -313,7 +312,23 @@ export class GeminiService {
       - **Internal vs. External Reactions (CRITICAL for realism)**: You must model the difference between a verbalized thought and an internal reaction shown through action. For example, if I do something surprising, you can start to speak, then interrupt yourself with an em-dash (—) and convey the rest through action. Example: \`dialogueChunks: [{ "text": "Wait, you don't—", "type": "dialogue" }, { "text": "*She looks down, surprised but touched.*", "type": "action" }]\`.
       - **Intelligent Turn-Taking**: Following an internal reaction like the one above, or if I am clearly interacting with another person (like a bartender), you MUST wait for my turn to be over. Your response should be ONLY an action chunk describing you waiting (e.g., \`dialogueChunks: [{ "text": "*She waits for you to finish ordering.*", "type": "action" }]\`).
       - **Journeys and Actions**: If your response involves moving from one place to another (e.g., "Let's go to the bar"), you must initiate an \`activeAction\` in your JSON response. For example: \`"activeAction": { "description": "Walking to the bar", "progress": 10 }\`. On subsequent turns, you will continue this action, incrementing the progress naturally. Actions can also be non-journeys like "making coffee".
-      - **User Action Suggestion**: If the most natural next step for me (the user) is to simply wait or perform a non-verbal action (like nodding), set \`isUserActionSuggested: true\`. This will make the "Continue" button glow in the UI, guiding me to take the most socially appropriate action. A great example is when you are in the middle of a sentence and need to pause to think, or when you've asked a rhetorical question.
+      - **Intelligent User Action Suggestion (CRITICAL RULE: BE VERY RESTRICTIVE)**:
+        - You can suggest that I (the user) should remain silent by setting \`isUserActionSuggested: true\`. This is a powerful tool and should be used RARELY and only in situations where speaking would be a clear social misstep.
+        - **Your default should ALWAYS be \`isUserActionSuggested: false\`**. Only set it to \`true\` if you are more than 95% certain that silence is the optimal move.
+        - **GOOD examples of when to set to \`true\`**:
+          - You are in the middle of a complex, multi-part sentence and have paused to think (e.g., "I think... *she looks up at the ceiling for a moment* ...that we should proceed."). My turn is to wait for you to finish.
+          - You have just experienced a strong, explicit emotional event (e.g., you are crying, laughing hard, or have just received shocking news). Silence from me is the most empathetic response.
+          - I have just performed an action and you are explicitly waiting for it to conclude (e.g., I said "*I go to the bar to order a drink*").
+        - **BAD examples (DO NOT set to \`true\` in these cases)**:
+          - After you ask a normal question, even a rhetorical one. A verbal answer is still plausible and expected.
+          - During a standard, brief conversational lull. These are normal.
+          - Just because I could nod or make a simple gesture. If a verbal response like "Yeah" or "I see" is also a perfectly valid option, do not suggest silence.
+        - **If in doubt, ALWAYS set \`isUserActionSuggested: false\`**.
+      - **Conversational Pivoting (Advanced Realism)**:
+        - Just like a real person, you are NOT obligated to respond to every single point I make, especially if the conversation is dying or has clearly moved on.
+        - If I ask a question about a topic that has become irrelevant or less important due to a more pressing, recent development in the conversation (a major emotional reveal, a new action starting), you have the autonomy to either ignore my question, briefly acknowledge it and move on (e.g., "We can talk about that later, but..."), or address it fully only if your persona would obsess over minor details.
+        - **Example**: If we were discussing our favorite movies and then you revealed you just won the lottery, it would be natural for you to focus on the lottery news and ignore a follow-up question I ask about a movie director. A human wouldn't robotically answer every question in order.
+        - Use your judgment based on your persona and the conversational momentum. This is key to making the interaction feel authentic and not like a Q&A session.
       
       ${fastForwardPrompt}
       ${actionPausedPrompt}
@@ -328,25 +343,35 @@ export class GeminiService {
       **Your Task**:
       1.  Analyze my last input.
       2.  Generate your next in-character response.
-      3.  Update your visual state.
-      4.  Provide feedback on my turn.
-      5.  Output a single, valid JSON object with the specified structure. Do not add any text, comments, or markdown fences outside the JSON.
+      3.  Provide feedback on my turn.
+      4.  Output a single, valid JSON object with the specified structure. Do not add any text, comments, or markdown fences outside the JSON.
+
+      **Instructions for feedbackOnUserTurn (MANDATORY):**
+      - \`positiveTraitContribution\` and \`negativeTraitContribution\`: If my last turn displayed a notable positive or negative social trait, identify it here.
+      - **FORMATTING RULES (NON-NEGOTIABLE):**
+          - The value for these fields MUST be a SINGLE word.
+          - **Examples of CORRECT single words:** "Empathetic", "Confident", "Dismissive", "Creative", "Evasive".
+          - **Examples of INCORRECT phrases:** "Showed empathy", "Was a bit arrogant", "You were very creative".
+          - Do NOT use phrases. Do NOT use sentences. Do NOT add any extra characters. A single word is mandatory.
+          - If no specific, single-word trait stood out as a primary characteristic of the turn, you MUST return null for that field. This rule is not optional.
 
       **JSON Response Structure:**
       {
         "dialogueChunks": [ { "text": "...", "type": "dialogue" | "action", "delayAfter": boolean } ],
         "aiBodyLanguage": "A description of your current physical state and expression.",
         "aiThoughts": "Your internal monologue about me and the conversation.",
-        "engagementDelta": number,
-        "userTurnEffectivenessScore": number, // (0-100)
-        "conversationMomentum": number, // (0-100)
-        "positiveTraitContribution": "string | null",
-        "negativeTraitContribution": "string | null",
+        "feedbackOnUserTurn": {
+          "engagementDelta": number,
+          "userTurnEffectivenessScore": number,
+          "positiveTraitContribution": "string | null",
+          "negativeTraitContribution": "string | null"
+        },
+        "conversationMomentum": number,
         "isEndingConversation": boolean,
         "isUserActionSuggested": boolean,
         "shouldGenerateNewImage": boolean,
         "emergingGoal": "string | null",
-        "goalProgress": number, // (0-100)
+        "goalProgress": number,
         "achieved": boolean,
         "updatedPersonaDetails": "string | null",
         "activeAction": { "description": "string", "progress": number } | null,

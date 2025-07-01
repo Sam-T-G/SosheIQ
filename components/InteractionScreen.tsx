@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import type { ScenarioDetails, ChatMessage, ActiveAction } from "../types";
+import type {
+	ScenarioDetails,
+	ChatMessage,
+	ActiveAction,
+	UserTurnFeedback,
+} from "../types";
 import { ProgressBar } from "./ProgressBar";
 import { AIVisualCue } from "./AIVisualCue";
 import { ChatBubbleIcon, CheckCircleIcon } from "./Icons";
@@ -34,6 +39,11 @@ interface InteractionScreenProps {
 	showGoalAchievedToast: { show: boolean; text: string };
 	onGoToAnalysis: () => void;
 	onCloseGoalToast: () => void;
+	pendingFeedback: { messageId: string; feedback: UserTurnFeedback } | null;
+	onFeedbackAnimationComplete: (
+		messageId: string,
+		feedback: UserTurnFeedback
+	) => void;
 }
 
 // Helper function to get the last meaningful AI body language description
@@ -136,6 +146,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	showGoalAchievedToast,
 	onGoToAnalysis,
 	onCloseGoalToast,
+	pendingFeedback,
+	onFeedbackAnimationComplete,
 }) => {
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	// Use helper function to get the body language description
@@ -250,7 +262,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							src={`data:image/jpeg;base64,${aiImageBase64}`}
 							alt=""
 							aria-hidden="true"
-							className="absolute inset-0 w-full h-full object-cover filter blur-xl scale-110"
+							className="absolute inset-0 w-full h-full object-cover filter blur-xl animate-subtle-pan"
 						/>
 					)}
 					<div className="absolute inset-0 w-full h-full bg-slate-800/70" />
@@ -286,6 +298,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						onViewImage={onViewImage}
 						goalJustChanged={goalJustChanged}
 						onAnimationComplete={onAnimationComplete}
+						pendingFeedback={pendingFeedback}
+						onFeedbackAnimationComplete={onFeedbackAnimationComplete}
 					/>
 				</div>
 			</div>
@@ -312,11 +326,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							src={`data:image/jpeg;base64,${aiImageBase64}`}
 							alt=""
 							aria-hidden="true"
-							className="absolute inset-0 w-full h-full object-cover object-center"
+							className="absolute inset-0 w-full h-full object-cover object-center filter blur-xl animate-subtle-pan"
 						/>
 					)}
 					{/* Darkening & Blur Layer */}
-					<div className="absolute inset-0 w-full h-full bg-slate-900/75 backdrop-blur-md" />
+					<div className="absolute inset-0 w-full h-full bg-slate-900/75" />
 
 					{/* Chat Interface Layer (on top) */}
 					<div className="relative z-10 h-full">
@@ -349,6 +363,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							onViewImage={onViewImage}
 							goalJustChanged={goalJustChanged}
 							onAnimationComplete={onAnimationComplete}
+							pendingFeedback={pendingFeedback}
+							onFeedbackAnimationComplete={onFeedbackAnimationComplete}
 						/>
 					</div>
 				</div>

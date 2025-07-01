@@ -92,26 +92,29 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 								icon={<CogIcon className="h-8 w-8" />}
 								title="1. Setting Up Your Scenario">
 								<p>
-									Every great interaction starts with context. You can use the
-									**Guided Setup** for a step-by-step process, or jump into the
-									**Advanced Setup** for full control.
+									Every great interaction starts with context. You can use the{" "}
+									<strong>Guided Setup</strong> for a step-by-step process, or
+									jump into the <strong>Advanced Setup</strong> for full
+									control.
 								</p>
 								<ul className="list-disc list-inside space-y-1 pl-2">
 									<li>
-										**Persona:** Define the AI's gender, age, name, and
-										personality traits.
+										<strong>Persona:</strong> Define the AI's gender, age, name,
+										and personality traits.
 									</li>
 									<li>
-										**Environment:** Choose where the conversation happens.
+										<strong>Environment:</strong> Choose where the conversation
+										happens.
 									</li>
 									<li>
-										**Goal (Optional):** Give yourself a mission, like "Ask for
-										a date".
+										<strong>Goal (Optional):</strong> Give yourself a mission,
+										like "Ask for a date".
 									</li>
 									<li>
-										**Feeling Lucky:** Hit the "I'm Feeling Lucky" button to let
-										the AI generate a complete, immersive scenario for you,
-										including your relationship and a starting situation.
+										<strong>Feeling Lucky:</strong> Hit the "I'm Feeling Lucky"
+										button to let the AI generate a complete, immersive scenario
+										for you, including your relationship and a starting
+										situation.
 									</li>
 								</ul>
 							</FeatureCard>
@@ -134,9 +137,10 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 										Tracking Your Progress
 									</h4>
 									<p>
-										The **Engagement Bar** at the bottom (or in the chat overlay
-										on mobile) shows the AI's interest level. It decays slightly
-										each turn, so consistent positive interaction is key!
+										The <strong>Engagement Bar</strong> at the bottom (or in the
+										chat overlay on mobile) shows the AI's interest level. It
+										decays slightly each turn, so consistent positive
+										interaction is key!
 									</p>
 									<UIExample caption="Engagement Bar: Green is high, yellow is medium, red is low.">
 										<div className="w-48">
@@ -198,7 +202,9 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 											</div>
 											<div className="text-center">
 												<p className="text-xs italic text-slate-400 px-2 py-0.5 bg-slate-700/50 rounded-full inline-block">
-													*She pauses to take a sip of her coffee*
+													<strong>
+														*She pauses to take a sip of her coffee*
+													</strong>
 												</p>
 											</div>
 											<div className="px-3 py-2 rounded-xl bg-slate-600 text-gray-200 rounded-bl-none text-sm self-start">
@@ -259,10 +265,12 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 											Gesture (
 											<GestureIcon className="h-4 w-4 inline-block -mt-1" />
 											):
-										</strong>{" "}
-										Click this to open a second text box where you can describe
-										a physical action (e.g., "*I smile and nod*"). You can send
-										a gesture alone or with dialogue.
+										</strong>
+										{
+											" Click this to open a second text box where you can describe a physical action (e.g., "
+										}
+										<strong>*I smile and nod*</strong>
+										{"). You can send a gesture alone or with dialogue."}
 									</li>
 									<li>
 										<strong className="text-sky-300">

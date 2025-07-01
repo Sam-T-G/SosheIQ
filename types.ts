@@ -1,5 +1,3 @@
-
-
 export enum SocialEnvironment {
   CASUAL = "Casual Encounter",
   DATING = "On a Date",
@@ -112,17 +110,21 @@ export interface ActiveAction {
   progress: number; // 0-100
 }
 
+export interface UserTurnFeedback {
+  engagementDelta: number;
+  userTurnEffectivenessScore: number;
+  positiveTraitContribution?: string;
+  negativeTraitContribution?: string;
+}
+
 export interface AiTurnResponse {
     aiName?: string; // Only present in the first turn
     scenarioBackstory?: string; // For "I'm Feeling Lucky"
     dialogueChunks: DialogueChunk[];
     aiBodyLanguage: string;
     aiThoughts: string;
-    engagementDelta: number;
-    userTurnEffectivenessScore: number;
     conversationMomentum: number;
-    positiveTraitContribution?: string;
-    negativeTraitContribution?: string;
+    feedbackOnUserTurn?: UserTurnFeedback;
     isEndingConversation: boolean;
     isUserActionSuggested?: boolean;
     shouldGenerateNewImage: boolean;

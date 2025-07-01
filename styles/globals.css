@@ -1,5 +1,3 @@
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -117,7 +115,7 @@ html {
   animation: popInAndSettle 0.4s ease-out forwards;
 }
 
-/* NEW Sequential User Feedback Badge Animation */
+/* Final location badge pop-in */
 @keyframes badgePlopIn {
   0% {
     opacity: 0;
@@ -134,7 +132,7 @@ html {
 }
 .animate-badge-plop {
   opacity: 0;
-  animation: badgePlopIn 1s ease-out forwards;
+  animation: badgePlopIn 0.8s ease-out forwards;
 }
 
 
@@ -251,17 +249,32 @@ html {
   animation: pulse-glow-fab 2.5s infinite ease-in-out;
 }
 
-@keyframes goal-toast-in-out {
-  0% { transform: translate(-50%, -150%); opacity: 0; }
-  10% { transform: translate(-50%, 0); opacity: 1; }
-  15% { transform: translate(-50%, -5%); opacity: 1; }
-  20% { transform: translate(-50%, 0); opacity: 1; }
-  85% { transform: translate(-50%, 0); opacity: 1; }
-  100% { transform: translate(-50%, -150%); opacity: 0; }
+@keyframes goal-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .animate-goal-toast {
-    animation: goal-toast-in-out 7s ease-in-out forwards;
+    animation: goal-toast-in 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+@keyframes countdown-bar-width {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-countdown-bar {
+  animation: countdown-bar-width 7000ms linear forwards;
 }
 
 @keyframes pulse-glow-slow {
@@ -319,4 +332,95 @@ html {
 }
 .animate-pulse-logo {
   animation: pulse-logo 2s infinite ease-in-out;
+}
+
+/* NEW Badge Animation Keyframes */
+@keyframes badge-slide-in-right {
+  /* The "from" state is now implicitly the initial state set on the class */
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1.2);
+  }
+}
+
+.animate-badge-slide-in-right {
+  /* Set initial state before animation starts to prevent flash */
+  opacity: 0;
+  transform: translateX(80px) scale(1.2);
+  /* Use a cubic bezier for a smooth overshoot and settle effect. This removes the "jerk". */
+  animation: badge-slide-in-right 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes badge-pop-out {
+  from {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.animate-badge-pop-out {
+  /* Set initial state for this animation */
+  opacity: 1;
+  transform: scale(1.2);
+  animation: badge-pop-out 0.4s ease-in forwards;
+}
+
+/* Subtle Pan animation for background images */
+@keyframes subtle-pan {
+  0% {
+    transform: scale(1.25) translate(2%, 2%);
+  }
+  25% {
+    transform: scale(1.25) translate(-2%, 2%);
+  }
+  50% {
+    transform: scale(1.25) translate(-2%, -2%);
+  }
+  75% {
+    transform: scale(1.25) translate(2%, -2%);
+  }
+  100% {
+    transform: scale(1.25) translate(2%, 2%);
+  }
+}
+
+.animate-subtle-pan {
+  animation: subtle-pan 40s infinite linear;
+}
+
+/* New animation for "modern glow" on active action banner */
+@keyframes sweep-glow {
+  0% {
+    transform: translateX(-100%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+.active-action-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.active-action-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 75%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(56, 189, 248, 0.5) 50%, /* Increased opacity */
+    transparent 100%
+  );
+  filter: blur(5px); /* Added blur for softer glow */
+  animation: sweep-glow 3s infinite linear; /* Sped up animation */
+  z-index: 5;
 }

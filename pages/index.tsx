@@ -20,6 +20,7 @@ import type {
 	ActiveAction,
 	AiTurnResponse,
 	EstablishedVisuals,
+	UserTurnFeedback,
 } from "../types";
 import {
 	GamePhase,
@@ -95,6 +96,10 @@ const HomePage: React.FC = () => {
 		text: string;
 	}>({ show: false, text: "" });
 	const [imageToView, setImageToView] = useState<string | null>(null);
+	const [pendingFeedback, setPendingFeedback] = useState<{
+		messageId: string;
+		feedback: UserTurnFeedback;
+	} | null>(null);
 
 	useEffect(() => {
 		const initServices = async () => {
@@ -153,6 +158,7 @@ const HomePage: React.FC = () => {
 		setGoalJustChanged(false);
 		setShowGoalAchievedToast({ show: false, text: "" });
 		setImageToView(null);
+		setPendingFeedback(null);
 	};
 
 	const handleNavigate = useCallback((phase: GamePhase) => {
@@ -337,6 +343,33 @@ const HomePage: React.FC = () => {
 		[conversationHistory, scenarioDetails, currentEngagement, displayedGoal]
 	);
 
+	const applyFeedbackToMessage = useCallback(
+		(messageId: string, feedback: UserTurnFeedback) => {
+			setConversationHistory((prev) =>
+				prev.map((m) =>
+					m.id === messageId
+						? {
+								...m,
+								engagementDelta: feedback.engagementDelta,
+								userTurnEffectivenessScore: feedback.userTurnEffectivenessScore,
+								positiveTraitContribution: feedback.positiveTraitContribution,
+								negativeTraitContribution: feedback.negativeTraitContribution,
+						  }
+						: m
+				)
+			);
+		},
+		[]
+	);
+
+	const handleFeedbackAnimationComplete = useCallback(
+		(messageId: string, feedback: UserTurnFeedback) => {
+			applyFeedbackToMessage(messageId, feedback);
+			setPendingFeedback(null);
+		},
+		[applyFeedbackToMessage]
+	);
+
 	const processAiResponse = useCallback(
 		(
 			aiResponse: AiTurnResponse,
@@ -419,30 +452,15 @@ const HomePage: React.FC = () => {
 				goalChange: goalChangeInfo,
 			};
 
+			// Step 3: Update conversation history and scores in a single batch
+			const feedback = aiResponse.feedbackOnUserTurn;
+
 			setConversationHistory((prev) => [...prev, aiMessageTurn]);
 
-			// Step 3: Update the user's message with AI feedback
-			if (userMessageId) {
-				const {
-					engagementDelta = 0,
-					userTurnEffectivenessScore,
-					positiveTraitContribution,
-					negativeTraitContribution,
-				} = aiResponse;
-				setConversationHistory((prev) =>
-					prev.map((m) =>
-						m.id === userMessageId
-							? {
-									...m,
-									engagementDelta,
-									userTurnEffectivenessScore,
-									positiveTraitContribution,
-									negativeTraitContribution,
-							  }
-							: m
-					)
-				);
+			if (userMessageId && feedback) {
+				setPendingFeedback({ messageId: userMessageId, feedback });
 
+				const { engagementDelta = 0 } = feedback;
 				const newEngagementValue = Math.max(
 					0,
 					Math.min(
@@ -458,7 +476,6 @@ const HomePage: React.FC = () => {
 					newEngagementValue <= 0 ? (prev) => prev + 1 : 0
 				);
 
-				// Update stagnant streak for the NEXT turn
 				if (engagementDelta <= 0) {
 					setStagnantTurnStreak((prev) => prev + 1);
 				} else {
@@ -986,6 +1003,8 @@ const HomePage: React.FC = () => {
 						onCloseGoalToast={() =>
 							setShowGoalAchievedToast({ show: false, text: "" })
 						}
+						pendingFeedback={pendingFeedback}
+						onFeedbackAnimationComplete={handleFeedbackAnimationComplete}
 					/>
 				);
 			case GamePhase.ANALYSIS:

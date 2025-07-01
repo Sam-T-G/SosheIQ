@@ -13,7 +13,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
 	return (
 		<header className="bg-slate-800 shadow-md">
-			<div className="container mx-auto px-4 py-3 flex justify-between items-center">
+			{/* Increased vertical padding and reverted horizontal padding */}
+			<div className="container mx-auto px-4 py-4 flex justify-between items-center">
 				<div
 					onClick={onLogoClick}
 					role="button"
@@ -24,10 +25,12 @@ export const Header: React.FC<HeaderProps> = ({
 				</div>
 				<button
 					onClick={onToggleQuickTips}
+					// Reverted responsive padding changes
 					className="text-sky-300 hover:text-sky-100 font-medium py-2 px-3 rounded-md text-sm
                      bg-slate-700 hover:bg-slate-600 transition-colors duration-150 flex items-center space-x-1.5"
 					aria-label="View Quick Tips">
-					<InfoIcon />
+					<InfoIcon className="h-5 w-5" />
+					{/* Reverted hidden text on mobile */}
 					<span>Quick Tips</span>
 				</button>
 			</div>

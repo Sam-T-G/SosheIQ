@@ -101,7 +101,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 		setVisibleChunks([]);
 		setIsComplete(false);
 		let delay = 50;
-		const timeouts: NodeJS.Timeout[] = [];
+		const timeouts: ReturnType<typeof setTimeout>[] = [];
 
 		chunks.forEach((chunk, index) => {
 			const timeoutId = setTimeout(() => {
@@ -244,12 +244,16 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 				<div className="space-y-2">
 					{visibleChunks.map((chunk) => {
 						if (chunk.type === "action") {
+							const actionText = chunk.text
+								.trim()
+								.replace(/^\*|\*$/g, "")
+								.trim();
 							return (
 								<div
 									key={chunk.key}
 									className="text-center my-1 opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
-									<p className="text-sm italic text-slate-400 px-3 py-1 bg-slate-700/30 rounded-full inline-block">
-										{chunk.text}
+									<p className="text-sm italic text-slate-400 px-4 py-2 bg-slate-700/30 rounded-lg inline-block">
+										{actionText}
 									</p>
 								</div>
 							);
