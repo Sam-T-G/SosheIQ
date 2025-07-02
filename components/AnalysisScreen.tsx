@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import type {
 	AnalysisReport,
 	ScenarioDetails,
@@ -176,14 +176,14 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 				</p>
 			)}
 			{item.aiBodyLanguage && (
-				<div className="mt-2 p-2.5 bg-yellow-800/20 border border-yellow-700/40 rounded-md">
-					<div className="flex items-center text-xs text-yellow-500 mb-1">
+				<div className="mt-2 p-2.5 bg-slate-600 rounded-md">
+					<div className="flex items-center text-xs text-sky-300 mb-1">
 						<ChatBubbleIcon className="h-4 w-4" />
 						<span className="ml-1.5 font-semibold">
 							{aiName}'s Body Language:
 						</span>
 					</div>
-					<p className="text-yellow-200 italic text-sm whitespace-pre-wrap">
+					<p className="text-gray-300 italic text-sm whitespace-pre-wrap">
 						{item.aiBodyLanguage}
 					</p>
 				</div>
@@ -294,6 +294,19 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	const reportContentRef = useRef<HTMLDivElement>(null);
 	const turnByTurnAnalysisContainerRef = useRef<HTMLDivElement>(null);
 	const [showPerTurnScores, setShowPerTurnScores] = useState(true);
+	const [cardWidth, setCardWidth] = useState<number | null>(null);
+	const analysisCardRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		function updateWidth() {
+			if (analysisCardRef.current) {
+				setCardWidth(analysisCardRef.current.offsetWidth);
+			}
+		}
+		updateWidth();
+		window.addEventListener("resize", updateWidth);
+		return () => window.removeEventListener("resize", updateWidth);
+	}, []);
 
 	const handleExportToPdf = async () => {
 		const contentToPrint = reportContentRef.current;
@@ -431,157 +444,171 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	const personalityDisplayText = formatPersonalityForDisplay(scenarioDetails);
 
 	return (
-		<div className="w-full max-w-4xl p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-8">
-			<div ref={reportContentRef} className="p-4 bg-transparent text-gray-100">
-				<h1 className="text-4xl font-bold text-center text-sky-400 mb-4">
-					Interaction Analysis
-				</h1>
+		<div className="w-full max-w-4xl relative flex flex-col h-[90vh] min-h-[600px] mx-auto">
+			<div
+				ref={analysisCardRef}
+				className="flex flex-col h-full bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl p-6">
+				<div
+					ref={reportContentRef}
+					className="flex-1 overflow-y-auto space-y-8 p-4 bg-transparent text-gray-100">
+					<h1 className="text-4xl font-bold text-center text-sky-400 mb-4">
+						Interaction Analysis
+					</h1>
 
-				<div className="text-center mb-6 bg-slate-700/50 p-4 rounded-lg border border-slate-600">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-300">
-						<div className="text-left">
-							<strong className="text-sky-400 font-semibold">Scenario:</strong>{" "}
-							{scenarioDetails.environment}
-						</div>
-						<div className="text-left">
-							<strong className="text-sky-400 font-semibold">AI Name:</strong>{" "}
-							{scenarioDetails.aiName}
-						</div>
-						<div className="text-left md:col-span-2">
-							<strong className="text-sky-400 font-semibold">
-								AI Persona:
-							</strong>{" "}
-							{personalityDisplayText} ({scenarioDetails.aiGender}
-							{ageText})
-						</div>
-
-						{scenarioDetails.conversationGoal && (
-							<div className="md:col-span-2 text-left">
-								<strong className="font-semibold text-teal-300">Goal:</strong>{" "}
-								{scenarioDetails.conversationGoal}
-							</div>
-						)}
-						{scenarioDetails.customContext && (
-							<div className="md:col-span-2 text-left mt-1 text-xs italic">
-								<strong className="font-semibold not-italic text-gray-400">
-									Context:
+					<div className="text-center mb-6 bg-slate-700/50 p-4 rounded-lg border border-slate-600">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-300">
+							<div className="text-left">
+								<strong className="text-sky-400 font-semibold">
+									Scenario:
 								</strong>{" "}
-								{scenarioDetails.customContext}
+								{scenarioDetails.environment}
 							</div>
-						)}
-					</div>
-				</div>
+							<div className="text-left">
+								<strong className="text-sky-400 font-semibold">AI Name:</strong>{" "}
+								{scenarioDetails.aiName}
+							</div>
+							<div className="text-left md:col-span-2">
+								<strong className="text-sky-400 font-semibold">
+									AI Persona:
+								</strong>{" "}
+								{personalityDisplayText} ({scenarioDetails.aiGender}
+								{ageText})
+							</div>
 
-				{/* Overall Performance */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-					<ScoreDisplay label="Charisma" score={report.overallCharismaScore} />
-					<ScoreDisplay label="Clarity" score={report.responseClarityScore} />
-					<ScoreDisplay
-						label="Engagement"
-						score={report.engagementMaintenanceScore}
-					/>
-					<ScoreDisplay label="Adaptability" score={report.adaptabilityScore} />
-					{report.goalAchievementScore && (
-						<ScoreDisplay
-							label="Goal Achievement"
-							score={report.goalAchievementScore}
-						/>
-					)}
-				</div>
-
-				{/* Qualitative Feedback */}
-				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-					<FeedbackSection
-						title="What You Did Well"
-						IconComponent={ThumbsUpIcon}
-						content={report.strengths}
-						colorClass="text-green-400"
-					/>
-					<FeedbackSection
-						title="Areas for Improvement"
-						IconComponent={ThumbsDownIcon}
-						content={report.areasForImprovement}
-						colorClass="text-yellow-400"
-					/>
-					<FeedbackSection
-						title="Actionable Tips"
-						IconComponent={LightbulbIcon}
-						content={report.actionableTips}
-						colorClass="text-sky-400"
-					/>
-					<FeedbackSection
-						title="Things to Avoid"
-						IconComponent={ProhibitIcon}
-						content={report.thingsToAvoid}
-						colorClass="text-red-400"
-					/>
-					{report.goalAchievementFeedback && (
-						<FeedbackSection
-							title="Goal Feedback"
-							IconComponent={TargetIcon}
-							content={report.goalAchievementFeedback}
-							colorClass="text-teal-400"
-						/>
-					)}
-				</div>
-				<FeedbackSection
-					title="AI's Evolving Perspective"
-					IconComponent={StarIcon}
-					content={report.aiEvolvingThoughtsSummary}
-					colorClass="text-purple-400"
-				/>
-
-				{/* Turn-by-Turn Analysis */}
-				<div className="mt-8">
-					<div className="flex justify-between items-center mb-4">
-						<h2 className="text-2xl font-semibold text-sky-400">
-							Turn-by-Turn Analysis
-						</h2>
-						<div className="flex items-center space-x-2">
-							<button
-								onClick={() => setShowPerTurnScores(!showPerTurnScores)}
-								className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
-								title={
-									showPerTurnScores
-										? "Hide per-turn scores"
-										: "Show per-turn scores"
-								}>
-								{showPerTurnScores ? (
-									<EyeSlashIcon className="h-5 w-5 text-gray-300" />
-								) : (
-									<EyeIcon className="h-5 w-5 text-gray-300" />
-								)}
-							</button>
+							{scenarioDetails.conversationGoal && (
+								<div className="md:col-span-2 text-left">
+									<strong className="font-semibold text-teal-300">Goal:</strong>{" "}
+									{scenarioDetails.conversationGoal}
+								</div>
+							)}
+							{scenarioDetails.customContext && (
+								<div className="md:col-span-2 text-left mt-1 text-xs italic">
+									<strong className="font-semibold not-italic text-gray-400">
+										Context:
+									</strong>{" "}
+									{scenarioDetails.customContext}
+								</div>
+							)}
 						</div>
 					</div>
-					<div
-						ref={turnByTurnAnalysisContainerRef}
-						className="space-y-4 max-h-[800px] overflow-y-auto custom-scrollbar pr-2 -mr-2">
-						{report.turnByTurnAnalysis.map((item, index) => (
-							<TurnAnalysisItemDisplay
-								key={index}
-								item={item}
-								index={index}
-								aiName={scenarioDetails.aiName || "AI"}
-								showPerTurnScores={showPerTurnScores}
+
+					{/* Overall Performance */}
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+						<ScoreDisplay
+							label="Charisma"
+							score={report.overallCharismaScore}
+						/>
+						<ScoreDisplay label="Clarity" score={report.responseClarityScore} />
+						<ScoreDisplay
+							label="Engagement"
+							score={report.engagementMaintenanceScore}
+						/>
+						<ScoreDisplay
+							label="Adaptability"
+							score={report.adaptabilityScore}
+						/>
+						{report.goalAchievementScore && (
+							<ScoreDisplay
+								label="Goal Achievement"
+								score={report.goalAchievementScore}
 							/>
-						))}
+						)}
+					</div>
+
+					{/* Qualitative Feedback */}
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+						<FeedbackSection
+							title="What You Did Well"
+							IconComponent={ThumbsUpIcon}
+							content={report.strengths}
+							colorClass="text-green-400"
+						/>
+						<FeedbackSection
+							title="Areas for Improvement"
+							IconComponent={ThumbsDownIcon}
+							content={report.areasForImprovement}
+							colorClass="text-yellow-400"
+						/>
+						<FeedbackSection
+							title="Actionable Tips"
+							IconComponent={LightbulbIcon}
+							content={report.actionableTips}
+							colorClass="text-sky-400"
+						/>
+						<FeedbackSection
+							title="Things to Avoid"
+							IconComponent={ProhibitIcon}
+							content={report.thingsToAvoid}
+							colorClass="text-red-400"
+						/>
+						{report.goalAchievementFeedback && (
+							<FeedbackSection
+								title="Goal Feedback"
+								IconComponent={TargetIcon}
+								content={report.goalAchievementFeedback}
+								colorClass="text-teal-400"
+							/>
+						)}
+					</div>
+					<FeedbackSection
+						title="AI's Evolving Perspective"
+						IconComponent={StarIcon}
+						content={report.aiEvolvingThoughtsSummary}
+						colorClass="text-purple-400"
+					/>
+
+					{/* Turn-by-Turn Analysis */}
+					<div className="mt-8">
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-2xl font-semibold text-sky-400">
+								Turn-by-Turn Analysis
+							</h2>
+							<div className="flex items-center space-x-2">
+								<button
+									onClick={() => setShowPerTurnScores(!showPerTurnScores)}
+									className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
+									title={
+										showPerTurnScores
+											? "Hide per-turn scores"
+											: "Show per-turn scores"
+									}>
+									{showPerTurnScores ? (
+										<EyeSlashIcon className="h-5 w-5 text-gray-300" />
+									) : (
+										<EyeIcon className="h-5 w-5 text-gray-300" />
+									)}
+								</button>
+							</div>
+						</div>
+						<div
+							ref={turnByTurnAnalysisContainerRef}
+							className="space-y-4 overflow-y-auto custom-scrollbar pr-2 -mr-2">
+							{report.turnByTurnAnalysis.map((item, index) => (
+								<TurnAnalysisItemDisplay
+									key={index}
+									item={item}
+									index={index}
+									aiName={scenarioDetails.aiName || "AI"}
+									showPerTurnScores={showPerTurnScores}
+								/>
+							))}
+						</div>
 					</div>
 				</div>
-			</div>
-
-			<div className="flex flex-col sm:flex-row justify-between items-center mt-8 pt-6 border-t border-slate-700 gap-4">
-				<button
-					onClick={handleExportToPdf}
-					className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-sky-800 hover:bg-sky-700 text-white font-semibold rounded-lg shadow-md transition-colors">
-					<DownloadIcon className="h-5 w-5" />
-					<span>Export as PDF</span>
-				</button>
-				<button
-					onClick={onRestart}
-					className="w-full sm:w-auto px-8 py-4 bg-green-600 hover:bg-green-500 text-white font-bold text-lg rounded-lg shadow-lg transition-transform hover:scale-105">
-					Start New Interaction
-				</button>
+				{/* Sticky Bottom Bar INSIDE the card */}
+				<div className="sticky bottom-0 left-0 w-full flex justify-evenly gap-3 bg-slate-800/80 backdrop-blur-md border-t border-slate-700 rounded-b-2xl shadow-2xl p-3 pointer-events-auto z-10">
+					<button
+						onClick={handleExportToPdf}
+						className="flex items-center gap-2 px-4 py-2 bg-sky-700 hover:bg-sky-600 text-white font-semibold rounded-lg shadow transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900">
+						<DownloadIcon className="h-4 w-4" />
+						<span>Export PDF</span>
+					</button>
+					<button
+						onClick={onRestart}
+						className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg shadow transition-transform text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-slate-900">
+						<span>New Interaction</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	);

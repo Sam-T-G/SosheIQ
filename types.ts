@@ -87,6 +87,7 @@ export interface EstablishedVisuals {
   positionRelativeToUser: string; // "sitting across the table from you", "standing a few feet away"
   environmentDescription: string; // "in a dimly lit, cozy coffee shop"
   currentPoseAndAction: string; // "leaning forward slightly, with a curious expression" - This is the most immediate action
+  facialAccessories?: string; // e.g., "wearing glasses, nose ring"; default: ""
 }
 
 
@@ -143,11 +144,23 @@ export interface AiTurnResponse {
     goalProgress: number;
     achieved: boolean;
     updatedPersonaDetails?: string;
-    activeAction?: ActiveAction;
-    updatedEstablishedVisuals?: EstablishedVisuals;
+    activeAction?: ActiveAction | null;
+    updatedEstablishedVisuals?: EstablishedVisuals | null;
     newEnvironment?: string;
 }
 
+// New interface for the initial conversation response
+export interface StartConversationResponse extends AiTurnResponse {
+    aiName: string;
+    scenarioBackstory?: string;
+    initialDialogueChunks: DialogueChunk[];
+    initialBodyLanguage: string;
+    initialAiThoughts: string;
+    initialEngagementScore: number;
+    initialConversationMomentum: number;
+    conversationStarter: 'user' | 'ai';
+    establishedVisuals: EstablishedVisuals;
+}
 
 export interface ChatMessage {
   id: string;

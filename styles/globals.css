@@ -518,3 +518,32 @@ html {
 .animate-accordion-slide-down {
   animation: accordion-slide-down 0.5s ease-in-out forwards;
 }
+
+/* === Dropdown Menu Pop Animations === */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-fadeInUp {
+  animation: fadeInUp 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeOutDown {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+.animate-fadeOutDown {
+  animation: fadeOutDown 0.18s cubic-bezier(0.55, 0, 0.55, 0.2) both;
+}

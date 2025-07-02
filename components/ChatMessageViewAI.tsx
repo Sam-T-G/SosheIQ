@@ -225,14 +225,14 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 				</button>
 				{/* Body Language Bubble */}
 				{message.bodyLanguageDescription && (
-					<div className="flex-grow p-3 bg-yellow-800/20 border border-yellow-700/40 rounded-md shadow-md animate-fadeIn">
-						<div className="flex items-center text-xs text-yellow-500 mb-1">
+					<div className="flex-grow p-3 bg-amber-800/20 border border-amber-700/40 rounded-md shadow-md animate-fadeIn">
+						<div className="flex items-center text-xs text-amber-300 mb-1">
 							<ChatBubbleIcon className="h-4 w-4" />
 							<span className="ml-1.5 font-semibold">
 								{scenarioDetailsAiName}'s Body Language
 							</span>
 						</div>
-						<p className="text-yellow-200 italic text-sm whitespace-pre-wrap break-words">
+						<p className="text-amber-200 italic text-sm whitespace-pre-wrap break-words">
 							{message.bodyLanguageDescription}
 						</p>
 					</div>

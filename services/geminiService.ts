@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import type { GenerateContentResponse } from "@google/genai";
-import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals, UserTurnFeedback } from '../types';
+import { ScenarioDetails, ChatMessage, AnalysisReport, AIGender, AIPersonalityTrait, SocialEnvironment, TurnByTurnAnalysisItem, AIAgeBracket, AiTurnResponse, DialogueChunk, ActiveAction, EstablishedVisuals, UserTurnFeedback, StartConversationResponse } from '../types';
 import { GEMINI_TEXT_MODEL, MAX_CONVERSATION_HISTORY_FOR_PROMPT, INITIAL_ENGAGEMENT, MAX_HISTORY_FOR_ANALYSIS, SILENT_USER_ACTION_TOKEN } from '../constants';
 
 // Helper to construct a more informative error message from Google API errors
@@ -10,6 +10,10 @@ const getGoogleApiErrorMessage = (error: any, defaultMessage: string): string =>
     let message = apiError.message || defaultMessage;
     if (apiError.code === 429 || apiError.status === 'RESOURCE_EXHAUSTED') {
       message = `API quota exceeded (Error ${apiError.code || '429'}: ${apiError.status || 'RESOURCE_EXHAUSTED'}). Please check your Google Cloud project plan and billing details. For more information, visit https://ai.google.dev/gemini-api/docs/rate-limits. Original message: ${apiError.message || 'No specific message.'}`;
+    } else if (apiError.code === 400 || apiError.status === 'INVALID_ARGUMENT') {
+      message = `Invalid request (Error ${apiError.code || '400'}: ${apiError.status || 'INVALID_ARGUMENT'}). Please check your input and try again. Original message: ${apiError.message || 'No specific message.'}`;
+    } else if (apiError.code === 403 || apiError.status === 'PERMISSION_DENIED') {
+      message = `Access denied (Error ${apiError.code || '403'}: ${apiError.status || 'PERMISSION_DENIED'}). Please check your API key and permissions. Original message: ${apiError.message || 'No specific message.'}`;
     } else if (apiError.message) {
       message = `API Error ${apiError.code || 'Unknown Code'} (${apiError.status || 'Unknown Status'}): ${apiError.message}`;
     }
@@ -53,18 +57,6 @@ const getPersonalityPromptSegment = (traits: AIPersonalityTrait[], customPersona
   return segment;
 }
 
-interface StartConversationResponse extends AiTurnResponse {
-    aiName: string;
-    scenarioBackstory?: string;
-    initialDialogueChunks: DialogueChunk[];
-    initialBodyLanguage: string;
-    initialAiThoughts: string;
-    initialEngagementScore: number;
-    initialConversationMomentum: number;
-    conversationStarter: 'user' | 'ai';
-    establishedVisuals: EstablishedVisuals;
-}
-
 export class GeminiService {
   private ai: GoogleGenAI;
 
@@ -74,11 +66,21 @@ export class GeminiService {
 
   private parseJsonFromText<T,>(text: string): T | null {
     let jsonStr = text.trim();
+    
+    // Remove markdown code fences
     const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
     const match = jsonStr.match(fenceRegex);
     if (match && match[2]) {
       jsonStr = match[2].trim();
     }
+    
+    // Remove any leading/trailing non-JSON text
+    const jsonStart = jsonStr.indexOf('{');
+    const jsonEnd = jsonStr.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
+    }
+    
     try {
       return JSON.parse(jsonStr) as T;
     } catch (e) {
@@ -117,6 +119,23 @@ export class GeminiService {
 
     const prompt = `Your task is to flawlessly role-play a character for a social interaction simulation. You will be given a persona and you must embody that character completely. **You are not an AI; you are the character.** If asked about your origin, invent a plausible backstory.
 
+    **Profanity Guidance**: If your selected AI personality traits (e.g. "Sarcastic", "Blunt", etc.), the dramatic context, a casual slang scenario, a **casual charismatic** interaction (like playful banter or friendly teasing), or heightened emotion (anger, excitement) call for it, you're allowed to drop a well-placed curse or slang term. Keep it natural, sparing, and true to today's conversational tone—only swear when it genuinely enhances your persona and the moment.
+    **Conversational Style Guidance**:
+    - Speak with natural hesitations (e.g., "um,", "you know,", "I guess"), and soften statements with hedges ("kind of", "maybe").
+    - Use contractions and occasional informal grammar to sound casual.
+    - Vary sentence length—mix quick one-liners with longer thoughts.
+    - Pepper in discourse markers ("by the way,", "so,", "anyway") and small-talk as appropriate.
+    - Reflect back on what the user said and ask genuine follow-up questions.
+    - Incorporate 1–2 signature quirks or idioms that feel unique to your persona.
+    - Adjust your emotional tone (low energy vs. high energy) to match the moment.
+    - In casual contexts, you may even drop a mild emoji or playful punctuation—sparingly.
+    - Use silence and nonverbal cues whenever they suit your persona or the situation: a thoughtful pause, a shy glance, a shrug, etc. When you do this, output only an action chunk, for example:
+        { "text": "*pauses, looking down thoughtfully*", "type": "action" }
+        Lean on these cues any time they deepen realism or emotion.
+    - Respond purely nonverbally for especially impactful moments: if the user does something emotionally significant—like spontaneously paying your bill or sharing heartbreaking news—your response may be **only** an action chunk (no dialogue), for example:
+        { "text": "*stares silently with tears welling up*", "type": "action" }
+
+
     **Character Identity**
     ${nameInstruction}
     
@@ -132,6 +151,7 @@ export class GeminiService {
     - \`positionRelativeToUser\`: Where are you in relation to me? (e.g., "sitting across the table from me", "standing a few feet away").
     - \`environmentDescription\`: Describe the immediate environment (e.g., "in a dimly lit, cozy coffee shop").
     - \`currentPoseAndAction\`: Combine the above into a single, user-friendly description of your initial pose and action (e.g., "leaning forward slightly, with a curious expression").
+    - \`facialAccessories\`: Describe any facial accessories (e.g., glasses, piercings, jewelry). If none, set to an empty string.
     Store this in the \`establishedVisuals\` object.
 
     ${starterInstruction}
@@ -163,7 +183,8 @@ export class GeminiService {
         "gazeDirection": "e.g., looking directly at you",
         "positionRelativeToUser": "e.g., sitting across the table from me",
         "environmentDescription": "e.g., in a dimly lit, cozy coffee shop",
-        "currentPoseAndAction": "e.g., leaning forward slightly, with a curious expression"
+        "currentPoseAndAction": "e.g., leaning forward slightly, with a curious expression",
+        "facialAccessories": ""
       }
     }`;
 
@@ -192,14 +213,15 @@ export class GeminiService {
         
         const fallbackName = scenario.aiName || "Alex";
         const defaultVisuals: EstablishedVisuals = {
-            characterDescription: `a ${scenario.aiGender === AIGender.MALE ? 'man' : 'woman'} named ${fallbackName} with brown hair`,
-            clothingDescription: "wearing a simple gray t-shirt",
+            characterDescription: `a ${scenario.aiGender === AIGender.MALE ? 'man' : 'woman'} named ${fallbackName} with brown hair and a friendly expression`,
+            clothingDescription: "wearing a simple gray t-shirt and dark jeans",
             heldObjects: "hands are free",
-            bodyPosition: "standing",
-            gazeDirection: "looking at you",
-            positionRelativeToUser: "a few feet away",
+            bodyPosition: "standing comfortably",
+            gazeDirection: "looking directly at you with interest",
+            positionRelativeToUser: "standing a few feet away, facing you",
             environmentDescription: "in a neutral, non-descript room",
-            currentPoseAndAction: "standing with a neutral expression"
+            currentPoseAndAction: "standing with a neutral expression",
+            facialAccessories: ""
         };
         return {
             aiName: fallbackName,
@@ -282,6 +304,24 @@ export class GeminiService {
 
       const prompt = `You are role-playing as an AI named ${scenario.aiName}. Your performance is being evaluated on how realistic and in-character you are.
 
+       **Profanity Guidance**: If your selected AI personality traits (e.g. "Sarcastic", "Blunt", etc.), the dramatic context, a casual slang scenario, a **casual charismatic** exchange (like witty teasing or friendly ribbing), or a moment of real heat (anger, frustration, excitement) justify it, you may pepper in situational profanity or slang to match current-day speak—use it sparingly and only when it truly fits your character's voice and the vibe.
+
+       **Conversational Style Guidance**:
+        - Speak with natural hesitations (e.g., "um,", "you know,", "I guess"), and soften statements with hedges ("kind of", "maybe").
+        - Use contractions and occasional informal grammar to sound casual.
+        - Vary sentence length—mix quick one-liners with longer thoughts.
+        - Pepper in discourse markers ("by the way,", "so,", "anyway") and small-talk as appropriate.
+        - Reflect back on what the user said and ask genuine follow-up questions.
+        - Incorporate 1–2 signature quirks or idioms that feel unique to your persona.
+        - Adjust your emotional tone (low energy vs. high energy) to match the moment.
+        - In casual contexts, you may even drop a mild emoji or playful punctuation—sparingly.
+        - Use silence and nonverbal cues whenever they suit your persona or the situation: a thoughtful pause, a shy glance, a shrug, etc. When you do this, output only an action chunk, for example:
+            { "text": "*pauses, looking down thoughtfully*", "type": "action" }
+            Lean on these cues any time they deepen realism or emotion.
+        - Respond purely nonverbally for especially impactful moments: if the user does something emotionally significant—like spontaneously paying your bill or sharing heartbreaking news—your response may be **only** an action chunk (no dialogue), for example:
+            { "text": "*stares silently with tears welling up*", "type": "action" }
+
+
       **PRIME DIRECTIVE: BE THE CHARACTER WITH AGENCY.**
       - Your goal is a realistic, engaging, and human-like social interaction. You have your own thoughts, feelings, and boundaries based on your persona.
       - **Dialogue Cadence**: Your default is a single, condensed response. Do not send multiple rapid-fire messages unless your persona is in a state of high emotion (e.g., extreme excitement, passion) that justifies it.
@@ -289,13 +329,16 @@ export class GeminiService {
       
       **State & Progression Management (CRITICAL RULES):**
       1.  **Action Lifecycle**: You are given \`activeAction: { "description": "${activeAction?.description || 'None'}", "progress": ${activeAction?.progress || 0} }\`.
-          - If an action is active, you MUST continue it.
+          - If an action is active, you MUST continue it and acknowledge the ongoing context in your dialogue and body language.
           - The \`progress\` value in your response MUST be greater than or equal to the current progress. **NEVER decrease the progress.**
           - **Time Skips**: For long actions (like a walk), you can advance progress significantly (e.g., +25%) by adding an action chunk like \`{ "text": "*A few minutes pass...*", "type": "action" }\`.
           - **Completion**: To finish an action, set its \`progress\` to 100. On the VERY NEXT turn, set \`activeAction: null\`. This two-step process is mandatory.
+          - **Action Pausing**: If \`isActionPaused\` is true, you should acknowledge the pause in your response but continue the action when appropriate.
+          - **Action Context Integration**: Your dialogue and body language should reflect the ongoing action. For example, if walking, mention the journey or environment changes. If ordering food, reference the menu or service.
       2.  **Goal Lifecycle**:
           - **Completion**: To complete a goal, you MUST set \`achieved: true\` in your response. Your dialogue must reflect this completion.
           - **Clearing**: On the VERY NEXT turn after a goal is achieved, you MUST treat it as if no goal is set (return \`emergingGoal: null\`) unless a new dynamic goal immediately emerges. This prevents a completed goal from getting stuck.
+          - **Progress Tracking**: Always update \`goalProgress\` (0-100) based on how close the user is to achieving the current goal.
       
       **Persona & Scenario**:
       - AI Name: ${scenario.aiName}, AI Gender: ${scenario.aiGender}
@@ -304,7 +347,9 @@ export class GeminiService {
       
       **Visual Memory & Consistency (CRITICAL RULES)**:
       1.  **Ground Truth**: You will be given an \`establishedVisuals\` object. This is the ground truth for your appearance and location.
-      2.  **Consistency is Key**: To prevent your appearance from changing randomly, you MUST **COPY** the \`characterDescription\` and \`clothingDescription\` values from the provided 'Current Visual State' into your response's \`updatedEstablishedVisuals\` object, unless an action in the conversation explicitly justifies a change (e.g., putting on a jacket, getting a new drink). The other fields (\`heldObjects\`, \`bodyPosition\`, etc.) should be updated every turn to reflect your current state.
+      2.  **Consistency is Key**: To prevent your appearance from changing randomly, you MUST **COPY** the \`characterDescription\` and \`clothingDescription\` values from the provided 'Current Visual State' into your response's \`updatedEstablishedVisuals\` object, unless an action in the conversation explicitly justifies a change (e.g., putting on a jacket, getting a new drink). The other fields (\`heldObjects\`, \`bodyPosition\`, \`gazeDirection\`, \`positionRelativeToUser\`, \`environmentDescription\`, \`currentPoseAndAction\`) should be updated every turn to reflect your current state.
+      3.  **Visual Updates**: Only update \`updatedEstablishedVisuals\` if there's a meaningful change in your appearance, position, or environment. If no change is needed, set this field to \`null\`.
+      4.  **Action-Driven Visual Changes**: Active actions should influence your visual state. For example, if walking, update \`bodyPosition\` and \`environmentDescription\`. If ordering food, update \`heldObjects\` and \`currentPoseAndAction\` to reflect the interaction.
       - **Current Visual State**: ${JSON.stringify(scenario.establishedVisuals)}
 
       **Visual Generation Logic (RESOURCE CONSERVATION)**:
@@ -331,6 +376,7 @@ export class GeminiService {
       - For example, if you just said "Okay, let's head to the cafe," and the user sends this token, you MUST infer that they agree and have started walking.
       - Your response MUST include a dialogue chunk of \`type: "action"\` describing my inferred action, e.g., \`{ "text": "*You nod and start walking alongside her.*", "type": "action" }\`.
       - If appropriate, you MUST also initiate the corresponding journey by creating an \`activeAction\` in your response, e.g., \`"activeAction": { "description": "Walking to the cafe", "progress": 10 }\`.
+      - **Action Context Awareness**: When interpreting silent actions, consider the current action state. If an action is already active, the silent input might mean continuing that action rather than starting a new one.
       
       **Intelligent User Action Suggestion (CRITICAL RULE: BE VERY RESTRICTIVE)**:
       - You can suggest that I (the user) should remain silent by setting \`isUserActionSuggested: true\`. This is a powerful tool and should be used RARELY and only in situations where speaking would be a clear social misstep.
@@ -348,6 +394,7 @@ export class GeminiService {
       **Conversational Pivoting (Advanced Realism)**:
       - Just like a real person, you are NOT obligated to respond to every single point I make, especially if the conversation is dying or has clearly moved on.
       - If I ask a question about a topic that has become irrelevant or less important due to a more pressing, recent development in the conversation (a major emotional reveal, a new action starting), you have the autonomy to either ignore my question, briefly acknowledge it and move on (e.g., "We can talk about that later, but..."), or address it fully only if your persona would obsess over minor details.
+      - **Action-Aware Dialogue**: When an action is active, your dialogue should naturally incorporate references to the ongoing activity. For example, while walking, mention the journey, surroundings, or destination. While ordering food, discuss the menu, service, or atmosphere.
       
       **Conversation History**:
       ${historyForPrompt}
@@ -355,6 +402,9 @@ export class GeminiService {
       **Last Known AI Pose/Action**: "${lastKnownPoseAndAction}"
       **Your (User's) Last Input**: "${userInput === SILENT_USER_ACTION_TOKEN ? '[You chose to remain silent or continue a non-verbal action.]' : userInput}"
       **Current Engagement Level**: ${currentEngagement}%
+      **Active Action State**: ${activeAction ? `Currently performing: "${activeAction.description}" (Progress: ${activeAction.progress}%)` : 'No active action'}
+      **Action Pause State**: ${isActionPaused ? 'Action is currently paused - acknowledge this in your response' : 'Action is active'}
+      **Action Context**: ${activeAction ? `You are in the middle of "${activeAction.description}". Consider how this ongoing action affects your dialogue, body language, and responses. If the action is paused, acknowledge this state appropriately.` : 'No active action - respond normally to the conversation.'}
 
       **Your Task**:
       1.  Analyze my last input.
@@ -374,6 +424,8 @@ export class GeminiService {
       - \`nextStepSuggestion\`: If a badge was assigned, provide a SINGLE concise suggestion for a good next step. The response MUST NOT be enclosed in quotation marks.
       - \`alternativeSuggestion\`: If a badge was assigned, provide a SINGLE concise example of something different the user could have said. The response MUST NOT be enclosed in quotation marks.
       - If no trait badge was assigned, these three fields (\`badgeReasoning\`, \`nextStepSuggestion\`, \`alternativeSuggestion\`) MUST be null.
+      - \`engagementDelta\`: A number between -20 and +20 indicating how much your response affected the conversation's energy level.
+      - \`userTurnEffectivenessScore\`: A number between 0-100 indicating how effective the user's turn was in advancing the conversation or achieving their goal.
 
       **JSON Response Structure:**
       {
@@ -414,6 +466,27 @@ export class GeminiService {
           const parsed = this.parseJsonFromText<AiTurnResponse>(response.text ?? ' ');
 
           if (parsed) {
+              // Validate required fields
+              if (!parsed.dialogueChunks || !Array.isArray(parsed.dialogueChunks)) {
+                  console.error("AI response missing or invalid dialogueChunks:", parsed);
+                  throw new Error("AI response is missing dialogue chunks.");
+              }
+              
+              if (!parsed.aiBodyLanguage || typeof parsed.aiBodyLanguage !== 'string') {
+                  console.error("AI response missing or invalid aiBodyLanguage:", parsed);
+                  throw new Error("AI response is missing body language description.");
+              }
+              
+              if (!parsed.aiThoughts || typeof parsed.aiThoughts !== 'string') {
+                  console.error("AI response missing or invalid aiThoughts:", parsed);
+                  throw new Error("AI response is missing AI thoughts.");
+              }
+              
+              if (typeof parsed.conversationMomentum !== 'number' || parsed.conversationMomentum < 0 || parsed.conversationMomentum > 100) {
+                  console.error("AI response has invalid conversationMomentum:", parsed.conversationMomentum);
+                  parsed.conversationMomentum = Math.max(0, Math.min(100, parsed.conversationMomentum || 50));
+              }
+              
               return parsed;
           }
           console.error("Failed to parse AI turn response from Gemini:", response.text);
@@ -539,6 +612,14 @@ export class GeminiService {
                         currentTurn.negativeTraitContribution = msg.negativeTraitContribution;
                         currentTurn.analysis = llmAnalyses[analysisIdx] || "No specific analysis provided for this turn.";
                         analysisIdx++;
+                    }
+                    
+                    // Handle user_action messages for better analysis context
+                    if(msg.sender === 'user_action'){
+                        // Add action context to the analysis
+                        if(currentTurn.analysis) {
+                            currentTurn.analysis += ` The user also performed the action: ${msg.text}.`;
+                        }
                     }
                 }
             }

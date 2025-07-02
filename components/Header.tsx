@@ -13,7 +13,7 @@ export const Header: React.FC<HeaderProps> = ({
 	onNavigateToLogin,
 }) => {
 	return (
-		<header className="bg-slate-800 shadow-md relative z-20">
+		<header className="bg-slate-800 shadow-md">
 			<div className="container mx-auto px-4 py-4 flex justify-between items-center">
 				<div
 					onClick={onLogoClick}

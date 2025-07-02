@@ -54,7 +54,7 @@ export const InstructionsScreen: React.FC<InstructionsScreenProps> = ({
 	onNavigate,
 }) => {
 	return (
-		<div className="w-full max-w-4xl p-6 md:p-10 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl text-gray-300 animate-fadeIn">
+		<div className="w-full max-w-4xl min-h-[60vh] flex flex-col justify-center p-6 md:p-10 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl text-gray-300 animate-fadeIn mt-9 mb-9 md:mt-8 md:mb-8">
 			<div className="max-h-[85vh] overflow-y-auto custom-scrollbar pr-4 -mr-4">
 				<div className="space-y-12">
 					<header className="text-center">

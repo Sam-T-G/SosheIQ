@@ -49,7 +49,7 @@ const GoalBanner: React.FC<{
 
 	return (
 		<div
-			className={`bg-teal-900/60 p-3 shadow-lg border-teal-800/50 ${shapeClass} ${animationClass}`}>
+			className={`bg-teal-900 p-3 shadow-lg border-teal-800 ${shapeClass} ${animationClass}`}>
 			<div className="flex items-center gap-3 mb-1.5">
 				<TargetIcon className="h-5 w-5 text-teal-300 flex-shrink-0" />
 				<div className="flex-grow">
@@ -88,7 +88,7 @@ const ActiveActionBanner: React.FC<{
 	isPaused: boolean;
 }> = ({ action, onFastForward, isLoading, isPaused }) => (
 	<div className="relative rounded-b-md active-action-glow overflow-hidden">
-		<div className="relative z-10 bg-sky-900/60 p-3 shadow-lg border-b border-sky-800/50 rounded-b-md">
+		<div className="relative z-10 bg-sky-900 p-3 shadow-lg border-b border-sky-800 rounded-b-md">
 			<div className="flex items-center gap-3 mb-1.5">
 				<div className="flex-grow">
 					<p className="text-xs font-semibold text-sky-300 uppercase tracking-wider">

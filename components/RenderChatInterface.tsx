@@ -558,7 +558,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const headerBgClass =
 		isOverlay || hasBlurredBackground
 			? "bg-slate-900/60 backdrop-blur-sm"
-			: "bg-slate-700/50";
+			: "bg-slate-700";
 
 	const ChatAreaHeader = () => (
 		<div
@@ -593,7 +593,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	);
 
 	const EngagementBar = () => (
-		<div className="px-4 pt-2 pb-3 bg-slate-900/60 backdrop-blur-sm border-b border-slate-700/40 shadow-sm z-10">
+		<div className="px-4 pt-2 pb-3 bg-slate-800 border-b border-slate-700 shadow-sm z-10">
 			<div className="flex justify-between items-center mb-1">
 				<span className="text-sm font-medium text-sky-300">Engagement</span>
 				<span className="text-sm font-bold text-white">
@@ -648,7 +648,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 
 			<div
 				ref={chatContainerRef}
-				className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-4"
+				className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
 				onClick={() => setActivePopoverId(null)}>
 				<div className="space-y-4">
 					{processedMessagesForDisplay.map((msg, index) => (

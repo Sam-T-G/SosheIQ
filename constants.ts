@@ -16,3 +16,20 @@ export const MAX_ZERO_ENGAGEMENT_STREAK = 3; // Reduced for faster game end if e
 export const ENGAGEMENT_DECAY_PER_TURN = 2; // Engagement decrease per AI turn to simulate time passing
 
 export const SILENT_USER_ACTION_TOKEN = "[[USER_CONTINUES_SILENTLY]]";
+
+// Enhanced constants for better AI programming
+export const MAX_RETRY_ATTEMPTS = 3;
+export const RETRY_DELAY_MS = 1000;
+export const MAX_DIALOGUE_CHUNKS = 10;
+export const MIN_DIALOGUE_LENGTH = 1;
+export const MAX_DIALOGUE_LENGTH = 500;
+
+// Session management constants
+export const SESSION_STORAGE_KEY = "sosheiq_session";
+export const LOCAL_STORAGE_KEY = "sosheiq_preferences";
+export const MAX_SESSIONS_STORED = 10;
+
+// UI constants
+export const ANIMATION_DURATION_MS = 300;
+export const TOAST_DURATION_MS = 5000;
+export const DEBOUNCE_DELAY_MS = 300;

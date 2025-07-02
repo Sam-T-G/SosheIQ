@@ -54,6 +54,26 @@ interface ProcessAiResponseOptions {
 	wasFastForward?: boolean;
 }
 
+// Custom hook to detect mobile landscape
+function useMobileLandscape() {
+	const [isMobileLandscape, setIsMobileLandscape] = useState(false);
+	useEffect(() => {
+		function check() {
+			const isMobile = window.innerWidth <= 900;
+			const isLandscape = window.innerWidth > window.innerHeight;
+			setIsMobileLandscape(isMobile && isLandscape);
+		}
+		check();
+		window.addEventListener("resize", check);
+		window.addEventListener("orientationchange", check);
+		return () => {
+			window.removeEventListener("resize", check);
+			window.removeEventListener("orientationchange", check);
+		};
+	}, []);
+	return isMobileLandscape;
+}
+
 const HomePage: React.FC = () => {
 	const [currentPhase, setCurrentPhase] = useState<GamePhase>(GamePhase.HERO);
 	const [setupMode, setSetupMode] = useState<"guided" | "advanced">("guided");
@@ -116,6 +136,8 @@ const HomePage: React.FC = () => {
 		messageId: string;
 		feedback: UserTurnFeedback;
 	} | null>(null);
+
+	const isMobileLandscape = useMobileLandscape();
 
 	useEffect(() => {
 		const initServices = async () => {
@@ -191,9 +213,11 @@ const HomePage: React.FC = () => {
 	};
 
 	const handleContinueFromLogin = () => {
+		setIsLoading(true); // Show loading screen after login/guest
 		if (postLoginAction === "start_guided") {
 			setSetupMode("guided");
 			handleNavigate(GamePhase.SETUP);
+			setIsLoading(false); // Hide loading after navigation
 		} else if (postLoginAction === "start_random") {
 			handleStartRandom();
 		}
@@ -333,10 +357,19 @@ const HomePage: React.FC = () => {
 				const initialMessages: ChatMessage[] = [];
 
 				if (scenarioBackstory) {
+					// For "I'm Feeling Lucky" scenarios
 					initialMessages.push({
 						id: uuidv4(),
 						sender: "backstory",
 						text: scenarioBackstory,
+						timestamp: new Date(),
+					});
+				} else if (contextualSummary) {
+					// For standard scenarios, show the initial context
+					initialMessages.push({
+						id: uuidv4(),
+						sender: "backstory",
+						text: contextualSummary,
 						timestamp: new Date(),
 					});
 				}
@@ -521,6 +554,13 @@ const HomePage: React.FC = () => {
 						return { type: "removed", from: prevGoalText };
 					if (prevGoalText && newGoalText && prevGoalText !== newGoalText)
 						return { type: "changed", from: prevGoalText, to: newGoalText };
+				}
+				// Enhanced goal change tracking for pinned goals
+				if (scenarioForThisTurn.conversationGoal && aiResponse.achieved) {
+					return {
+						type: "removed",
+						from: scenarioForThisTurn.conversationGoal,
+					};
 				}
 				return undefined;
 			})();
@@ -980,6 +1020,7 @@ const HomePage: React.FC = () => {
 		};
 
 		handleStartInteraction(randomScenario);
+		// Loading will be hidden when scenario is ready in handleStartInteraction
 	}, [handleStartInteraction]);
 
 	const handleGoToAnalysis = () => {
@@ -1010,7 +1051,8 @@ const HomePage: React.FC = () => {
 
 		if (
 			isLoading &&
-			(currentPhase === GamePhase.HERO ||
+			(currentPhase === GamePhase.LOGIN ||
+				currentPhase === GamePhase.HERO ||
 				currentPhase === GamePhase.SETUP ||
 				(currentPhase === GamePhase.INTERACTION && !scenarioDetails) ||
 				(currentPhase === GamePhase.ANALYSIS && !analysisReport && !error))
@@ -1023,6 +1065,8 @@ const HomePage: React.FC = () => {
 				(currentPhase === GamePhase.HERO && isLoading)
 			) {
 				message = "Conjuring a scenario...";
+			} else if (currentPhase === GamePhase.LOGIN) {
+				message = "Logging in...";
 			}
 			return <LoadingIndicator message={message} />;
 		}
@@ -1164,20 +1208,23 @@ const HomePage: React.FC = () => {
 
 			{/* Outermost div now visible by default */}
 			<div
-				className={`flex flex-col min-h-screen ${
+				className={`flex flex-col h-screen ${
 					isAppLoading ? "invisible" : "visible"
 				}`}>
-				<Header
-					onLogoClick={() => {
-						if (currentPhase === GamePhase.INTERACTION) {
-							setShowConfirmEndDialog(true);
-						} else {
-							handleNavigate(GamePhase.HERO);
-						}
-					}}
-					onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-					onNavigateToLogin={handleNavigateToLogin}
-				/>
+				{/* Hide Header in mobile landscape */}
+				{!isMobileLandscape && (
+					<Header
+						onLogoClick={() => {
+							if (currentPhase === GamePhase.INTERACTION) {
+								setShowConfirmEndDialog(true);
+							} else {
+								handleNavigate(GamePhase.HERO);
+							}
+						}}
+						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+						onNavigateToLogin={handleNavigateToLogin}
+					/>
+				)}
 
 				{/* Main content area gets a quick, direct fade-in */}
 				<main
@@ -1191,11 +1238,13 @@ const HomePage: React.FC = () => {
 						currentPhase === GamePhase.LOGIN
 							? "justify-center"
 							: ""
-					}`}>
+					}`}
+					style={isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}}>
 					{renderContent()}
 				</main>
 
-				{currentPhase !== GamePhase.INTERACTION && (
+				{/* Hide Footer in mobile landscape and during INTERACTION phase */}
+				{!isMobileLandscape && currentPhase !== GamePhase.INTERACTION && (
 					<Footer
 						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
 						onNavigateToInstructions={() =>

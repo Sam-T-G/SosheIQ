@@ -195,22 +195,20 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 	) => {
 		let nextState: typeof popoverState = null;
 
-		// If we're not clicking the currently open popover, we intend to open a new one.
-		if (popoverState?.badgeType !== type) {
-			if (
-				message.badgeReasoning &&
-				message.nextStepSuggestion &&
-				message.alternativeSuggestion
-			) {
-				nextState = {
-					content: {
-						reasoning: message.badgeReasoning,
-						nextStep: message.nextStepSuggestion,
-						alternative: message.alternativeSuggestion,
-					},
-					badgeType: type,
-				};
-			}
+		// Open popover if ANY feedback field is present
+		if (
+			message.badgeReasoning ||
+			message.nextStepSuggestion ||
+			message.alternativeSuggestion
+		) {
+			nextState = {
+				content: {
+					reasoning: message.badgeReasoning || "",
+					nextStep: message.nextStepSuggestion || "",
+					alternative: message.alternativeSuggestion || "",
+				},
+				badgeType: type,
+			};
 		}
 		// If we ARE clicking the currently open one, nextState remains null, effectively closing it.
 

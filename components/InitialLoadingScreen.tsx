@@ -8,10 +8,8 @@ export const InitialLoadingScreen: React.FC = () => {
 			role="status"
 			aria-live="polite"
 			aria-label="Waking up the AI...">
-			<div className="relative flex items-center justify-center">
-				{/* Breathing Glow Effect */}
-				<div className="absolute h-40 w-40 rounded-full bg-sky-500/10 animate-logo-glow-pulse"></div>
-				{/* Logo on top */}
+			<div className="flex items-center justify-center">
+				{/* Logo only, no breathing glow */}
 				<SosheIQLogo className="h-24 w-auto relative z-10" />
 			</div>
 
