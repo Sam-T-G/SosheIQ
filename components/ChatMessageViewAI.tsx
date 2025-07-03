@@ -41,6 +41,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	const [incomingImage, setIncomingImage] = useState<string | null>(null);
 	const [isFading, setIsFading] = useState(false);
 	const imageRef = useRef<string | null>(null);
+	const displayedImageRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		// Set initial image (don't animate)
@@ -50,7 +51,10 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 
 		// When a new image URL arrives for this message via props
 		if (message.imageUrl && message.imageUrl !== imageRef.current) {
-			if (displayedImage && displayedImage !== message.imageUrl) {
+			if (
+				displayedImageRef.current &&
+				displayedImageRef.current !== message.imageUrl
+			) {
 				// An image is already showing, so prepare to fade
 				setIncomingImage(message.imageUrl);
 				setIsFading(true);
@@ -60,8 +64,8 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			}
 		}
 		// Keep track of the most recent image URL we've processed for this message instance
-		imageRef.current = message.imageUrl ?? displayedImage;
-	}, [message.imageUrl, message.fallbackImageUrl, displayedImage]);
+		imageRef.current = message.imageUrl ?? displayedImageRef.current;
+	}, [message.imageUrl, message.fallbackImageUrl]);
 
 	const onImageAnimationEnd = () => {
 		if (incomingImage) {
@@ -70,6 +74,11 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 			setIsFading(false);
 		}
 	};
+
+	// Update ref when displayedImage changes
+	useEffect(() => {
+		displayedImageRef.current = displayedImage;
+	}, [displayedImage]);
 
 	useEffect(() => {
 		const chunks = message.dialogueChunks || [];
@@ -205,9 +214,6 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 								className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
 								style={{ opacity: isFading ? 0 : 1 }}
 							/>
-							<div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-								<EyeIcon className="h-8 w-8 text-white" />
-							</div>
 						</>
 					)}
 					{incomingImage && isFading && (

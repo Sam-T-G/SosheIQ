@@ -464,13 +464,13 @@ html {
   animation: subtle-pan 40s infinite linear;
 }
 
-/* New animation for "modern glow" on active action banner */
+/* Modern, sleek, world-class moving glow animation for active action banner */
 @keyframes sweep-glow {
   0% {
-    transform: translateX(-100%) skewX(-20deg);
+    transform: translateX(-100%);
   }
   100% {
-    transform: translateX(250%) skewX(-20deg);
+    transform: translateX(200%);
   }
 }
 
@@ -484,17 +484,22 @@ html {
   position: absolute;
   top: 0;
   left: 0;
-  width: 75%;
+  width: 50%;
   height: 100%;
   background: linear-gradient(
     to right,
     transparent 0%,
-    rgba(56, 189, 248, 0.5) 50%, /* Increased opacity */
+    rgba(56, 189, 248, 0.08) 20%,
+    rgba(56, 189, 248, 0.15) 40%,
+    rgba(56, 189, 248, 0.2) 50%,
+    rgba(56, 189, 248, 0.15) 60%,
+    rgba(56, 189, 248, 0.08) 80%,
     transparent 100%
   );
-  filter: blur(5px); /* Added blur for softer glow */
-  animation: sweep-glow 3s infinite linear; /* Sped up animation */
+  filter: blur(8px);
+  animation: sweep-glow 5s infinite cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 5;
+  pointer-events: none;
 }
 
 /* New animation for the badge info popover */
@@ -547,3 +552,680 @@ html {
 .animate-fadeOutDown {
   animation: fadeOutDown 0.18s cubic-bezier(0.55, 0, 0.55, 0.2) both;
 }
+
+/* === Progress Bar Completion Animations === */
+@keyframes progress-completion {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+.animate-progress-completion {
+  animation: progress-completion 1.5s ease-out forwards;
+}
+
+@keyframes completion-sparkle {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.animate-completion-sparkle {
+  animation: completion-sparkle 1.5s ease-out forwards;
+}
+
+@keyframes sparkle-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.animate-sparkle-sweep {
+  animation: sparkle-sweep 1.5s ease-out forwards;
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+.animate-sparkle-pulse {
+  animation: sparkle-pulse 1.5s ease-out forwards;
+}
+
+@keyframes sparkle-pulse-delayed {
+  0%, 30% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+.animate-sparkle-pulse-delayed {
+  animation: sparkle-pulse-delayed 1.5s ease-out forwards;
+}
+
+@keyframes sparkle-pulse-delayed-2 {
+  0%, 60% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  90% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+.animate-sparkle-pulse-delayed-2 {
+  animation: sparkle-pulse-delayed-2 1.5s ease-out forwards;
+}
+
+/* === Action Completion and Stow-Away Animations === */
+@keyframes action-completion {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3), 0 4px 6px -2px rgba(14, 165, 233, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+}
+.animate-action-completion {
+  animation: action-completion 1.5s ease-out forwards;
+}
+
+@keyframes goal-completion {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.01);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+.animate-goal-completion {
+  animation: goal-completion 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes stow-away {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    max-height: 200px;
+    z-index: 15;
+  }
+  30% {
+    opacity: 0.8;
+    transform: translateY(-5px) scale(0.98);
+    max-height: 200px;
+    z-index: 15;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    max-height: 0;
+    z-index: 5;
+  }
+}
+.animate-stow-away {
+  animation: stow-away 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  overflow: hidden;
+}
+
+/* === Desktop Banner Animations (Subtle Pop-In) === */
+@keyframes slideInFromUnder {
+  0% {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-slideInFromUnder {
+  animation: slideInFromUnder 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Desktop-specific stow-away animation (subtle slide out) */
+@keyframes stow-away-desktop {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    max-height: 200px;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-15px) scale(0.98);
+    max-height: 0;
+  }
+}
+.animate-stow-away-desktop {
+  animation: stow-away-desktop 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  overflow: hidden;
+}
+
+/* === Mobile Banner Animations (Subtle Slide From Top) === */
+@keyframes slideInFromUnderMobile {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-slideInFromUnderMobile {
+  animation: slideInFromUnderMobile 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+}
+
+/* Mobile-specific stow-away animation (subtle slide to top) */
+@keyframes stow-away-mobile {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px);
+    max-height: 0;
+  }
+}
+.animate-stow-away-mobile {
+  animation: stow-away-mobile 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  overflow: hidden;
+  will-change: transform, opacity, max-height;
+}
+
+/* === Mobile Full Screen Image Parallax Drift Animation === */
+@keyframes parallax-drift {
+  0% {
+    transform: scale(1.07) translate(0px, 0px);
+  }
+  25% {
+    transform: scale(1.07) translate(8px, 6px);
+  }
+  50% {
+    transform: scale(1.07) translate(16px, 12px);
+  }
+  75% {
+    transform: scale(1.07) translate(8px, 6px);
+  }
+  100% {
+    transform: scale(1.07) translate(0px, 0px);
+  }
+}
+.animate-parallax-drift {
+  animation: parallax-drift 32s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* === Cinematic First Load Animations === */
+@keyframes cinematic-fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cinematic-image-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-cinematic-fade-in-up {
+  animation: cinematic-fade-in-up 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-cinematic-image-reveal {
+  animation: cinematic-image-reveal 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Replay button animations */
+@keyframes replay-button-fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+.animate-replay-button-fade-in {
+	animation: replay-button-fade-in 0.5s ease-out forwards;
+}
+
+/* Enhanced replay button hover effects */
+.replay-button-hover {
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.replay-button-hover:hover {
+	transform: scale(1.05) rotate(5deg);
+	box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+}
+
+.replay-button-hover:active {
+	transform: scale(0.95);
+}
+
+/* Enhanced cinematic animations */
+@keyframes cinematic-fade-in {
+	from {
+		opacity: 0;
+		transform: scale(0.95) translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+@keyframes cinematic-slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes cinematic-stagger-reveal {
+	0% {
+		opacity: 0;
+		transform: translateY(20px) scale(0.9);
+	}
+	50% {
+		opacity: 0.7;
+		transform: translateY(10px) scale(0.95);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes cinematic-dramatic-reveal {
+	0% {
+		opacity: 0;
+		transform: translateY(40px) scale(0.8);
+		filter: blur(10px);
+	}
+	50% {
+		opacity: 0.5;
+		transform: translateY(20px) scale(0.9);
+		filter: blur(5px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+}
+
+@keyframes screen-dim {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0.3;
+	}
+}
+
+@keyframes screen-brighten {
+	from {
+		opacity: 0.3;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes modal-fade-in {
+	from {
+		opacity: 0;
+		transform: scale(0.9) translateY(20px);
+		filter: blur(10px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+		filter: blur(0);
+	}
+}
+
+@keyframes modal-fade-out {
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+		filter: blur(0);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.9) translateY(20px);
+		filter: blur(10px);
+	}
+}
+
+@keyframes cinematic-modal-title {
+	from {
+		opacity: 0;
+		transform: translateY(-30px) scale(0.8);
+		filter: blur(5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+}
+
+@keyframes cinematic-modal-content {
+	from {
+		opacity: 0;
+		transform: translateY(20px) scale(0.95);
+		filter: blur(3px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+}
+
+@keyframes cinematic-button-appear {
+	from {
+		opacity: 0;
+		transform: translateY(15px) scale(0.9);
+		filter: blur(2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		filter: blur(0);
+	}
+}
+
+.animate-cinematic-modal-title {
+	animation: cinematic-modal-title 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-cinematic-modal-content {
+	animation: cinematic-modal-content 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s both;
+}
+
+.animate-cinematic-button-appear {
+	animation: cinematic-button-appear 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
+}
+
+.modal-content-glow {
+  box-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.1),
+    0 0 40px rgba(14, 165, 233, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.modal-content-glow:hover {
+  box-shadow: 
+    0 0 25px rgba(255, 255, 255, 0.15),
+    0 0 50px rgba(14, 165, 233, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Enhanced cinematic classes */
+.animate-cinematic-fade-in {
+	animation: cinematic-fade-in 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-cinematic-slide-up {
+	animation: cinematic-slide-up 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-cinematic-stagger-reveal {
+	animation: cinematic-stagger-reveal 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-cinematic-dramatic-reveal {
+	animation: cinematic-dramatic-reveal 1.0s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-screen-dim {
+	animation: screen-dim 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-screen-brighten {
+	animation: screen-brighten 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-modal-fade-in {
+	animation: modal-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-modal-fade-out {
+	animation: modal-fade-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animate-button-pop-in {
+	animation: button-pop-in 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Enhanced modal styling */
+.modal-glow {
+	box-shadow: 
+		0 0 0 1px rgba(59, 130, 246, 0.1),
+		0 4px 6px -1px rgba(0, 0, 0, 0.1),
+		0 2px 4px -1px rgba(0, 0, 0, 0.06),
+		0 0 0 4px rgba(59, 130, 246, 0.05),
+		0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+.modal-glow:hover {
+	box-shadow: 
+		0 0 0 1px rgba(59, 130, 246, 0.15),
+		0 4px 6px -1px rgba(0, 0, 0, 0.1),
+		0 2px 4px -1px rgba(0, 0, 0, 0.06),
+		0 0 0 4px rgba(59, 130, 246, 0.08),
+		0 0 25px rgba(59, 130, 246, 0.15);
+}
+
+/* Subtle shimmer animation for buttons */
+@keyframes subtle-shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+
+.animate-subtle-shimmer {
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.1),
+		transparent
+	);
+	background-size: 200% 100%;
+	animation: subtle-shimmer 3s ease-in-out infinite;
+}
+
+.animate-subtle-shimmer:hover {
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.15),
+		transparent
+	);
+	background-size: 200% 100%;
+	animation: subtle-shimmer 2s ease-in-out infinite;
+}
+
+/* Smooth chat overlay open/close for mobile */
+@keyframes chat-overlay-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(30px);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 0.7;
+    transform: scale(1.01) translateY(6px);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+@keyframes chat-overlay-out {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.98) translateY(20px);
+    filter: blur(6px);
+  }
+}
+.animate-chat-overlay-in {
+  animation: chat-overlay-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.animate-chat-overlay-out {
+  animation: chat-overlay-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Simple button hover animations */
+@keyframes button-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-button-shimmer {
+  animation: button-shimmer 0.6s ease-out;
+}
+
+/* Loading screen fade to black animations */
+@keyframes loading-fade-to-black {
+  0% {
+    opacity: 1;
+    background-color: rgb(15, 23, 42); /* slate-900 */
+  }
+  100% {
+    opacity: 1;
+    background-color: rgb(0, 0, 0); /* black */
+  }
+}
+
+@keyframes loading-content-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.animate-loading-fade-to-black {
+  animation: loading-fade-to-black 1.5s ease-in-out forwards;
+}
+
+.animate-loading-content-fade-out {
+  animation: loading-content-fade-out 1s ease-in-out forwards;
+}
+
+/* Session end fade to black animations */
+@keyframes session-fade-to-black {
+  0% {
+    opacity: 1;
+    background-color: transparent;
+  }
+  100% {
+    opacity: 1;
+    background-color: rgb(0, 0, 0);
+  }
+}
+
+@keyframes analysis-loading-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-session-fade-to-black {
+  animation: session-fade-to-black 1.2s ease-in-out forwards;
+}
+
+.animate-analysis-loading-fade-in {
+  animation: analysis-loading-fade-in 0.8s ease-in-out forwards;
+}
+
+
+

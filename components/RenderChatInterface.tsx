@@ -278,7 +278,7 @@ const InputArea: React.FC<InputAreaProps> = ({
 		? "The scene is set. What's your opening line?"
 		: "Type your response...";
 
-	const gesturePlaceholderText = "e.g., *smiles and nods*";
+	const gesturePlaceholderText = "e.g., smiles and nods";
 
 	return (
 		<div className={wrapperClasses}>
@@ -593,7 +593,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	);
 
 	const EngagementBar = () => (
-		<div className="px-4 pt-2 pb-3 bg-slate-800 border-b border-slate-700 shadow-sm z-10">
+		<div className="px-4 pt-2 pb-3 bg-slate-800 border-b border-slate-700/50 shadow-sm z-20">
 			<div className="flex justify-between items-center mb-1">
 				<span className="text-sm font-medium text-sky-300">Engagement</span>
 				<span className="text-sm font-bold text-white">
@@ -626,10 +626,15 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 
 	return (
 		<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
-			<div className="flex-shrink-0 z-20">
+			{/* Header and Engagement Container - Fixed at top */}
+			<div className="flex-shrink-0 z-20 relative">
 				<ChatAreaHeader />
 				{isOverlay && <EngagementBar />}
-				{isOverlay && (
+			</div>
+
+			{/* Mobile Banner Container - Positioned right under engagement element */}
+			{isOverlay && (
+				<div className="flex-shrink-0 relative">
 					<TopBannerContainer
 						activeAction={activeAction}
 						isActionPaused={isActionPaused}
@@ -643,8 +648,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						goalJustChanged={goalJustChanged}
 						isOverlay={true}
 					/>
-				)}
-			</div>
+				</div>
+			)}
 
 			<div
 				ref={chatContainerRef}

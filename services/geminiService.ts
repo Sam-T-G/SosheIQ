@@ -68,7 +68,7 @@ export class GeminiService {
     let jsonStr = text.trim();
     
     // Remove markdown code fences
-    const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
+    const fenceRegex = /^```(\w*)?\s*\n?([\s\S]*?)\n?\s*```$/;
     const match = jsonStr.match(fenceRegex);
     if (match && match[2]) {
       jsonStr = match[2].trim();
@@ -308,13 +308,13 @@ export class GeminiService {
 
        **Conversational Style Guidance**:
         - Speak with natural hesitations (e.g., "um,", "you know,", "I guess"), and soften statements with hedges ("kind of", "maybe").
-        - Use contractions and occasional informal grammar to sound casual.
-        - Vary sentence length—mix quick one-liners with longer thoughts.
+      - Use contractions and occasional informal grammar to sound casual.
+      - Vary sentence length—mix quick one-liners with longer thoughts.
         - Pepper in discourse markers ("by the way,", "so,", "anyway") and small-talk as appropriate.
-        - Reflect back on what the user said and ask genuine follow-up questions.
-        - Incorporate 1–2 signature quirks or idioms that feel unique to your persona.
-        - Adjust your emotional tone (low energy vs. high energy) to match the moment.
-        - In casual contexts, you may even drop a mild emoji or playful punctuation—sparingly.
+      - Reflect back on what the user said and ask genuine follow-up questions.
+      - Incorporate 1–2 signature quirks or idioms that feel unique to your persona.
+      - Adjust your emotional tone (low energy vs. high energy) to match the moment.
+      - In casual contexts, you may even drop a mild emoji or playful punctuation—sparingly.
         - Use silence and nonverbal cues whenever they suit your persona or the situation: a thoughtful pause, a shy glance, a shrug, etc. When you do this, output only an action chunk, for example:
             { "text": "*pauses, looking down thoughtfully*", "type": "action" }
             Lean on these cues any time they deepen realism or emotion.
@@ -372,11 +372,13 @@ export class GeminiService {
       - **CRITICAL**: If you are setting 'achieved: true' this turn, your 'dialogueChunks' MUST include a line of dialogue that acknowledges the completion of the goal in a natural, in-character way (e.g., "Wow, you convinced me!", "Okay, you've got a deal.", "Yes, I'd love to give you my number.").
       
       **Interpreting User's Silent 'Continue' Action**:
-      - If the user input is \`"${SILENT_USER_ACTION_TOKEN}"\`, it means they chose to remain silent or continue a non-verbal action. **You MUST interpret this in the context of your previous turn.**
-      - For example, if you just said "Okay, let's head to the cafe," and the user sends this token, you MUST infer that they agree and have started walking.
-      - Your response MUST include a dialogue chunk of \`type: "action"\` describing my inferred action, e.g., \`{ "text": "*You nod and start walking alongside her.*", "type": "action" }\`.
-      - If appropriate, you MUST also initiate the corresponding journey by creating an \`activeAction\` in your response, e.g., \`"activeAction": { "description": "Walking to the cafe", "progress": 10 }\`.
-      - **Action Context Awareness**: When interpreting silent actions, consider the current action state. If an action is already active, the silent input might mean continuing that action rather than starting a new one.
+      - If the user input is \`SILENT_USER_ACTION_TOKEN\`, it means they chose to remain silent or continue a non-verbal action. **You MUST always infer and generate an appropriate, contextually relevant user action or behavior that would naturally follow in the scenario.**
+      - You MUST include the inferred user action in the \`feedbackOnUserTurn.inferredUserAction\` field (e.g., "you nod in agreement", "you start walking to the cafe", "you wait patiently").
+      - **CRITICAL PERSPECTIVE RULE**: The inferredUserAction MUST be written from the USER's perspective, describing what the USER is doing. Use "you" to refer to the user, not "I" or third-person descriptions.
+      - **CORRECT examples**: "you continue walking alongside me", "you nod in agreement", "you wait patiently", "you smile warmly"
+      - **INCORRECT examples**: "continued walking towards the bench alongside you", "nods in agreement", "waits patiently" (these are from AI's perspective)
+      - This inferred action should be treated as if the user performed it, and you MUST generate trait badges and feedback for this action, including \`positiveTraitContribution\`, \`negativeTraitContribution\`, \`badgeReasoning\`, \`nextStepSuggestion\`, \`alternativeSuggestion\`, etc., just as you would for a spoken user turn.
+      - The UI will display this as a separate user_action message, so ensure your response is clear and concise.
       
       **Intelligent User Action Suggestion (CRITICAL RULE: BE VERY RESTRICTIVE)**:
       - You can suggest that I (the user) should remain silent by setting \`isUserActionSuggested: true\`. This is a powerful tool and should be used RARELY and only in situations where speaking would be a clear social misstep.
@@ -420,12 +422,15 @@ export class GeminiService {
           - **Examples of INCORRECT phrases:** "Showed empathy", "Was a bit arrogant", "You were very creative".
           - Do NOT use phrases. Do NOT use sentences. Do NOT add any extra characters. A single word is mandatory.
           - If no specific, single-word trait stood out as a primary characteristic of the turn, you MUST return null for that field. This rule is not optional.
-      - \`badgeReasoning\`: If a badge was assigned, provide a SINGLE concise sentence explaining *why*. Example: "Your question showed genuine curiosity about my feelings." The response MUST NOT be enclosed in quotation marks.
-      - \`nextStepSuggestion\`: If a badge was assigned, provide a SINGLE concise suggestion for a good next step. The response MUST NOT be enclosed in quotation marks.
-      - \`alternativeSuggestion\`: If a badge was assigned, provide a SINGLE concise example of something different the user could have said. The response MUST NOT be enclosed in quotation marks.
-      - If no trait badge was assigned, these three fields (\`badgeReasoning\`, \`nextStepSuggestion\`, \`alternativeSuggestion\`) MUST be null.
+      - If you assign a positiveTraitContribution or negativeTraitContribution (i.e., a trait badge), you MUST also provide:
+          - badgeReasoning: A single concise sentence explaining why this trait was assigned.
+          - nextStepSuggestion: A single concise suggestion for what the user could do next.
+          - alternativeSuggestion: A single concise suggestion for an alternative approach.
+      - These three fields MUST NOT be null or empty if a trait badge is present.
+      - If no trait badge is assigned, set all three fields to null.
       - \`engagementDelta\`: A number between -20 and +20 indicating how much your response affected the conversation's energy level.
       - \`userTurnEffectivenessScore\`: A number between 0-100 indicating how effective the user's turn was in advancing the conversation or achieving their goal.
+      - \`inferredUserAction\`: If the user input was \`SILENT_USER_ACTION_TOKEN\`, provide a concise description of what the user likely did from the USER's perspective (e.g., "you nod in agreement", "you start walking", "you wait patiently"). Use "you" to refer to the user. If not a silent action, set to null.
 
       **JSON Response Structure:**
       {
@@ -439,7 +444,8 @@ export class GeminiService {
           "negativeTraitContribution": "string | null",
           "badgeReasoning": "string | null",
           "nextStepSuggestion": "string | null",
-          "alternativeSuggestion": "string | null"
+          "alternativeSuggestion": "string | null",
+          "inferredUserAction": "string | null"
         },
         "conversationMomentum": number,
         "isEndingConversation": boolean,
@@ -509,6 +515,8 @@ export class GeminiService {
       .map(msg => {
         if (msg.sender === 'user') {
           return `  - You: "${msg.text}" (Effectiveness: ${msg.userTurnEffectivenessScore ?? 'N/A'}%, Engagement Impact: ${msg.engagementDelta ?? 'N/A'}%)`;
+        } else if (msg.sender === 'user_action') {
+          return `  - You: *${msg.text}* (Action)`;
         } else if (msg.sender === 'ai') {
           return `  - ${scenario.aiName}: "${msg.text}" (Body Language: ${msg.bodyLanguageDescription ?? 'N/A'}) (Thoughts: ${msg.aiThoughts ?? 'N/A'})`;
         } else if (msg.sender === 'backstory') {

@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
 					</button>
 					<button
 						onClick={onNavigateToLogin}
-						className="text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-md transition-colors"
+						className="text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 px-4 py-2 rounded-md transition-all duration-200 shadow-lg hover:shadow-xl"
 						aria-label="Login">
 						Login
 					</button>

@@ -126,6 +126,7 @@ export interface UserTurnFeedback {
   badgeReasoning?: string;
   nextStepSuggestion?: string;
   alternativeSuggestion?: string;
+  inferredUserAction?: string; // For AI-inferred user actions from silent continue button
 }
 
 export interface AiTurnResponse {
@@ -190,6 +191,7 @@ export interface ChatMessage {
   };
   isRetryable?: boolean;
   originalMessageText?: string;
+  isInferredAction?: boolean; // Indicates if this user_action is an AI-inferred action from the continue button
 }
 
 export interface TurnByTurnAnalysisItem {

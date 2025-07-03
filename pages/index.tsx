@@ -101,6 +101,7 @@ const HomePage: React.FC = () => {
 	const [isAppLoading, setIsAppLoading] = useState<boolean>(true); // For initial app load
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
 	const [isAiResponding, setIsAiResponding] = useState<boolean>(false); // Specific for AI turn processing (image and text)
+	const [isFadingToBlack, setIsFadingToBlack] = useState<boolean>(false); // For session end fade to black
 	const [error, setError] = useState<string | null>(null);
 	const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(
 		null
@@ -137,6 +138,8 @@ const HomePage: React.FC = () => {
 		feedback: UserTurnFeedback;
 	} | null>(null);
 
+	const [isModalActive, setIsModalActive] = useState(false);
+
 	const isMobileLandscape = useMobileLandscape();
 
 	useEffect(() => {
@@ -157,10 +160,13 @@ const HomePage: React.FC = () => {
 				console.error("Failed to fetch API key:", err);
 				setError("Could not initialize services.");
 			} finally {
-				// Give a small artificial delay for the loading animation to be seen
+				// Check if mobile for extended loading duration
+				const isMobile = window.innerWidth <= 768;
+				const loadingDuration = isMobile ? 4500 : 1500; // Extended for mobile fade to black
+
 				setTimeout(() => {
 					setIsAppLoading(false);
-				}, 500);
+				}, loadingDuration);
 			}
 		};
 
@@ -197,6 +203,7 @@ const HomePage: React.FC = () => {
 		setShowGoalAchievedToast({ show: false, text: "" });
 		setImageGalleryConfig({ isOpen: false, images: [], startIndex: 0 });
 		setPendingFeedback(null);
+		setIsFadingToBlack(false);
 	};
 
 	const handleNavigate = useCallback((phase: GamePhase) => {
@@ -433,36 +440,53 @@ const HomePage: React.FC = () => {
 			}
 
 			setShowConfirmEndDialog(false);
-			setIsLoading(true);
 			setError(null);
 
-			const historyForAnalysis = conversationHistory.filter(
-				(m) => !m.isThoughtBubble
-			);
-			setConversationHistory(historyForAnalysis);
+			// Start fade to black transition
+			setIsFadingToBlack(true);
 
-			setCurrentPhase(GamePhase.ANALYSIS);
+			// Wait for fade to black to complete, then transition to analysis
+			setTimeout(() => {
+				setIsFadingToBlack(false);
+				setCurrentPhase(GamePhase.ANALYSIS);
 
-			try {
-				const finalScenarioDetails = { ...scenarioDetails };
-				// This ensures that an emerged goal is passed to the analysis screen
-				if (displayedGoal && !finalScenarioDetails.conversationGoal) {
-					finalScenarioDetails.conversationGoal = displayedGoal.text;
-				}
+				// Start the actual analysis after a brief delay
+				setTimeout(async () => {
+					if (!geminiService.current) {
+						setError("Service not available for analysis");
+						setIsLoading(false);
+						return;
+					}
 
-				const report = await geminiService.current.analyzeConversation(
-					historyForAnalysis,
-					finalScenarioDetails,
-					currentEngagement
-				);
-				setAnalysisReport(report);
-			} catch (e: any) {
-				console.error("Error generating analysis report:", e);
-				setError(`Failed to generate analysis: ${e.message}`);
-				setAnalysisReport(null);
-			} finally {
-				setIsLoading(false);
-			}
+					setIsLoading(true);
+
+					const historyForAnalysis = conversationHistory.filter(
+						(m) => !m.isThoughtBubble
+					);
+					setConversationHistory(historyForAnalysis);
+
+					try {
+						const finalScenarioDetails = { ...scenarioDetails };
+						// This ensures that an emerged goal is passed to the analysis screen
+						if (displayedGoal && !finalScenarioDetails.conversationGoal) {
+							finalScenarioDetails.conversationGoal = displayedGoal.text;
+						}
+
+						const report = await geminiService.current.analyzeConversation(
+							historyForAnalysis,
+							finalScenarioDetails,
+							currentEngagement
+						);
+						setAnalysisReport(report);
+					} catch (e: any) {
+						console.error("Error generating analysis report:", e);
+						setError(`Failed to generate analysis: ${e.message}`);
+						setAnalysisReport(null);
+					} finally {
+						setIsLoading(false);
+					}
+				}, 800); // Brief delay before starting analysis
+			}, 1200); // Wait for fade to black animation
 		},
 		[conversationHistory, scenarioDetails, currentEngagement, displayedGoal]
 	);
@@ -544,6 +568,37 @@ const HomePage: React.FC = () => {
 			// Step 2: Create the AI message object for the chat log
 			const dialogueChunks = aiResponse.dialogueChunks || [];
 
+			// Prepare messages to add in a single batch
+			const newMessages: ChatMessage[] = [];
+
+			// NEW LOGIC: Handle AI-inferred user actions differently
+			// If this was triggered by a silent user action (continue button),
+			// create a separate user_action message that's visually distinct
+			if (userMessageId === undefined && aiResponse.feedbackOnUserTurn) {
+				// This means the AI generated an inferred user action
+				const inferredUserActionMessage: ChatMessage = {
+					id: uuidv4(),
+					sender: "user_action",
+					text:
+						aiResponse.feedbackOnUserTurn.inferredUserAction ||
+						"You continue the interaction",
+					timestamp: new Date(),
+					isInferredAction: true,
+					userTurnEffectivenessScore:
+						aiResponse.feedbackOnUserTurn?.userTurnEffectivenessScore,
+					engagementDelta: aiResponse.feedbackOnUserTurn?.engagementDelta,
+					positiveTraitContribution:
+						aiResponse.feedbackOnUserTurn?.positiveTraitContribution,
+					negativeTraitContribution:
+						aiResponse.feedbackOnUserTurn?.negativeTraitContribution,
+					badgeReasoning: aiResponse.feedbackOnUserTurn?.badgeReasoning,
+					nextStepSuggestion: aiResponse.feedbackOnUserTurn?.nextStepSuggestion,
+					alternativeSuggestion:
+						aiResponse.feedbackOnUserTurn?.alternativeSuggestion,
+				};
+				newMessages.push(inferredUserActionMessage);
+			}
+
 			const goalChangeInfo: ChatMessage["goalChange"] | undefined = (() => {
 				const prevGoalText = displayedGoal?.text || null;
 				const newGoalText = aiResponse.emergingGoal?.trim() || null;
@@ -580,11 +635,13 @@ const HomePage: React.FC = () => {
 				goalChange: goalChangeInfo,
 				contextualSummary: aiResponse.contextualSummary,
 			};
+			newMessages.push(aiMessageTurn);
+
+			// Batch add both messages
+			setConversationHistory((prev) => [...prev, ...newMessages]);
 
 			// Step 3: Update conversation history and scores in a single batch
 			const feedback = aiResponse.feedbackOnUserTurn;
-
-			setConversationHistory((prev) => [...prev, aiMessageTurn]);
 
 			if (userMessageId && feedback) {
 				setPendingFeedback({ messageId: userMessageId, feedback });
@@ -766,7 +823,6 @@ const HomePage: React.FC = () => {
 			lastCompletedGoal,
 			stagnantTurnStreak,
 			handleEndConversation,
-			currentAIImage,
 		]
 	);
 
@@ -1162,6 +1218,7 @@ const HomePage: React.FC = () => {
 						}
 						pendingFeedback={pendingFeedback}
 						onFeedbackAnimationComplete={handleFeedbackAnimationComplete}
+						onModalStateChange={setIsModalActive}
 					/>
 				);
 			case GamePhase.ANALYSIS:
@@ -1206,13 +1263,18 @@ const HomePage: React.FC = () => {
 
 			{isAppLoading && <InitialLoadingScreen />}
 
+			{/* Fade to Black Overlay */}
+			{isFadingToBlack && (
+				<div className="fixed inset-0 z-[9999] animate-session-fade-to-black pointer-events-none" />
+			)}
+
 			{/* Outermost div now visible by default */}
 			<div
 				className={`flex flex-col h-screen ${
 					isAppLoading ? "invisible" : "visible"
 				}`}>
-				{/* Hide Header in mobile landscape */}
-				{!isMobileLandscape && (
+				{/* Hide Header in mobile landscape and when modal is active */}
+				{!isMobileLandscape && !isModalActive && (
 					<Header
 						onLogoClick={() => {
 							if (currentPhase === GamePhase.INTERACTION) {
@@ -1238,23 +1300,25 @@ const HomePage: React.FC = () => {
 						currentPhase === GamePhase.LOGIN
 							? "justify-center"
 							: ""
-					}`}
+					} ${isModalActive ? "pointer-events-none" : ""}`}
 					style={isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}}>
 					{renderContent()}
 				</main>
 
 				{/* Hide Footer in mobile landscape and during INTERACTION phase */}
-				{!isMobileLandscape && currentPhase !== GamePhase.INTERACTION && (
-					<Footer
-						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-						onNavigateToInstructions={() =>
-							handleNavigate(GamePhase.INSTRUCTIONS)
-						}
-						onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
-						onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
-						onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
-					/>
-				)}
+				{!isMobileLandscape &&
+					currentPhase !== GamePhase.INTERACTION &&
+					!isModalActive && (
+						<Footer
+							onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+							onNavigateToInstructions={() =>
+								handleNavigate(GamePhase.INSTRUCTIONS)
+							}
+							onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
+							onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
+							onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
+						/>
+					)}
 
 				{imageGalleryConfig.isOpen && (
 					<ImageViewerOverlay

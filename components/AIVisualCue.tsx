@@ -8,6 +8,22 @@ interface AIVisualCueProps {
 	aiPersona?: string;
 	aiEnvironment?: string;
 	showOverlayText?: boolean; // New prop: show overlay text (mobile, chatbox not open)
+	cinematicPhase?:
+		| "image"
+		| "name"
+		| "personality"
+		| "encounter-type"
+		| "body-language"
+		| "complete";
+	imageOpacity?: number;
+	nameOpacity?: number;
+	personalityOpacity?: number;
+	encounterTypeOpacity?: number;
+	bodyLanguageOpacity?: number;
+	hasCompletedFirstLoad?: boolean;
+	showReplayButton?: boolean;
+	onReplayCinematic?: () => void;
+	onViewImage?: (url: string | null) => void; // New prop for image viewing
 }
 
 export const AIVisualCue: React.FC<AIVisualCueProps> = ({
@@ -18,16 +34,27 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	aiPersona,
 	aiEnvironment,
 	showOverlayText = false,
+	cinematicPhase,
+	imageOpacity,
+	nameOpacity,
+	personalityOpacity,
+	encounterTypeOpacity,
+	bodyLanguageOpacity,
+	hasCompletedFirstLoad,
+	showReplayButton,
+	onReplayCinematic,
+	onViewImage,
 }) => {
 	const [displayedImage, setDisplayedImage] = useState<string | null>(null);
 	const [incomingImage, setIncomingImage] = useState<string | null>(null);
 	const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
 	const prevImageBase64Ref = useRef<string | null>(null);
+	const displayedImageRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		if (imageBase64 && imageBase64 !== prevImageBase64Ref.current) {
-			if (!displayedImage) {
+			if (!displayedImageRef.current) {
 				setDisplayedImage(imageBase64);
 				setIncomingImage(null);
 				setIsAnimating(false);
@@ -36,14 +63,22 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				setIsAnimating(true);
 			}
 			prevImageBase64Ref.current = imageBase64;
-		} else if (!imageBase64 && displayedImage) {
+		} else if (!imageBase64 && displayedImageRef.current) {
 			// Handles case where image is explicitly cleared
 			setDisplayedImage(null);
 			setIncomingImage(null);
 			setIsAnimating(false);
 			prevImageBase64Ref.current = null;
 		}
-	}, [imageBase64, displayedImage]);
+		// Also handle the case where imageBase64 is provided but displayedImage is null
+		// This can happen if the component is re-rendered or state is reset
+		else if (imageBase64 && !displayedImageRef.current && !incomingImage) {
+			setDisplayedImage(imageBase64);
+			setIncomingImage(null);
+			setIsAnimating(false);
+			prevImageBase64Ref.current = imageBase64;
+		}
+	}, [imageBase64]);
 
 	const handleAnimationEnd = () => {
 		if (incomingImage) {
@@ -53,7 +88,30 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 		setIsAnimating(false);
 	};
 
-	const showPlaceholder = isLoading && !displayedImage && !incomingImage;
+	// Update ref when displayedImage changes
+	useEffect(() => {
+		displayedImageRef.current = displayedImage;
+	}, [displayedImage]);
+
+	// Fallback: if we have imageBase64 but no displayedImage, use imageBase64 directly
+	const imageToDisplay =
+		displayedImage || (imageBase64 && !incomingImage ? imageBase64 : null);
+
+	// Only show placeholder if we have no image to display at all
+	// This prevents the placeholder from showing when we have a current image
+	// and are just loading a new one
+	const showPlaceholder = !imageToDisplay && !incomingImage;
+
+	// Debug logging
+	console.log("AIVisualCue Debug:", {
+		imageBase64: imageBase64 ? "present" : "null",
+		displayedImage: displayedImage ? "present" : "null",
+		incomingImage: incomingImage ? "present" : "null",
+		imageToDisplay: imageToDisplay ? "present" : "null",
+		showPlaceholder,
+		hasCompletedFirstLoad,
+		imageOpacity,
+	});
 
 	return (
 		<div
@@ -80,13 +138,13 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				</div>
 			) : (
 				<>
-					{displayedImage && (
+					{imageToDisplay && (
 						<>
 							<img
-								key={`displayed-${displayedImage.substring(0, 20)}`}
-								src={`data:image/jpeg;base64,${displayedImage}`}
+								key={`displayed-${imageToDisplay.substring(0, 20)}`}
+								src={`data:image/jpeg;base64,${imageToDisplay}`}
 								alt="AI's current visual cue"
-								className="absolute inset-0 w-full h-full object-cover"
+								className="absolute inset-0 w-full h-full object-cover md:animate-none animate-parallax-drift"
 								style={{
 									opacity: incomingImage && isAnimating ? 0 : 1,
 									transition:
@@ -95,35 +153,117 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 											: "none",
 								}}
 							/>
+							{/* Clickable overlay for image viewing - Mobile Only */}
+							{onViewImage && showOverlayText && (
+								<button
+									onClick={() => onViewImage(imageToDisplay)}
+									className="md:hidden absolute inset-0 z-20 bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent"
+									aria-label="View image in full screen"></button>
+							)}
+							{/* Clickable overlay for image viewing - Desktop Only */}
+							{onViewImage && !showOverlayText && (
+								<button
+									onClick={() => onViewImage(imageToDisplay)}
+									className="hidden md:block absolute inset-0 z-20 bg-transparent focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900/80"
+									aria-label="View image in full screen"></button>
+							)}
 							{/* Overlayed text for mobile, world-class style */}
 							{showOverlayText && (
 								<div className="md:hidden absolute inset-0 flex flex-col items-center justify-end pb-36 px-4 z-10">
 									{/* Stronger fade at the bottom for readability */}
 									<div className="w-full bg-gradient-to-t from-black/90 via-black/50 to-transparent absolute inset-0 pointer-events-none" />
-									<div className="relative z-10 w-full flex flex-col items-center text-center gap-1 animate-fadeInUp">
+									<div className="relative z-10 w-full flex flex-col items-center text-center gap-1">
 										{aiName && (
-											<h2 className="text-2xl font-extrabold text-white drop-shadow-lg tracking-tight mb-0.5 animate-fadeInUp delay-100">
+											<h2
+												className="text-2xl font-extrabold text-white drop-shadow-lg tracking-tight mb-0.5"
+												style={{
+													opacity: hasCompletedFirstLoad ? 1 : nameOpacity || 0,
+													transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+													transform: hasCompletedFirstLoad
+														? "translateY(0)"
+														: "translateY(30px)",
+													transitionDelay: hasCompletedFirstLoad ? "0s" : "0s",
+												}}>
 												{aiName}
 											</h2>
 										)}
 										{aiPersona && (
-											<p className="text-base text-sky-200 font-medium drop-shadow-md animate-fadeInUp delay-200">
+											<p
+												className="text-base text-sky-200 font-medium drop-shadow-md"
+												style={{
+													opacity: hasCompletedFirstLoad
+														? 1
+														: personalityOpacity || 0,
+													transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+													transform: hasCompletedFirstLoad
+														? "translateY(0)"
+														: "translateY(30px)",
+													transitionDelay: hasCompletedFirstLoad ? "0s" : "0s",
+												}}>
 												{aiPersona}
 											</p>
 										)}
 										{aiEnvironment && (
-											<p className="text-sm text-slate-200/90 font-normal animate-fadeInUp delay-300">
+											<p
+												className="text-sm text-slate-200/90 font-normal"
+												style={{
+													opacity: hasCompletedFirstLoad
+														? 1
+														: encounterTypeOpacity || 0,
+													transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+													transform: hasCompletedFirstLoad
+														? "translateY(0)"
+														: "translateY(30px)",
+													transitionDelay: hasCompletedFirstLoad ? "0s" : "0s",
+												}}>
 												{aiEnvironment}
 											</p>
 										)}
 										{bodyLanguageDescription && (
-											<p className="mt-1 text-sm text-slate-100/90 italic font-light animate-fadeInUp delay-400">
+											<p
+												className="mt-1 text-sm text-slate-100/90 italic font-light"
+												style={{
+													opacity: hasCompletedFirstLoad
+														? 1
+														: bodyLanguageOpacity || 0,
+													transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+													transform: hasCompletedFirstLoad
+														? "translateY(0)"
+														: "translateY(30px)",
+													transitionDelay: hasCompletedFirstLoad ? "0s" : "0s",
+												}}>
 												{bodyLanguageDescription}
 											</p>
 										)}
 									</div>
 								</div>
 							)}
+
+							{/* Replay Button - Mobile Only */}
+							{showReplayButton &&
+								onReplayCinematic &&
+								hasCompletedFirstLoad && (
+									<div className="md:hidden absolute bottom-6 left-6 z-[9998] animate-replay-button-fade-in">
+										<button
+											onClick={onReplayCinematic}
+											className="group bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-3 replay-button-hover focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg"
+											aria-label="Replay introduction animation">
+											<svg
+												className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-180"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+												xmlns="http://www.w3.org/2000/svg">
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+												/>
+											</svg>
+										</button>
+									</div>
+								)}
 						</>
 					)}
 					{incomingImage && isAnimating && (
@@ -131,7 +271,8 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 							key={`incoming-${incomingImage.substring(0, 20)}`}
 							src={`data:image/jpeg;base64,${incomingImage}`}
 							alt="AI's new visual cue"
-							className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in opacity-0"
+							className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in md:animate-none animate-parallax-drift"
+							style={{ opacity: 1 }}
 							onAnimationEnd={handleAnimationEnd}
 						/>
 					)}

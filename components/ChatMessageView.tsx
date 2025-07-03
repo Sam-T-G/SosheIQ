@@ -195,17 +195,22 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 	) => {
 		let nextState: typeof popoverState = null;
 
-		// Open popover if ANY feedback field is present
+		// Always open popover if a trait badge is present
 		if (
-			message.badgeReasoning ||
-			message.nextStepSuggestion ||
-			message.alternativeSuggestion
+			(type === "positive" && message.positiveTraitContribution) ||
+			(type === "negative" && message.negativeTraitContribution)
 		) {
 			nextState = {
 				content: {
-					reasoning: message.badgeReasoning || "",
-					nextStep: message.nextStepSuggestion || "",
-					alternative: message.alternativeSuggestion || "",
+					reasoning:
+						message.badgeReasoning ||
+						"No specific reasoning provided for this turn.",
+					nextStep:
+						message.nextStepSuggestion ||
+						"No next step suggestion for this turn.",
+					alternative:
+						message.alternativeSuggestion ||
+						"No alternative suggestion for this turn.",
 				},
 				badgeType: type,
 			};
@@ -281,12 +286,88 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 	}
 
 	if (isUserAction) {
+		const badges: React.ReactNode[] = [];
+		if (message.positiveTraitContribution) {
+			badges.push(
+				<button
+					key="pos-trait"
+					onClick={(e) => {
+						e.stopPropagation();
+						handleBadgeClick(message, "positive");
+					}}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full"
+					aria-label={`View details for positive trait: ${message.positiveTraitContribution}`}>
+					<TraitContributionBadge trait={message.positiveTraitContribution} />
+				</button>
+			);
+		}
+		if (message.negativeTraitContribution) {
+			badges.push(
+				<button
+					key="neg-trait"
+					onClick={(e) => {
+						e.stopPropagation();
+						handleBadgeClick(message, "negative");
+					}}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full"
+					aria-label={`View details for negative trait: ${message.negativeTraitContribution}`}>
+					<NegativeTraitContributionBadge
+						trait={message.negativeTraitContribution}
+					/>
+				</button>
+			);
+		}
+		if (typeof message.userTurnEffectivenessScore === "number") {
+			badges.push(
+				<EffectivenessBadge
+					key="effectiveness"
+					score={message.userTurnEffectivenessScore}
+				/>
+			);
+		}
+		if (typeof message.engagementDelta === "number") {
+			badges.push(
+				<EngagementDeltaBadge
+					key="engagement"
+					delta={message.engagementDelta}
+				/>
+			);
+		}
+
+		// Consistent styling for all user actions - use subtle transparent quality like AI actions
+		const actionText = message.text; // Remove asterisks - display clean text
+		const actionBgClass = "bg-slate-700/30"; // Match AI action dialogue subtle transparency
+
 		return (
-			<div className="flex justify-center items-center gap-2 my-2 animate-fadeIn">
-				<GestureIcon className="h-4 w-4 text-slate-400" />
-				<p className="text-sm italic text-slate-400 px-4 py-1 bg-slate-700/50 rounded-full">
-					{message.text}
-				</p>
+			<div className="flex flex-col items-end pr-10 sm:pr-20">
+				<div className="relative w-full flex justify-end">
+					{popoverState && (
+						<BadgeInfoPopover
+							content={popoverState.content}
+							badgeType={popoverState.badgeType}
+							onClose={() => setPopoverState(null)}
+						/>
+					)}
+					{badges.length > 0 && (
+						<div className="absolute -top-4 right-0 flex flex-row-reverse items-center gap-x-2 w-auto whitespace-nowrap">
+							{badges.map((badge, index) => (
+								<div
+									key={index}
+									className="animate-badge-plop"
+									style={{ animationDelay: `${index * 0.15}s` }}>
+									{badge}
+								</div>
+							))}
+						</div>
+					)}
+				</div>
+				<div className="flex justify-center items-center gap-2 my-2 animate-fadeIn">
+					<GestureIcon className="h-4 w-4 text-slate-400" />
+					<p
+						className={`text-sm italic text-slate-400 px-4 py-2 rounded-lg inline-block ${actionBgClass}`}>
+						{actionText}
+					</p>
+				</div>
 			</div>
 		);
 	}
