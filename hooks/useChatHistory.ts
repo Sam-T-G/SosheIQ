@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage } from '../types';
+import { ChatMessage, ScenarioDetails, AnalysisReport } from '../types';
 
 export interface ChatSession {
   id: string;
   timestamp: Date;
-  scenarioDetails: any;
+  scenarioDetails: ScenarioDetails;
   conversationHistory: ChatMessage[];
   finalEngagement: number;
-  analysisReport?: any;
+  analysisReport?: AnalysisReport;
 }
 
 export function useChatHistory() {

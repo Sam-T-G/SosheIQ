@@ -70,7 +70,7 @@ export const HelpOverlay: React.FC<HelpOverlayProps> = ({ onClose }) => {
 
 	return (
 		<div
-			className="fixed inset-0 bg-slate-900/85 flex items-center justify-center z-[100] p-4 animate-[fadeIn_0.2s_ease-out]"
+			className="fixed inset-0 bg-slate-900/85 flex items-center justify-center z-[200] p-4 animate-[fadeIn_0.2s_ease-out]"
 			onClick={onClose} // Close on backdrop click
 			role="dialog"
 			aria-modal="true"

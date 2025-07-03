@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { ScenarioDetails } from "../types";
+import type { ScenarioDetails, IconComponentProps } from "../types";
 import {
 	SocialEnvironment,
 	AIPersonalityTrait,
@@ -220,7 +220,7 @@ const SegmentedProgressBar: React.FC<{
 );
 
 const SummaryItem: React.FC<{
-	Icon: React.FC<any>;
+	Icon: React.FC<IconComponentProps>;
 	label: string;
 	children: React.ReactNode;
 }> = ({ Icon, label, children }) => (

@@ -77,6 +77,32 @@ export enum AIAgeBracket {
   CUSTOM = "Custom Age",
 }
 
+// Error types for proper error handling
+export interface ApiError {
+  message: string;
+  code?: number;
+  status?: string;
+  details?: string;
+}
+
+export interface ServiceError extends ApiError {
+  service: 'gemini' | 'imagen' | 'general';
+  timestamp: Date;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+  value?: unknown;
+}
+
+// Icon component interface
+export interface IconComponentProps {
+  className?: string;
+  size?: number;
+  color?: string;
+}
+
 // New interface for structured visual memory
 export interface EstablishedVisuals {
   characterDescription: string; // "a woman in her late 20s with long, curly brown hair and green eyes"
@@ -236,4 +262,48 @@ export enum GamePhase {
   SETUP = "setup",
   INTERACTION = "interaction",
   ANALYSIS = "analysis",
+}
+
+// Z-Index system for consistent layering
+export const Z_INDEX_LAYERS = {
+  BASE: 0,
+  CONTENT: 1,
+  OVERLAY: 100,
+  MODAL: 200,
+  TOOLTIP: 300,
+  DROPDOWN: 400,
+  LOADING: 500,
+  NOTIFICATION: 600,
+  DIALOG: 700,
+  POPUP: 800,
+  FIXED_HEADER: 900,
+  FIXED_FOOTER: 950,
+  HIGHEST: 1000,
+} as const;
+
+// Animation timing constants
+export const ANIMATION_DURATIONS = {
+  FAST: 150,
+  NORMAL: 300,
+  SLOW: 500,
+  VERY_SLOW: 1000,
+} as const;
+
+// Environment validation interface
+export interface EnvironmentConfig {
+  apiKey: string;
+  geminiModel: string;
+  imagenModel: string;
+  isDevelopment: boolean;
+  isProduction: boolean;
+}
+
+// Session storage interface
+export interface StoredSession {
+  id: string;
+  timestamp: Date;
+  scenarioDetails: ScenarioDetails;
+  conversationHistory: ChatMessage[];
+  finalEngagement: number;
+  analysisReport?: AnalysisReport;
 }

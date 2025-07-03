@@ -1,5 +1,5 @@
 import React from "react";
-import { GamePhase } from "../types";
+import { GamePhase, IconComponentProps } from "../types";
 import {
 	ArrowLeftIcon,
 	PlayIcon,
@@ -18,7 +18,7 @@ interface InstructionsScreenProps {
 const FeatureSection: React.FC<{
 	title: string;
 	children: React.ReactNode;
-	Icon: React.FC<any>;
+	Icon: React.FC<IconComponentProps>;
 	delay: string;
 }> = ({ title, children, Icon, delay }) => (
 	<div

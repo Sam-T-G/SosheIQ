@@ -1227,5 +1227,208 @@ html {
   animation: analysis-loading-fade-in 0.8s ease-in-out forwards;
 }
 
+/* Standardized Animation Classes */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes buttonPress {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes buttonHover {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageExit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Standardized Animation Classes */
+.animate-slide-in-left {
+  animation: slideInLeft 300ms ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 300ms ease-out;
+}
+
+.animate-slide-in-down {
+  animation: slideInDown 300ms ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 250ms ease-out;
+}
+
+.animate-scale-out {
+  animation: scaleOut 200ms ease-in;
+}
+
+.animate-bounce-in {
+  animation: bounceIn 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-shimmer {
+  animation: shimmer 1500ms ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200px 100%;
+}
+
+.animate-button-press {
+  animation: buttonPress 150ms ease-out;
+}
+
+.animate-button-hover {
+  animation: buttonHover 200ms ease-out;
+}
+
+.animate-modal-in {
+  animation: modalIn 300ms ease-out;
+}
+
+.animate-modal-out {
+  animation: modalOut 250ms ease-in;
+}
+
+.animate-page-enter {
+  animation: pageEnter 400ms ease-out;
+}
+
+.animate-page-exit {
+  animation: pageExit 300ms ease-in;
+}
+
 
 

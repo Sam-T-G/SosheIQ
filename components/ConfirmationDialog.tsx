@@ -32,7 +32,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 
 	return (
 		<div
-			className="fixed inset-0 bg-slate-900/85 flex items-center justify-center z-[150] p-4 animate-[fadeIn_0.2s_ease-out]"
+			className="fixed inset-0 bg-slate-900/85 flex items-center justify-center z-[700] p-4 animate-[fadeIn_0.2s_ease-out]"
 			role="alertdialog"
 			aria-modal="true"
 			aria-labelledby="confirm-dialog-title"

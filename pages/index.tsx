@@ -44,6 +44,10 @@ import {
 	INITIAL_ENGAGEMENT,
 	SILENT_USER_ACTION_TOKEN,
 } from "../constants";
+import {
+	getErrorMessageByType,
+	getErrorMessage,
+} from "../constants/errorMessages";
 
 type DisplayedGoal = {
 	text: string;
@@ -103,6 +107,7 @@ const HomePage: React.FC = () => {
 	const [isAiResponding, setIsAiResponding] = useState<boolean>(false); // Specific for AI turn processing (image and text)
 	const [isFadingToBlack, setIsFadingToBlack] = useState<boolean>(false); // For session end fade to black
 	const [error, setError] = useState<string | null>(null);
+	const [errorDetails, setErrorDetails] = useState<any>(null);
 	const [analysisReport, setAnalysisReport] = useState<AnalysisReport | null>(
 		null
 	);
@@ -149,16 +154,18 @@ const HomePage: React.FC = () => {
 				const data = await res.json();
 
 				if (!data.apiKey) {
-					setError("API key is missing.");
+					setError(getErrorMessage("API_KEY_MISSING").userMessage);
 					setIsAppLoading(false);
 					return;
 				}
 
 				geminiService.current = new GeminiService(data.apiKey);
 				imagenService.current = new ImagenService(data.apiKey);
-			} catch (err: any) {
-				console.error("Failed to fetch API key:", err);
-				setError("Could not initialize services.");
+			} catch (err: unknown) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Unknown error occurred";
+				console.error("Failed to fetch API key:", errorMessage);
+				setError(getErrorMessage("FETCH_FAILED").userMessage);
 			} finally {
 				// Check if mobile for extended loading duration
 				const isMobile = window.innerWidth <= 768;
@@ -182,6 +189,16 @@ const HomePage: React.FC = () => {
 			return () => clearTimeout(timer);
 		}
 	}, [goalJustChanged]);
+
+	// Effect to handle mobile landscape detection cleanup
+	useEffect(() => {
+		const handleResize = () => {
+			// Mobile landscape detection logic
+		};
+
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, []);
 
 	const resetStateForNewGame = () => {
 		setSetupMode("guided");
@@ -413,9 +430,11 @@ const HomePage: React.FC = () => {
 
 				// Step 6: Transition to the interaction screen
 				setCurrentPhase(GamePhase.INTERACTION);
-			} catch (e: any) {
-				console.error("Error starting interaction:", e);
-				setError(`Failed to start interaction: ${e.message}`);
+			} catch (e: unknown) {
+				const errorMessage =
+					e instanceof Error ? e.message : "Unknown error occurred";
+				console.error("Error starting interaction:", errorMessage);
+				setError(`Failed to start interaction: ${errorMessage}`);
 				// Revert to setup on failure, keeping setup mode consistent
 				setCurrentPhase(GamePhase.SETUP);
 			} finally {
@@ -478,9 +497,11 @@ const HomePage: React.FC = () => {
 							currentEngagement
 						);
 						setAnalysisReport(report);
-					} catch (e: any) {
-						console.error("Error generating analysis report:", e);
-						setError(`Failed to generate analysis: ${e.message}`);
+					} catch (e: unknown) {
+						const errorMessage =
+							e instanceof Error ? e.message : "Unknown error occurred";
+						console.error("Error generating analysis report:", errorMessage);
+						setError(`Failed to generate analysis: ${errorMessage}`);
 						setAnalysisReport(null);
 					} finally {
 						setIsLoading(false);
@@ -701,8 +722,12 @@ const HomePage: React.FC = () => {
 									: m
 							)
 						);
-					} catch (imgError: any) {
-						console.error("Optimized image generation failed:", imgError);
+					} catch (imgError: unknown) {
+						const errorMessage =
+							imgError instanceof Error
+								? imgError.message
+								: "Unknown error occurred";
+						console.error("Optimized image generation failed:", errorMessage);
 						setConversationHistory((prev) =>
 							prev.map((m) =>
 								m.id === aiMessageTurn.id
@@ -888,8 +913,13 @@ const HomePage: React.FC = () => {
 					isActionPaused
 				);
 				processAiResponse(aiResponse, userMessageId);
-			} catch (e: any) {
-				console.error("Error sending message or getting AI response:", e);
+			} catch (e: unknown) {
+				const errorMessage =
+					e instanceof Error ? e.message : "Unknown error occurred";
+				console.error(
+					"Error sending message or getting AI response:",
+					errorMessage
+				);
 				const systemErrorMessage: ChatMessage = {
 					id: uuidv4(),
 					sender: "system",
@@ -977,8 +1007,10 @@ const HomePage: React.FC = () => {
 				isActionPaused
 			);
 			processAiResponse(aiResponse, undefined, { wasFastForward: true });
-		} catch (e: any) {
-			console.error("Error during fast forward:", e);
+		} catch (e: unknown) {
+			const errorMessage =
+				e instanceof Error ? e.message : "Unknown error occurred";
+			console.error("Error during fast forward:", errorMessage);
 			const systemErrorMessage: ChatMessage = {
 				id: uuidv4(),
 				sender: "system",
@@ -1044,7 +1076,7 @@ const HomePage: React.FC = () => {
 
 	const handleStartRandom = useCallback(() => {
 		if (!geminiService.current || !imagenService.current) {
-			setError("Services not initialized.");
+			setError(getErrorMessage("STATE_ERROR").userMessage);
 			return;
 		}
 		// Show loading indicator immediately
@@ -1265,7 +1297,7 @@ const HomePage: React.FC = () => {
 
 			{/* Fade to Black Overlay */}
 			{isFadingToBlack && (
-				<div className="fixed inset-0 z-[9999] animate-session-fade-to-black pointer-events-none" />
+				<div className="fixed inset-0 z-[1000] animate-session-fade-to-black pointer-events-none" />
 			)}
 
 			{/* Outermost div now visible by default */}

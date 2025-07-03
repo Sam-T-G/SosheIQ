@@ -23,7 +23,7 @@ import {
 	XCircleIcon,
 	TargetIcon,
 } from "./Icons";
-import { AIAgeBracket } from "../types";
+import { AIAgeBracket, IconComponentProps } from "../types";
 
 interface AnalysisScreenProps {
 	report: AnalysisReport | null;
@@ -91,7 +91,7 @@ const TraitBadge: React.FC<{
 interface FeedbackSectionProps {
 	title: string;
 	content?: string;
-	IconComponent: React.FC<any>;
+	IconComponent: React.FC<IconComponentProps>;
 	colorClass: string;
 }
 
@@ -385,8 +385,10 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					new Date().toISOString().split("T")[0]
 				}.pdf`
 			);
-		} catch (err: any) {
-			console.error("Error generating PDF:", err);
+		} catch (err: unknown) {
+			const errorMessage =
+				err instanceof Error ? err.message : "Unknown error occurred";
+			console.error("Error generating PDF:", errorMessage);
 			// You might want to show an error message to the user here
 		} finally {
 			// Restore original styles

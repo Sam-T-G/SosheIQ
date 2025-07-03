@@ -631,7 +631,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{/* Scenario Context Modal - Mobile Only */}
 			{showScenarioContextModal && (
 				<div
-					className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/25 backdrop-blur-sm"
+					className="fixed inset-0 z-[600] flex items-center justify-center bg-black/25 backdrop-blur-sm"
 					style={{ pointerEvents: "auto" }}>
 					<div
 						className={`text-center transition-all duration-500 max-w-2xl mx-4 ${

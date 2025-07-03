@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { IconComponentProps } from "../types";
 import {
 	CloseIcon,
 	ChatBubbleIcon,
@@ -43,7 +44,7 @@ const TabButton: React.FC<{
 const ProTip: React.FC<{
 	title: string;
 	children: React.ReactNode;
-	Icon: React.FC<any>;
+	Icon: React.FC<IconComponentProps>;
 }> = ({ title, children, Icon }) => (
 	<div className="p-4 bg-slate-700/70 rounded-lg shadow flex items-start gap-4">
 		<Icon className="h-8 w-8 text-teal-300 mt-1 flex-shrink-0" />
@@ -199,7 +200,7 @@ export const HelpAndTipsOverlay: React.FC<HelpAndTipsOverlayProps> = ({
 
 	return (
 		<div
-			className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-[100] p-4 animate-[fadeIn_0.3s_ease-out]"
+			className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-[200] p-4 animate-[fadeIn_0.3s_ease-out]"
 			onClick={onClose}
 			role="dialog"
 			aria-modal="true"

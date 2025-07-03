@@ -1,4 +1,5 @@
 import React from "react";
+import { IconComponentProps } from "../types";
 import {
 	ArrowLeftIcon,
 	DocumentTextIcon,
@@ -14,7 +15,7 @@ interface TermsOfServiceScreenProps {
 const InfoSection: React.FC<{
 	title: string;
 	children: React.ReactNode;
-	Icon: React.FC<any>;
+	Icon: React.FC<IconComponentProps>;
 	delay: string;
 }> = ({ title, children, Icon, delay }) => (
 	<div

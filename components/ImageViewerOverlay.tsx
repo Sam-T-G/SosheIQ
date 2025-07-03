@@ -69,7 +69,7 @@ export const ImageViewerOverlay: React.FC<ImageViewerOverlayProps> = ({
 
 	return (
 		<div
-			className={`fixed inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-[200] p-4 ${overlayAnimationClass}`}
+			className={`fixed inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-[300] p-4 ${overlayAnimationClass}`}
 			onClick={handleClose}
 			role="dialog"
 			aria-modal="true"

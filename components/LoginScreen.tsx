@@ -1,4 +1,5 @@
 import React from "react";
+import { IconComponentProps } from "../types";
 import {
 	ArrowLeftIcon,
 	GoogleIcon,
@@ -16,7 +17,7 @@ interface LoginScreenProps {
 }
 
 const AuthButton: React.FC<{
-	Icon: React.FC<any>;
+	Icon: React.FC<IconComponentProps>;
 	children: React.ReactNode;
 }> = ({ Icon, children }) => (
 	<button
