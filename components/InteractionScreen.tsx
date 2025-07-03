@@ -339,6 +339,14 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	const [scenarioContextModalVisible, setScenarioContextModalVisible] =
 		useState(false);
 	const [screenDimmed, setScreenDimmed] = useState(false);
+	const [uiExclusionZones, setUiExclusionZones] = useState<
+		Array<{
+			top: number;
+			left: number;
+			width: number;
+			height: number;
+		}>
+	>([]);
 	const [buttonsVisible, setButtonsVisible] = useState(false);
 	const [cinematicSequenceComplete, setCinematicSequenceComplete] =
 		useState(false);
@@ -489,9 +497,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		};
 
 		// Start sequence after a brief delay to ensure smooth transition
-		const timer = setTimeout(startCinematicSequence, 200);
-		return () => clearTimeout(timer);
-	}, [aiImageBase64, hasCompletedFirstLoad, showChatOverlay]);
+		// Only start if not already completed
+		if (!hasCompletedFirstLoad) {
+			const timer = setTimeout(startCinematicSequence, 200);
+			return () => clearTimeout(timer);
+		}
+	}, [aiImageBase64, showChatOverlay]);
 
 	// Enhanced replay cinematic animation
 	const replayCinematic = () => {
@@ -617,6 +628,45 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		}
 	}, [showScenarioContextModal, onModalStateChange]);
 
+	// Calculate UI exclusion zones for mobile image clicks
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			const calculateExclusionZones = () => {
+				const zones = [
+					// Open Chat button exclusion zone (bottom-right corner)
+					{
+						top: window.innerHeight - 80, // bottom-6 = 24px, button height ~56px
+						left: window.innerWidth - 120, // right-6 = 24px, button width ~96px
+						width: 120,
+						height: 80,
+					},
+					// Header exclusion zone (top area)
+					{
+						top: 0,
+						left: 0,
+						width: window.innerWidth,
+						height: 56, // h-14 = 56px
+					},
+					// Replay button exclusion zone (bottom-left corner)
+					{
+						top: window.innerHeight - 80,
+						left: 0,
+						width: 80,
+						height: 80,
+					},
+				];
+				setUiExclusionZones(zones);
+			};
+
+			calculateExclusionZones();
+			window.addEventListener("resize", calculateExclusionZones);
+
+			return () => {
+				window.removeEventListener("resize", calculateExclusionZones);
+			};
+		}
+	}, []);
+
 	return (
 		<div className="w-full max-w-7xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl relative overflow-hidden">
 			{/* Goal Achieved Toast */}
@@ -631,42 +681,39 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{/* Scenario Context Modal - Mobile Only */}
 			{showScenarioContextModal && (
 				<div
-					className="fixed inset-0 z-[600] flex items-center justify-center bg-black/25 backdrop-blur-sm"
+					className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/25 backdrop-blur-sm"
 					style={{ pointerEvents: "auto" }}>
-					<div
-						className={`text-center transition-all duration-500 max-w-2xl mx-4 ${
-							scenarioContextModalVisible
-								? "animate-modal-fade-in"
-								: "animate-modal-fade-out"
-						}`}>
-						<div className="mb-12">
-							<p className="text-white/90 text-lg leading-relaxed font-light tracking-wide mb-8">
+					<div className="text-center transition-all duration-500 max-w-2xl mx-4 animate-modal-fade-in flex flex-col h-96">
+						<div className="flex-1 overflow-y-auto custom-scrollbar mb-12 flex items-center justify-center">
+							<p className="text-white/90 text-lg leading-relaxed font-light tracking-wide text-center">
 								{scenarioContext}
 							</p>
 						</div>
 
-						<button
-							onClick={handleScenarioContextConfirm}
-							className={`group relative z-[10000] bg-black/40 hover:bg-black/60 active:bg-black/70 backdrop-blur-md rounded-full px-8 py-4 text-slate-200/90 font-medium text-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-600/40 cursor-pointer shadow-md hover:shadow-lg border border-slate-300/40 overflow-hidden ${
-								scenarioContextModalVisible
-									? "animate-cinematic-button-appear"
-									: ""
-							}`}
-							style={{ pointerEvents: "auto", letterSpacing: "0.01em" }}>
-							{/* Simple shimmer effect on hover */}
-							<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-x-full group-hover:translate-x-full rounded-full" />
+						<div className="flex-shrink-0">
+							<button
+								onClick={handleScenarioContextConfirm}
+								className={`group relative z-[10000] bg-black/40 hover:bg-black/60 active:bg-black/70 backdrop-blur-md rounded-full px-8 py-4 text-slate-200/90 font-medium text-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-600/40 cursor-pointer shadow-md hover:shadow-lg border border-slate-300/40 overflow-hidden ${
+									scenarioContextModalVisible
+										? "animate-cinematic-button-appear"
+										: ""
+								}`}
+								style={{ pointerEvents: "auto", letterSpacing: "0.01em" }}>
+								{/* Simple shimmer effect on hover */}
+								<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-x-full group-hover:translate-x-full rounded-full" />
 
-							{/* Subtle border glow on hover */}
-							<div className="absolute inset-0 border border-transparent group-hover:border-white/20 transition-all duration-300 rounded-full" />
+								{/* Subtle border glow on hover */}
+								<div className="absolute inset-0 border border-transparent group-hover:border-white/20 transition-all duration-300 rounded-full" />
 
-							{/* Button content with subtle hover effects */}
-							<span className="relative z-10 transition-all duration-300 group-hover:text-white group-hover:drop-shadow-sm">
-								Continue
-							</span>
+								{/* Button content with subtle hover effects */}
+								<span className="relative z-10 transition-all duration-300 group-hover:text-white group-hover:drop-shadow-sm">
+									Continue
+								</span>
 
-							{/* Simple click feedback */}
-							<div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity duration-150 rounded-full" />
-						</button>
+								{/* Simple click feedback */}
+								<div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity duration-150 rounded-full" />
+							</button>
+						</div>
 					</div>
 				</div>
 			)}
@@ -716,6 +763,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						showReplayButton={showReplayButton && buttonsVisible}
 						onReplayCinematic={replayCinematic}
 						onViewImage={onViewImage}
+						uiExclusionZones={uiExclusionZones}
 					/>
 					{/* SosheIQ Logo and Header (top) */}
 					{!showChatOverlay && (
@@ -832,6 +880,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						showReplayButton={showReplayButton}
 						onReplayCinematic={replayCinematic}
 						onViewImage={onViewImage}
+						uiExclusionZones={[]} // No exclusions needed for desktop
 					/>
 					{/* Desktop Banner Area */}
 					<TopBannerContainer

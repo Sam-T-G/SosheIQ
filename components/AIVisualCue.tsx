@@ -25,6 +25,12 @@ interface AIVisualCueProps {
 	showReplayButton?: boolean;
 	onReplayCinematic?: () => void;
 	onViewImage?: (url: string | null) => void; // New prop for image viewing
+	uiExclusionZones?: Array<{
+		top: number;
+		left: number;
+		width: number;
+		height: number;
+	}>; // Areas to exclude from image clicks
 }
 
 export const AIVisualCue: React.FC<AIVisualCueProps> = ({
@@ -45,7 +51,14 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	showReplayButton,
 	onReplayCinematic,
 	onViewImage,
+	uiExclusionZones = [],
 }) => {
+	// Add state for click detection
+	const [clickStartTime, setClickStartTime] = useState<number>(0);
+	const [clickStartPosition, setClickStartPosition] = useState<{
+		x: number;
+		y: number;
+	} | null>(null);
 	const [displayedImage, setDisplayedImage] = useState<string | null>(null);
 	const [incomingImage, setIncomingImage] = useState<string | null>(null);
 	const [isAnimating, setIsAnimating] = useState<boolean>(false);
@@ -110,6 +123,73 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 		displayedImageRef.current = displayedImage;
 	}, [displayedImage]);
 
+	// Click detection handlers for better UX
+	const handleMouseDown = (e: React.MouseEvent) => {
+		setClickStartTime(Date.now());
+		setClickStartPosition({ x: e.clientX, y: e.clientY });
+	};
+
+	const handleMouseUp = (e: React.MouseEvent) => {
+		if (!clickStartPosition || !onViewImage) return;
+
+		const clickDuration = Date.now() - clickStartTime;
+		const distance = Math.sqrt(
+			Math.pow(e.clientX - clickStartPosition.x, 2) +
+				Math.pow(e.clientY - clickStartPosition.y, 2)
+		);
+
+		// Check if click is within UI exclusion zones
+		const isInExclusionZone = uiExclusionZones.some((zone) => {
+			return (
+				e.clientX >= zone.left &&
+				e.clientX <= zone.left + zone.width &&
+				e.clientY >= zone.top &&
+				e.clientY <= zone.top + zone.height
+			);
+		});
+
+		// Only trigger image view if it's a short, stationary click (not a drag or long press) and not in exclusion zone
+		if (clickDuration < 300 && distance < 10 && !isInExclusionZone) {
+			onViewImage(imageToDisplay);
+		}
+
+		setClickStartPosition(null);
+	};
+
+	const handleTouchStart = (e: React.TouchEvent) => {
+		const touch = e.touches[0];
+		setClickStartTime(Date.now());
+		setClickStartPosition({ x: touch.clientX, y: touch.clientY });
+	};
+
+	const handleTouchEnd = (e: React.TouchEvent) => {
+		if (!clickStartPosition || !onViewImage) return;
+
+		const touch = e.changedTouches[0];
+		const clickDuration = Date.now() - clickStartTime;
+		const distance = Math.sqrt(
+			Math.pow(touch.clientX - clickStartPosition.x, 2) +
+				Math.pow(touch.clientY - clickStartPosition.y, 2)
+		);
+
+		// Check if touch is within UI exclusion zones
+		const isInExclusionZone = uiExclusionZones.some((zone) => {
+			return (
+				touch.clientX >= zone.left &&
+				touch.clientX <= zone.left + zone.width &&
+				touch.clientY >= zone.top &&
+				touch.clientY <= zone.top + zone.height
+			);
+		});
+
+		// Only trigger image view if it's a short, stationary tap (not a swipe or long press) and not in exclusion zone
+		if (clickDuration < 300 && distance < 10 && !isInExclusionZone) {
+			onViewImage(imageToDisplay);
+		}
+
+		setClickStartPosition(null);
+	};
+
 	const imageToDisplay =
 		displayedImage || (imageBase64 && !incomingImage ? imageBase64 : null);
 	const showPlaceholder = !imageToDisplay && !incomingImage;
@@ -158,17 +238,41 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 					/>
 					{/* Clickable overlay for image viewing - Mobile Only */}
 					{onViewImage && showOverlayText && (
-						<button
-							onClick={() => onViewImage(imageToDisplay)}
-							className="md:hidden absolute inset-0 z-20 bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent"
-							aria-label="View image in full screen"></button>
+						<div
+							onMouseDown={handleMouseDown}
+							onMouseUp={handleMouseUp}
+							onTouchStart={handleTouchStart}
+							onTouchEnd={handleTouchEnd}
+							className="md:hidden absolute inset-0 z-10 bg-transparent focus:outline-none"
+							style={{ pointerEvents: "auto" }}
+							role="button"
+							tabIndex={0}
+							aria-label="View image in full screen"
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									onViewImage(imageToDisplay);
+								}
+							}}></div>
 					)}
 					{/* Clickable overlay for image viewing - Desktop Only */}
 					{onViewImage && !showOverlayText && (
-						<button
-							onClick={() => onViewImage(imageToDisplay)}
-							className="hidden md:block absolute inset-0 z-20 bg-transparent focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900/80"
-							aria-label="View image in full screen"></button>
+						<div
+							onMouseDown={handleMouseDown}
+							onMouseUp={handleMouseUp}
+							onTouchStart={handleTouchStart}
+							onTouchEnd={handleTouchEnd}
+							className="hidden md:block absolute inset-0 z-10 bg-transparent focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900/80"
+							style={{ pointerEvents: "auto" }}
+							role="button"
+							tabIndex={0}
+							aria-label="View image in full screen"
+							onKeyDown={(e) => {
+								if (e.key === "Enter" || e.key === " ") {
+									e.preventDefault();
+									onViewImage(imageToDisplay);
+								}
+							}}></div>
 					)}
 					{/* Overlayed text for mobile, world-class style */}
 					{showOverlayText && (
