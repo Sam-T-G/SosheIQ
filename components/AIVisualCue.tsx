@@ -31,6 +31,7 @@ interface AIVisualCueProps {
 		width: number;
 		height: number;
 	}>; // Areas to exclude from image clicks
+	isHidden?: boolean; // New prop: completely hide the component
 }
 
 export const AIVisualCue: React.FC<AIVisualCueProps> = ({
@@ -52,6 +53,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	onReplayCinematic,
 	onViewImage,
 	uiExclusionZones = [],
+	isHidden = false,
 }) => {
 	// Add state for click detection
 	const [clickStartTime, setClickStartTime] = useState<number>(0);
@@ -125,6 +127,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 
 	// Click detection handlers for better UX
 	const handleMouseDown = (e: React.MouseEvent) => {
+		e.preventDefault();
 		setClickStartTime(Date.now());
 		setClickStartPosition({ x: e.clientX, y: e.clientY });
 	};
@@ -138,7 +141,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				Math.pow(e.clientY - clickStartPosition.y, 2)
 		);
 
-		// Check if click is within UI exclusion zones
 		const isInExclusionZone = uiExclusionZones.some((zone) => {
 			return (
 				e.clientX >= zone.left &&
@@ -148,7 +150,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 			);
 		});
 
-		// Only trigger image view if it's a short, stationary click (not a drag or long press) and not in exclusion zone
 		if (clickDuration < 300 && distance < 10 && !isInExclusionZone) {
 			onViewImage(imageToDisplay);
 		}
@@ -157,6 +158,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	};
 
 	const handleTouchStart = (e: React.TouchEvent) => {
+		e.preventDefault();
 		const touch = e.touches[0];
 		setClickStartTime(Date.now());
 		setClickStartPosition({ x: touch.clientX, y: touch.clientY });
@@ -172,7 +174,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				Math.pow(touch.clientY - clickStartPosition.y, 2)
 		);
 
-		// Check if touch is within UI exclusion zones
 		const isInExclusionZone = uiExclusionZones.some((zone) => {
 			return (
 				touch.clientX >= zone.left &&
@@ -182,7 +183,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 			);
 		});
 
-		// Only trigger image view if it's a short, stationary tap (not a swipe or long press) and not in exclusion zone
 		if (clickDuration < 300 && distance < 10 && !isInExclusionZone) {
 			onViewImage(imageToDisplay);
 		}
@@ -194,16 +194,10 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 		displayedImage || (imageBase64 && !incomingImage ? imageBase64 : null);
 	const showPlaceholder = !imageToDisplay && !incomingImage;
 
-	// Debug logging
-	console.log("AIVisualCue Debug:", {
-		imageBase64: imageBase64 ? "present" : "null",
-		displayedImage: displayedImage ? "present" : "null",
-		incomingImage: incomingImage ? "present" : "null",
-		imageToDisplay: imageToDisplay ? "present" : "null",
-		showPlaceholder,
-		hasCompletedFirstLoad,
-		imageOpacity,
-	});
+	// Early return if component should be hidden
+	if (isHidden) {
+		return null;
+	}
 
 	return (
 		<div
@@ -285,7 +279,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 										className="text-2xl font-extrabold text-white drop-shadow-lg tracking-tight mb-0.5"
 										style={{
 											opacity: hasCompletedFirstLoad ? 1 : nameOpacity || 0,
-											transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
 											transform: hasCompletedFirstLoad
 												? "translateY(0)"
 												: "translateY(30px)",
@@ -301,7 +295,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 											opacity: hasCompletedFirstLoad
 												? 1
 												: personalityOpacity || 0,
-											transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
 											transform: hasCompletedFirstLoad
 												? "translateY(0)"
 												: "translateY(30px)",
@@ -317,7 +311,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 											opacity: hasCompletedFirstLoad
 												? 1
 												: encounterTypeOpacity || 0,
-											transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
 											transform: hasCompletedFirstLoad
 												? "translateY(0)"
 												: "translateY(30px)",

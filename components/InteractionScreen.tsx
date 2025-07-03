@@ -312,6 +312,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	const [chatOverlayHasFadedIn, setChatOverlayHasFadedIn] = useState(false);
 	const [chatOverlayIsVisible, setChatOverlayIsVisible] = useState(false);
+	const [chatOverlayImageVisible, setChatOverlayImageVisible] = useState(false);
 	const [showMenu, setShowMenu] = useState(false);
 	const [showMenuContent, setShowMenuContent] = useState(false);
 	const [showQuitConfirm, setShowQuitConfirm] = useState(false);
@@ -392,11 +393,19 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		if (showChatOverlay) {
 			setChatOverlayIsVisible(true);
 			setChatOverlayHasFadedIn(false);
-			const timeout = setTimeout(() => setChatOverlayHasFadedIn(true), 200); // match fadeIn duration
-			return () => clearTimeout(timeout);
+			setChatOverlayImageVisible(false);
+			const timeout = setTimeout(() => setChatOverlayHasFadedIn(true), 200);
+			const imageTimeout = setTimeout(
+				() => setChatOverlayImageVisible(true),
+				300
+			);
+			return () => {
+				clearTimeout(timeout);
+				clearTimeout(imageTimeout);
+			};
 		} else {
 			setChatOverlayHasFadedIn(false);
-			// Delay removal of chat overlay for fade-out
+			setChatOverlayImageVisible(false);
 			const timeout = setTimeout(() => setChatOverlayIsVisible(false), 200);
 			return () => clearTimeout(timeout);
 		}
@@ -633,26 +642,26 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		if (typeof window !== "undefined") {
 			const calculateExclusionZones = () => {
 				const zones = [
-					// Open Chat button exclusion zone (bottom-right corner)
+					// Open Chat button (bottom-right)
 					{
-						top: window.innerHeight - 80, // bottom-6 = 24px, button height ~56px
-						left: window.innerWidth - 120, // right-6 = 24px, button width ~96px
-						width: 120,
+						top: window.innerHeight - 80,
+						left: window.innerWidth - 140,
+						width: 140,
 						height: 80,
 					},
-					// Header exclusion zone (top area)
+					// Header (top)
 					{
 						top: 0,
 						left: 0,
 						width: window.innerWidth,
-						height: 56, // h-14 = 56px
+						height: 64,
 					},
-					// Replay button exclusion zone (bottom-left corner)
+					// Replay button (bottom-left)
 					{
-						top: window.innerHeight - 80,
+						top: window.innerHeight - 88,
 						left: 0,
-						width: 80,
-						height: 80,
+						width: 88,
+						height: 88,
 					},
 				];
 				setUiExclusionZones(zones);
@@ -728,17 +737,21 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				{/* Base black screen layer for clean transitions */}
 				<div className="md:hidden fixed inset-0 z-[9996] bg-black" />
 
-				{/* On mobile, render the AIVisualCue as a fullscreen absolute element with no border/padding/background, and omit the top text */}
+				{/* Mobile AIVisualCue - Fullscreen overlay */}
 				<div
-					className={`md:hidden fixed inset-0 z-[9997] transition-all duration-500 ${
-						showChatOverlay && chatOverlayHasFadedIn
-							? "opacity-0 pointer-events-none"
+					className={`md:hidden fixed inset-0 z-[9997] transition-all duration-300 ${
+						showChatOverlay
+							? "opacity-0 pointer-events-none scale-95 translate-y-4"
 							: isReplaying
 							? "opacity-0"
 							: screenDimmed
 							? "opacity-30"
-							: "opacity-100"
-					}`}>
+							: "opacity-100 scale-100 translate-y-0"
+					}`}
+					style={{
+						visibility: showChatOverlay ? "hidden" : "visible",
+						transformOrigin: "center center",
+					}}>
 					<AIVisualCue
 						imageBase64={aiImageBase64}
 						bodyLanguageDescription={bodyLanguageForDisplay}
@@ -750,9 +763,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							scenarioDetails.customEnvironment ||
 							scenarioDetails.environment
 						}
-						showOverlayText={
-							!!aiImageBase64 && (!showChatOverlay || !chatOverlayHasFadedIn)
-						}
+						showOverlayText={!!aiImageBase64 && !showChatOverlay}
 						cinematicPhase={cinematicPhase}
 						imageOpacity={imageOpacity}
 						nameOpacity={nameOpacity}
@@ -764,6 +775,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						onReplayCinematic={replayCinematic}
 						onViewImage={onViewImage}
 						uiExclusionZones={uiExclusionZones}
+						isHidden={showChatOverlay}
 					/>
 					{/* SosheIQ Logo and Header (top) */}
 					{!showChatOverlay && (
@@ -867,9 +879,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							scenarioDetails.customEnvironment ||
 							scenarioDetails.environment
 						}
-						showOverlayText={
-							!!aiImageBase64 && (!showChatOverlay || !chatOverlayHasFadedIn)
-						}
+						showOverlayText={!!aiImageBase64 && !showChatOverlay}
 						cinematicPhase={cinematicPhase}
 						imageOpacity={imageOpacity}
 						nameOpacity={nameOpacity}
@@ -961,7 +971,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			{!showChatOverlay && hasCompletedFirstLoad && buttonsVisible && (
 				<button
 					onClick={() => setShowChatOverlay(true)}
-					className="md:hidden fixed bottom-6 right-6 z-[9997] flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-900/70 border border-slate-700/70 shadow-2xl backdrop-blur-md text-sky-100 font-semibold text-lg hover:bg-slate-800/80 active:bg-slate-900/90 transition-all duration-150 animate-button-pop-in animate-subtle-shimmer focus:outline-none"
+					className="md:hidden fixed bottom-6 right-6 z-[9997] flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-900/70 border border-slate-700/70 shadow-2xl backdrop-blur-md text-sky-100 font-semibold text-lg hover:bg-slate-800/80 active:bg-slate-900/90 transition-all duration-150 animate-replay-button-fade-in animate-subtle-shimmer focus:outline-none"
 					aria-label="Open chat">
 					{/* If you want to crossfade between different icons, use BackgroundCrossfadeImage here. For now, wrap the icon for future extensibility. */}
 					<span className="relative w-7 h-7 flex items-center justify-center">
@@ -981,13 +991,18 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					}`}
 					role="dialog"
 					aria-modal="true">
-					<BackgroundCrossfadeImage
-						src={
-							aiImageBase64 ? `data:image/jpeg;base64,${aiImageBase64}` : null
-						}
-						parallax
-					/>
-					{/* Darkening & Blur Layer */}
+					{/* Solid background to prevent image pop-in */}
+					<div className="absolute inset-0 bg-black" />
+					{chatOverlayImageVisible && (
+						<BackgroundCrossfadeImage
+							src={
+								aiImageBase64 ? `data:image/jpeg;base64,${aiImageBase64}` : null
+							}
+							parallax
+							className="animate-fadeIn"
+						/>
+					)}
+					{/* Darkening overlay */}
 					<div className="absolute inset-0 w-full h-full bg-slate-900/75 backdrop-blur-sm" />
 					{/* Chat Interface Layer (on top) */}
 					<div className="relative z-10 h-full">
