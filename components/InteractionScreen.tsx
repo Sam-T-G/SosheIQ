@@ -19,6 +19,7 @@ import {
 import { RenderChatInterface } from "./RenderChatInterface";
 import { SosheIQLogo } from "./SosheIQLogo";
 import { TopBannerContainer } from "./TopBannerContainer";
+import { BackgroundCrossfadeImage } from "./BackgroundCrossfadeImage";
 
 interface InteractionScreenProps {
 	scenarioDetails: ScenarioDetails;
@@ -862,14 +863,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			<div className="hidden md:flex md:w-2/3 relative">
 				{/* Background Container with AI Image */}
 				<div className="absolute inset-0 overflow-hidden rounded-r-xl">
-					{aiImageBase64 && (
-						<img
-							src={`data:image/jpeg;base64,${aiImageBase64}`}
-							alt=""
-							aria-hidden="true"
-							className="absolute inset-0 w-full h-full object-cover object-center animate-parallax-drift"
-						/>
-					)}
+					<BackgroundCrossfadeImage
+						src={
+							aiImageBase64 ? `data:image/jpeg;base64,${aiImageBase64}` : null
+						}
+						parallax
+					/>
 					{/* Darkening overlay for better text readability */}
 					<div className="absolute inset-0 w-full h-full bg-slate-900/75 backdrop-blur-sm" />
 				</div>
@@ -915,7 +914,10 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					onClick={() => setShowChatOverlay(true)}
 					className="md:hidden fixed bottom-6 right-6 z-[9997] flex items-center gap-3 px-6 py-3 rounded-2xl bg-slate-900/70 border border-slate-700/70 shadow-2xl backdrop-blur-md text-sky-100 font-semibold text-lg hover:bg-slate-800/80 active:bg-slate-900/90 transition-all duration-150 animate-button-pop-in animate-subtle-shimmer focus:outline-none"
 					aria-label="Open chat">
-					<ChatBubbleIcon className="h-7 w-7 text-sky-300 drop-shadow" />
+					{/* If you want to crossfade between different icons, use BackgroundCrossfadeImage here. For now, wrap the icon for future extensibility. */}
+					<span className="relative w-7 h-7 flex items-center justify-center">
+						<ChatBubbleIcon className="h-7 w-7 text-sky-300 drop-shadow" />
+					</span>
 					<span className="drop-shadow">Open Chat</span>
 				</button>
 			)}
@@ -930,18 +932,14 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					}`}
 					role="dialog"
 					aria-modal="true">
-					{/* Background Image Layer */}
-					{aiImageBase64 && (
-						<img
-							src={`data:image/jpeg;base64,${aiImageBase64}`}
-							alt=""
-							aria-hidden="true"
-							className="absolute inset-0 w-full h-full object-cover object-center animate-parallax-drift"
-						/>
-					)}
+					<BackgroundCrossfadeImage
+						src={
+							aiImageBase64 ? `data:image/jpeg;base64,${aiImageBase64}` : null
+						}
+						parallax
+					/>
 					{/* Darkening & Blur Layer */}
 					<div className="absolute inset-0 w-full h-full bg-slate-900/75 backdrop-blur-sm" />
-
 					{/* Chat Interface Layer (on top) */}
 					<div className="relative z-10 h-full">
 						<RenderChatInterface

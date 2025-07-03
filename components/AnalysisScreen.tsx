@@ -296,6 +296,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 	const [showPerTurnScores, setShowPerTurnScores] = useState(true);
 	const [cardWidth, setCardWidth] = useState<number | null>(null);
 	const analysisCardRef = useRef<HTMLDivElement>(null);
+	const [hasTriedToLoad, setHasTriedToLoad] = useState(false);
 
 	useEffect(() => {
 		function updateWidth() {
@@ -307,6 +308,12 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 		window.addEventListener("resize", updateWidth);
 		return () => window.removeEventListener("resize", updateWidth);
 	}, []);
+
+	useEffect(() => {
+		if (!isLoadingReport) {
+			setHasTriedToLoad(true);
+		}
+	}, [isLoadingReport]);
 
 	const handleExportToPdf = async () => {
 		const contentToPrint = reportContentRef.current;
@@ -391,7 +398,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 		}
 	};
 
-	if (isLoadingReport) {
+	if (isLoadingReport || !hasTriedToLoad) {
 		return (
 			<LoadingIndicator message="Generating your performance analysis..." />
 		);
@@ -411,7 +418,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 		);
 	}
 
-	if (!report) {
+	if (!report && hasTriedToLoad) {
 		return (
 			<div className="w-full max-w-3xl p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl text-center">
 				<h2 className="text-3xl font-bold text-yellow-500 mb-4">
@@ -429,6 +436,9 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 			</div>
 		);
 	}
+
+	// At this point, report is guaranteed to be non-null
+	const reportNonNull = report!;
 
 	let ageText = "";
 	if (typeof scenarioDetails.customAiAge === "number") {
@@ -496,21 +506,24 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 						<ScoreDisplay
 							label="Charisma"
-							score={report.overallCharismaScore}
+							score={reportNonNull.overallCharismaScore}
 						/>
-						<ScoreDisplay label="Clarity" score={report.responseClarityScore} />
+						<ScoreDisplay
+							label="Clarity"
+							score={reportNonNull.responseClarityScore}
+						/>
 						<ScoreDisplay
 							label="Engagement"
-							score={report.engagementMaintenanceScore}
+							score={reportNonNull.engagementMaintenanceScore}
 						/>
 						<ScoreDisplay
 							label="Adaptability"
-							score={report.adaptabilityScore}
+							score={reportNonNull.adaptabilityScore}
 						/>
-						{report.goalAchievementScore && (
+						{reportNonNull.goalAchievementScore && (
 							<ScoreDisplay
 								label="Goal Achievement"
-								score={report.goalAchievementScore}
+								score={reportNonNull.goalAchievementScore}
 							/>
 						)}
 					</div>
@@ -520,32 +533,32 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 						<FeedbackSection
 							title="What You Did Well"
 							IconComponent={ThumbsUpIcon}
-							content={report.strengths}
+							content={reportNonNull.strengths}
 							colorClass="text-green-400"
 						/>
 						<FeedbackSection
 							title="Areas for Improvement"
 							IconComponent={ThumbsDownIcon}
-							content={report.areasForImprovement}
+							content={reportNonNull.areasForImprovement}
 							colorClass="text-yellow-400"
 						/>
 						<FeedbackSection
 							title="Actionable Tips"
 							IconComponent={LightbulbIcon}
-							content={report.actionableTips}
+							content={reportNonNull.actionableTips}
 							colorClass="text-sky-400"
 						/>
 						<FeedbackSection
 							title="Things to Avoid"
 							IconComponent={ProhibitIcon}
-							content={report.thingsToAvoid}
+							content={reportNonNull.thingsToAvoid}
 							colorClass="text-red-400"
 						/>
-						{report.goalAchievementFeedback && (
+						{reportNonNull.goalAchievementFeedback && (
 							<FeedbackSection
 								title="Goal Feedback"
 								IconComponent={TargetIcon}
-								content={report.goalAchievementFeedback}
+								content={reportNonNull.goalAchievementFeedback}
 								colorClass="text-teal-400"
 							/>
 						)}
@@ -553,7 +566,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 					<FeedbackSection
 						title="AI's Evolving Perspective"
 						IconComponent={StarIcon}
-						content={report.aiEvolvingThoughtsSummary}
+						content={reportNonNull.aiEvolvingThoughtsSummary}
 						colorClass="text-purple-400"
 					/>
 
@@ -583,7 +596,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 						<div
 							ref={turnByTurnAnalysisContainerRef}
 							className="space-y-4 overflow-y-auto custom-scrollbar pr-2 -mr-2">
-							{report.turnByTurnAnalysis.map((item, index) => (
+							{reportNonNull.turnByTurnAnalysis.map((item, index) => (
 								<TurnAnalysisItemDisplay
 									key={index}
 									item={item}

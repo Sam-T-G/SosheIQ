@@ -460,6 +460,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
 	const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
+	const [showGlow, setShowGlow] = useState(false);
 
 	const isScrollingMutedRef = useRef(false);
 
@@ -539,6 +540,8 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	);
 
 	const handleSend = (gesture: string, dialogue: string) => {
+		setShowGlow(false); // reset
+		setTimeout(() => setShowGlow(true), 10); // retrigger for every interaction
 		setActivePopoverId(null);
 		if (gesture.trim() || dialogue.trim()) {
 			onSendMessage({ gesture, dialogue });
@@ -625,82 +628,84 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		: "bg-slate-800";
 
 	return (
-		<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
-			{/* Header and Engagement Container - Fixed at top */}
-			<div className="flex-shrink-0 z-20 relative">
-				<ChatAreaHeader />
-				{isOverlay && <EngagementBar />}
-			</div>
-
-			{/* Mobile Banner Container - Positioned right under engagement element */}
-			{isOverlay && (
-				<div className="flex-shrink-0 relative">
-					<TopBannerContainer
-						activeAction={activeAction}
-						isActionPaused={isActionPaused}
-						displayedGoal={displayedGoal}
-						isPinnable={isPinnable}
-						isGoalPinned={isGoalPinned}
-						onPinGoal={onPinGoal}
-						onUnpinGoal={onUnpinGoal}
-						onFastForwardAction={onFastForwardAction}
-						isLoadingAI={isLoadingAI}
-						goalJustChanged={goalJustChanged}
-						isOverlay={true}
-					/>
+		<>
+			<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
+				{/* Header and Engagement Container - Fixed at top */}
+				<div className="flex-shrink-0 z-20 relative">
+					<ChatAreaHeader />
+					{isOverlay && <EngagementBar />}
 				</div>
-			)}
 
-			<div
-				ref={chatContainerRef}
-				className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
-				onClick={() => setActivePopoverId(null)}>
-				<div className="space-y-4">
-					{processedMessagesForDisplay.map((msg, index) => (
-						<ChatMessageView
-							key={msg.id}
-							message={msg}
-							isLastMessage={
-								index === processedMessagesForDisplay.length - 1 &&
-								msg.id ===
-									conversationHistory[conversationHistory.length - 1]?.id &&
-								!msg.isThoughtBubble
-							}
-							isLoadingAI={
-								isLoadingAI &&
-								index === processedMessagesForDisplay.length - 1 &&
-								msg.id ===
-									conversationHistory[conversationHistory.length - 1]?.id &&
-								!msg.isThoughtBubble
-							}
-							onAnimationComplete={
-								lastMessageIsAi &&
-								index === processedMessagesForDisplay.length - 1
-									? onAnimationComplete
-									: undefined
-							}
-							onThoughtToggle={handleThoughtToggle}
-							scenarioDetailsAiName={scenarioDetailsAiName}
-							onViewImage={onViewImage}
-							onRetryMessage={onRetryMessage}
+				{/* Mobile Banner Container - Positioned right under engagement element */}
+				{isOverlay && (
+					<div className="flex-shrink-0 relative">
+						<TopBannerContainer
+							activeAction={activeAction}
+							isActionPaused={isActionPaused}
+							displayedGoal={displayedGoal}
+							isPinnable={isPinnable}
+							isGoalPinned={isGoalPinned}
+							onPinGoal={onPinGoal}
+							onUnpinGoal={onUnpinGoal}
+							onFastForwardAction={onFastForwardAction}
+							isLoadingAI={isLoadingAI}
+							goalJustChanged={goalJustChanged}
+							isOverlay={true}
 						/>
-					))}
-					{isLoadingAI && <ChatMessageViewAIThinking />}
-					<div ref={chatEndRef} />
+					</div>
+				)}
+
+				<div
+					ref={chatContainerRef}
+					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
+					onClick={() => setActivePopoverId(null)}>
+					<div className="space-y-4">
+						{processedMessagesForDisplay.map((msg, index) => (
+							<ChatMessageView
+								key={msg.id}
+								message={msg}
+								isLastMessage={
+									index === processedMessagesForDisplay.length - 1 &&
+									msg.id ===
+										conversationHistory[conversationHistory.length - 1]?.id &&
+									!msg.isThoughtBubble
+								}
+								isLoadingAI={
+									isLoadingAI &&
+									index === processedMessagesForDisplay.length - 1 &&
+									msg.id ===
+										conversationHistory[conversationHistory.length - 1]?.id &&
+									!msg.isThoughtBubble
+								}
+								onAnimationComplete={
+									lastMessageIsAi &&
+									index === processedMessagesForDisplay.length - 1
+										? onAnimationComplete
+										: undefined
+								}
+								onThoughtToggle={handleThoughtToggle}
+								scenarioDetailsAiName={scenarioDetailsAiName}
+								onViewImage={onViewImage}
+								onRetryMessage={onRetryMessage}
+							/>
+						))}
+						{isLoadingAI && <ChatMessageViewAIThinking />}
+						<div ref={chatEndRef} />
+					</div>
+				</div>
+
+				{pendingFeedback && (
+					<FeedbackAnimationTray
+						key={pendingFeedback.messageId}
+						data={pendingFeedback}
+						onComplete={onFeedbackAnimationComplete}
+					/>
+				)}
+
+				<div className="flex-shrink-0 z-20">
+					<InputArea {...inputAreaProps} />
 				</div>
 			</div>
-
-			{pendingFeedback && (
-				<FeedbackAnimationTray
-					key={pendingFeedback.messageId}
-					data={pendingFeedback}
-					onComplete={onFeedbackAnimationComplete}
-				/>
-			)}
-
-			<div className="flex-shrink-0 z-20">
-				<InputArea {...inputAreaProps} />
-			</div>
-		</div>
+		</>
 	);
 };
