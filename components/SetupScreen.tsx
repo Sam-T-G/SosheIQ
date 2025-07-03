@@ -343,7 +343,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 	};
 
 	return (
-		<div className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]">
+		<div className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards] my-4">
 			<div className="flex items-center gap-4 mb-4">
 				<button
 					type="button"
@@ -356,7 +356,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 				</h1>
 			</div>
 
-			<form onSubmit={handleSubmit} className="space-y-4">
+			<form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto">
 				<AccordionSection
 					title="AI Persona"
 					defaultOpen={true}

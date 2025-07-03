@@ -1290,16 +1290,17 @@ const HomePage: React.FC = () => {
 
 				{/* Main content area gets a quick, direct fade-in */}
 				<main
-					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] relative overflow-hidden ${
+					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] relative ${
 						currentPhase === GamePhase.HERO ||
-						currentPhase === GamePhase.SETUP ||
 						currentPhase === GamePhase.ABOUT ||
 						currentPhase === GamePhase.PRIVACY ||
 						currentPhase === GamePhase.TERMS ||
 						currentPhase === GamePhase.SAFETY ||
 						currentPhase === GamePhase.LOGIN
-							? "justify-center"
-							: ""
+							? "justify-center overflow-hidden"
+							: currentPhase === GamePhase.SETUP
+							? "justify-start py-4 overflow-y-auto"
+							: "overflow-hidden"
 					} ${isModalActive ? "pointer-events-none" : ""}`}
 					style={isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}}>
 					{renderContent()}
