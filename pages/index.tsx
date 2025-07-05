@@ -1318,7 +1318,7 @@ const HomePage: React.FC = () => {
 				<link rel="icon" href="/logo.svg" />
 			</Head>
 
-			{isAppLoading && <InitialLoadingScreen />}
+			<InitialLoadingScreen />
 
 			{mainAppVisible && (
 				<>

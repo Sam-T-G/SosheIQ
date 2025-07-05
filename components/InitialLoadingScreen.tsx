@@ -1,7 +1,7 @@
 /**
  * Motion-Optimized Initial Loading Screen with Perfect Viewport Centering
  * Enhanced with refined bounce effects and momentum curves using Motion physics
- * Comprehensive implementation with advanced glow system and cinematic transitions
+ * Fixed for hydration safety and proper hook sequencing
  */
 
 "use client";
@@ -32,63 +32,20 @@ interface LoadingPhase {
 	progress: number;
 }
 
-// Enhanced timing constants for seamless cinematic experience with quick synchronized transition
+// Enhanced timing constants for seamless cinematic experience - 4 second target
 const LOADING_SEQUENCE = {
-	ENTRANCE_DURATION: 200, // Very quick entrance
-	LOGO_DURATION: 300, // Quick logo phase - total 0.5s before progress
-	CONTENT_DURATION: 1000,
-	PROGRESS_DURATION: 3200, // Slightly faster progress
-	COMPLETION_DURATION: 1200, // Reduced for quicker transition
-	READY_DURATION: 600, // Faster ready phase
-	EXIT_DURATION: 800, // Synchronized exit timing
-	MINIMUM_TOTAL_DURATION: 7500, // Slightly reduced total duration
-	TRANSITION_HANDOFF_DELAY: 200, // Precise handoff timing
+	ENTRANCE_DURATION: 100, // Quick entrance
+	LOGO_DURATION: 150, // Quick logo phase - total 0.25s before progress
+	CONTENT_DURATION: 500, // Content phase
+	PROGRESS_DURATION: 1800, // Progress bar animation
+	COMPLETION_DURATION: 800, // Completion phase
+	READY_DURATION: 400, // Ready phase
+	EXIT_DURATION: 400, // Exit animations
+	TRANSITION_HANDOFF_DELAY: 100, // Precise handoff timing
+	MINIMUM_TOTAL_DURATION: 4000, // 4 second total duration
 } as const;
 
-// Sophisticated spacing system for responsive design
-const SPACING = {
-	XS: 6,
-	SM: 12,
-	MD: 24,
-	LG: 32,
-	XL: 48,
-	CINEMATIC_SM: 60,
-	CINEMATIC_MD: 120,
-	CINEMATIC_LG: 180,
-} as const;
-
-// Advanced typography system
-const TYPOGRAPHY = {
-	SIZES: {
-		SM: 14,
-		MD: 16,
-		LG: 18,
-		XL: 20,
-	},
-	LINE_HEIGHTS: {
-		TIGHT: 1.25,
-		NORMAL: 1.5,
-		RELAXED: 1.6,
-	},
-	LETTER_SPACING: {
-		TIGHT: "-0.025em",
-		NORMAL: "0em",
-		WIDE: "0.025em",
-		WIDER: "0.05em",
-	},
-} as const;
-
-// Sophisticated shadow system
-const SHADOWS = {
-	CINEMATIC_SOFT:
-		"0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08)",
-	CINEMATIC_MEDIUM:
-		"0 12px 48px rgba(0, 0, 0, 0.18), 0 6px 24px rgba(0, 0, 0, 0.12)",
-	CINEMATIC_STRONG:
-		"0 16px 64px rgba(0, 0, 0, 0.24), 0 8px 32px rgba(0, 0, 0, 0.16)",
-} as const;
-
-// Advanced easing curves for sophisticated momentum with quick transition
+// Advanced easing curves for sophisticated momentum
 const EASING_CURVES = {
 	gentleEntrance: [0.16, 1, 0.3, 1] as const,
 	dramaticReveal: [0.25, 0.46, 0.45, 0.94] as const,
@@ -96,14 +53,9 @@ const EASING_CURVES = {
 	smoothMomentum: [0.4, 0, 0.2, 1] as const,
 	breathingMomentum: "cubic-bezier(0.4, 0, 0.6, 1)" as const,
 	elegantProgress: [0.4, 0.0, 0.2, 1] as const,
-	// Advanced synchronized exit curves using Motion-generated springs
-	synchronizedExit:
-		"1000ms linear(0, 0.1262, 0.4133, 0.7368, 1.0078, 1.1812, 1.2506, 1.2366, 1.1719, 1.0896, 1.0154, 0.9638, 0.9389, 0.9372, 0.9509, 0.9713, 0.9912, 1.0062, 1.0144, 1.0163, 1.0137, 1.0088, 1.0036, 0.9993, 0.9968, 1, 0.9962, 0.9974, 0.9987, 0.9999, 1.0007, 1, 1)" as const,
-	cinematicHandoff:
-		"800ms linear(0, 0.8577, 1.5266, 1.0688, 0.7228, 0.967, 1.1459, 1.0157, 0.9232, 0.9926, 1.0404, 1.0034, 0.9788, 0.9984, 1.0112, 1.0007, 0.9941, 0.9997, 1, 1.0001, 1, 1, 1, 1, 1, 1, 1)" as const,
 } as const;
 
-// Enhanced Motion spring configurations with sophisticated physics and quick transitions
+// Enhanced Motion spring configurations with sophisticated physics
 const MOTION_SPRING_CONFIGS = {
 	GENTLE: {
 		type: "spring" as const,
@@ -137,32 +89,7 @@ const MOTION_SPRING_CONFIGS = {
 		restSpeed: 0.5,
 		restDelta: 0.01,
 	},
-	COMPLETION_GLOW: {
-		type: "spring" as const,
-		damping: 12,
-		stiffness: 200,
-		mass: 1.2,
-		restSpeed: 0.1,
-		restDelta: 0.01,
-	},
-	// Advanced synchronized exit springs
-	SYNCHRONIZED_EXIT: {
-		type: "spring" as const,
-		damping: 28,
-		stiffness: 380,
-		mass: 0.7,
-		restSpeed: 0.01,
-		restDelta: 0.001,
-	},
-	QUICK_FADE: {
-		type: "spring" as const,
-		damping: 35,
-		stiffness: 450,
-		mass: 0.5,
-		restSpeed: 0.01,
-		restDelta: 0.001,
-	},
-	// Advanced springy exit animations with sophisticated bounce and momentum
+	// Sophisticated exit with controlled spring physics
 	SPRINGY_EXIT: {
 		type: "spring" as const,
 		damping: 20,
@@ -171,70 +98,6 @@ const MOTION_SPRING_CONFIGS = {
 		bounce: 0.25,
 		restSpeed: 0.01,
 		restDelta: 0.001,
-	},
-	LOGO_SPRINGY_EXIT: {
-		type: "spring" as const,
-		damping: 25,
-		stiffness: 300,
-		mass: 0.6,
-		bounce: 0.3,
-		restSpeed: 0.01,
-		restDelta: 0.001,
-	},
-	CONTENT_SPRINGY_EXIT: {
-		type: "spring" as const,
-		damping: 22,
-		stiffness: 250,
-		mass: 0.7,
-		bounce: 0.2,
-		restSpeed: 0.01,
-		restDelta: 0.001,
-	},
-	CASCADING_EXIT: {
-		type: "spring" as const,
-		damping: 18,
-		stiffness: 180,
-		mass: 0.9,
-		bounce: 0.35,
-		restSpeed: 0.01,
-		restDelta: 0.001,
-	},
-	// Ultimate sophisticated exit with Motion AI-generated spring physics
-	ULTIMATE_EXIT: {
-		type: "spring" as const,
-		damping: 15,
-		stiffness: 160,
-		mass: 1.1,
-		bounce: 0.4,
-		restSpeed: 0.001,
-		restDelta: 0.0001,
-	},
-	// Breathing collapse animation configurations
-	BREATHE_OUT: {
-		type: "spring" as const,
-		damping: 12,
-		stiffness: 80,
-		mass: 1.5,
-		restSpeed: 0.01,
-		restDelta: 0.001,
-	},
-	BREATHE_IN_COLLAPSE: {
-		type: "spring" as const,
-		damping: 25,
-		stiffness: 300,
-		mass: 0.8,
-		bounce: 0.4,
-		restSpeed: 0.001,
-		restDelta: 0.0001,
-	},
-	SPRINGY_COLLAPSE: {
-		type: "spring" as const,
-		damping: 20,
-		stiffness: 400,
-		mass: 0.6,
-		bounce: 0.5,
-		restSpeed: 0.001,
-		restDelta: 0.0001,
 	},
 } as const;
 
@@ -272,41 +135,38 @@ const StyleInjector: React.FC = () => (
 );
 
 export const InitialLoadingScreen: React.FC = () => {
+	// 🔥 CRITICAL: ALL HOOKS MUST BE DECLARED FIRST - NO CONDITIONAL LOGIC BEFORE HOOKS
+	// This is the key to preventing "Rendered fewer hooks than expected" errors
+
+	// State hooks - ALWAYS called in the same order
 	const [isVisible, setIsVisible] = useState(true);
 	const [animationComplete, setAnimationComplete] = useState(false);
 	const [showGlow, setShowGlow] = useState(false);
 	const [glowOpacity, setGlowOpacity] = useState(0.8);
-
-	// Early return if not visible and animation is complete
-	if (!isVisible && animationComplete) {
-		return null;
-	}
-
 	const [currentPhase, setCurrentPhase] = useState<LoadingPhase>({
 		phase: "entrance",
 		message: "Initializing SosheIQ...",
 		progress: 0,
 	});
-
-	// Add a dedicated collapse trigger state
 	const [isCollapsing, setIsCollapsing] = useState(false);
+	const [isClient, setIsClient] = useState(false); // Hydration safety
 
-	// Enhanced Motion values with sophisticated physics
+	// Motion values - ALWAYS called in the same order
 	const progress = useMotionValue(0);
 	const progressSpring = useSpring(progress, MOTION_SPRING_CONFIGS.CINEMATIC);
 	const containerOpacitySpring = useSpring(1, MOTION_SPRING_CONFIGS.GENTLE);
 	const completionScaleSpring = useSpring(1, MOTION_SPRING_CONFIGS.SNAPPY);
 
-	// Advanced Motion controls for sophisticated animations
+	// Advanced Motion controls - ALWAYS called in the same order
 	const shimmerControls = useAnimation();
 	const breathingControls = useAnimation();
 	const completionGlow = useMotionValue(0);
 	const completionGlowSpring = useSpring(
 		completionGlow,
-		MOTION_SPRING_CONFIGS.COMPLETION_GLOW
+		MOTION_SPRING_CONFIGS.GENTLE
 	);
 
-	// Advanced transform chains for sophisticated animations
+	// Transform chains - ALWAYS called in the same order
 	const progressWidth = useTransform(progressSpring, [0, 100], ["0%", "100%"]);
 	const displayedPercentage = useTransform(progressSpring, (value) =>
 		Math.floor(value)
@@ -320,35 +180,58 @@ export const InitialLoadingScreen: React.FC = () => {
 		["brightness(1)", "brightness(1.2)", "brightness(1.4)"]
 	);
 
-	// Performance optimization refs
+	// Progress bar box shadow transform - ALWAYS called in same order
+	const progressBoxShadow = useTransform(
+		completionGlowSpring,
+		[0, 0.5, 1],
+		[
+			"0 0 16px rgba(59, 130, 246, 0.4)",
+			"0 0 24px rgba(59, 130, 246, 0.6), 0 0 48px rgba(6, 182, 212, 0.4)",
+			"0 0 32px rgba(59, 130, 246, 0.8), 0 0 64px rgba(6, 182, 212, 0.6)",
+		]
+	);
+
+	// Progress percentage color and text shadow transforms - ALWAYS called in same order
+	const progressTextColor = useTransform(
+		completionGlowSpring,
+		[0, 1],
+		["rgba(56, 189, 248, 0.8)", "rgba(255, 255, 255, 1)"]
+	);
+	const progressTextShadow = useTransform(
+		completionGlowSpring,
+		[0, 1],
+		["0 0 10px rgba(56, 189, 248, 0.3)", "0 0 20px rgba(255, 255, 255, 0.6)"]
+	);
+
+	// Performance optimization refs - ALWAYS called in the same order
 	const animationFrameRef = useRef<number>();
 	const completionTimeoutRef = useRef<NodeJS.Timeout>();
 	const startTimeRef = useRef<number>(Date.now());
 
-	// Enhanced shimmer sequence with sophisticated momentum curves
+	// Callback hooks - ALWAYS called in the same order
 	const triggerShimmerSequence = useCallback(async () => {
-		await shimmerControls.start({
-			x: [-60, 300],
+		shimmerControls.start({
+			x: 300,
 			transition: {
-				duration: 2.8,
+				duration: 1.4, // Adjusted for 4 second total duration
 				ease: [0.4, 0.0, 0.2, 1],
 				repeat: Infinity,
-				repeatDelay: 0.8,
+				repeatDelay: 0.4, // Adjusted for 4 second total duration
 			},
 		});
 	}, [shimmerControls]);
 
-	// Enhanced loading sequence with sophisticated timing and more text dialogues
+	// Enhanced loading sequence with sophisticated timing and text dialogues
 	const runLoadingSequence = useCallback(async () => {
 		const startTime = Date.now();
 		startTimeRef.current = startTime;
 
 		try {
 			console.log(
-				"InitialLoadingScreen: Starting sophisticated loading sequence"
+				"InitialLoadingScreen: Starting sophisticated loading sequence - hooks fixed"
 			);
 
-			// Phase 1: Entrance - Very quick entrance (200ms)
+			// Phase 1: Entrance - Quick entrance (200ms)
 			setCurrentPhase({
 				phase: "entrance",
 				message: "Initializing SosheIQ...",
@@ -366,7 +249,7 @@ export const InitialLoadingScreen: React.FC = () => {
 				progress: 0,
 			});
 			animate(progress, 15, {
-				duration: 0.8,
+				duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 				ease: EASING_CURVES.smoothMomentum,
 			});
 
@@ -384,7 +267,7 @@ export const InitialLoadingScreen: React.FC = () => {
 				progress: 45,
 			});
 			animate(progress, 45, {
-				duration: 1.2,
+				duration: 0.84, // 30% reduction: 1.2 * 0.7 = 0.84 seconds
 				ease: EASING_CURVES.dramaticReveal,
 			});
 			await new Promise((resolve) =>
@@ -398,81 +281,37 @@ export const InitialLoadingScreen: React.FC = () => {
 				progress: 65,
 			});
 
-			// Animate progress through multiple stages with text changes
-			const progressSequence = animate(progress, [45, 65, 75, 87], {
-				duration: 2.8, // Slightly faster for quicker transition
+			// Animate progress through multiple stages with text changes - 4 second target
+			const progressSequence = animate(progress, [45, 65, 75, 87, 99], {
+				duration: 1.4, // Adjusted for 4 second total duration
 				ease: "linear",
-				times: [0, 0.3, 0.6, 1],
+				times: [0, 0.3, 0.6, 0.8, 1],
 			});
 
-			// Text dialogue changes during progress (more like original)
+			// Text dialogue changes during progress - 4 second timing
 			setTimeout(() => {
 				setCurrentPhase((prev) => ({
 					...prev,
 					message: "Calibrating personality matrix...",
 				}));
-			}, 900);
+			}, 450); // Adjusted for 4 second total
 
 			setTimeout(() => {
 				setCurrentPhase((prev) => ({
 					...prev,
 					message: "Optimizing conversation algorithms...",
 				}));
-			}, 1800);
+			}, 900); // Adjusted for 4 second total
 
 			setTimeout(() => {
 				setCurrentPhase((prev) => ({
 					...prev,
 					message: "Almost ready...",
 				}));
-			}, 2400);
+			}, 1200); // Adjusted for 4 second total
 
 			// Wait for progress sequence
 			await progressSequence;
-
-			// Final progress push to 100%
-			await animate(progress, 100, {
-				duration: 0.6,
-				ease: EASING_CURVES.elegantProgress,
-			});
-
-			// Phase 5: Completion - Enhanced completion effects with expansion animation
-			setCurrentPhase({
-				phase: "completion",
-				message: "Welcome to SosheIQ!",
-				progress: 100,
-			});
-
-			// Trigger enhanced completion effects with Motion controls
-			const completionEffects = Promise.all([
-				// Glow effect
-				animate(completionGlow, 1, MOTION_SPRING_CONFIGS.COMPLETION_GLOW),
-				// Scale pulse
-				animate(completionScaleSpring, 1.05, MOTION_SPRING_CONFIGS.BREATHING),
-			]);
-
-			await completionEffects;
-
-			// EXPANSION PHASE: Breathe out to maximum size
-			console.log("Starting expansion phase...");
-
-			// Trigger maximum expansion animation
-			const expansionEffects = Promise.all([
-				// Main container expansion
-				animate(completionScaleSpring, 1.12, MOTION_SPRING_CONFIGS.BREATHE_OUT),
-				// Glow expansion
-				animate(completionGlow, 1.5, MOTION_SPRING_CONFIGS.BREATHE_OUT),
-				// Breathing controls expansion
-				breathingControls.start({
-					scale: 1.15,
-					transition: MOTION_SPRING_CONFIGS.BREATHE_OUT,
-				}),
-			]);
-
-			await expansionEffects;
-
-			// Hold the expansion for a moment
-			await new Promise((resolve) => setTimeout(resolve, 300));
 
 			// Ensure minimum duration
 			const elapsed = Date.now() - startTime;
@@ -481,47 +320,27 @@ export const InitialLoadingScreen: React.FC = () => {
 				await new Promise((resolve) => setTimeout(resolve, remaining));
 			}
 
-			// Phase 6: Ready - Quick preparation with synchronized glow fade-out
-			setCurrentPhase({
-				phase: "ready",
-				message: "Welcome to SosheIQ!",
-				progress: 100,
-			});
-
-			// Start synchronized fade-out effects
-			const readyEffects = Promise.all([
-				animate(completionGlow, 0.3, MOTION_SPRING_CONFIGS.QUICK_FADE),
-				animate(completionScaleSpring, 0.98, MOTION_SPRING_CONFIGS.QUICK_FADE),
-			]);
-
-			setGlowOpacity(0.2);
-
-			// Signal completion with sophisticated coordination
+			// Signal completion and start exit - NO COMPLETION PHASE ANIMATIONS
 			document.body.setAttribute("data-loading-complete", "true");
 			document.body.setAttribute("data-loading-ready-for-crossfade", "true");
 
-			await readyEffects;
-			// No hold period - go directly to collapse
-
-			// Phase 7: Quick Collapse Exit - Rapid shrink to nothing
-			console.log("Starting quick collapse phase...");
+			// Go directly to exit animation
+			console.log("Starting exit phase...");
 			setCurrentPhase({
 				phase: "exit",
 				message: "",
-				progress: 100,
+				progress: 99,
 			});
 
 			// Trigger collapse state for variants
 			setIsCollapsing(true);
 
-			// COLLAPSE PHASE: Only use exit variants - stop all other animations
 			// Immediate glow shutdown for clean transition
 			setShowGlow(false);
 			setGlowOpacity(0);
 
-			// Stop all conflicting animations - let only exit variants handle the collapse
-			// Wait for exit animations to complete (0.8s duration)
-			await new Promise((resolve) => setTimeout(resolve, 800));
+			// Wait for exit animations to complete - reduced linger delay
+			await new Promise((resolve) => setTimeout(resolve, 100)); // Reduced by 0.3s as requested
 
 			// Additional handoff delay for perfect synchronization
 			await new Promise((resolve) =>
@@ -555,10 +374,18 @@ export const InitialLoadingScreen: React.FC = () => {
 		triggerShimmerSequence,
 	]);
 
+	// Effect hooks - ALWAYS called in the same order
+	// Hydration safety - ensure client-side rendering
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
+
 	// Start loading sequence
 	useEffect(() => {
-		console.log("InitialLoadingScreen: Component mounted, starting sequence");
-		runLoadingSequence();
+		if (isClient) {
+			console.log("InitialLoadingScreen: Component mounted, starting sequence");
+			runLoadingSequence();
+		}
 
 		return () => {
 			if (animationFrameRef.current) {
@@ -568,7 +395,7 @@ export const InitialLoadingScreen: React.FC = () => {
 				clearTimeout(completionTimeoutRef.current);
 			}
 		};
-	}, [runLoadingSequence]);
+	}, [isClient, runLoadingSequence]);
 
 	// Fallback emergency timeout
 	useEffect(() => {
@@ -583,17 +410,32 @@ export const InitialLoadingScreen: React.FC = () => {
 				setAnimationComplete(true);
 				setIsVisible(false);
 			}
-		}, 12000);
+		}, 8000); // Adjusted emergency timeout for 4 second loading
 
 		return () => clearTimeout(emergencyTimeout);
 	}, [isVisible, animationComplete, containerOpacitySpring]);
 
-	// Enhanced animation variants for sophisticated phase transitions with synchronized exit
+	// 🔥 CRITICAL: Early return ONLY AFTER all hooks are declared
+	// This prevents "Rendered fewer hooks than expected" errors
+	if (!isClient) {
+		// Return a simple loading state during hydration
+		return (
+			<div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
+				<div className="text-white">Loading...</div>
+			</div>
+		);
+	}
+
+	if (!isVisible && animationComplete) {
+		return null;
+	}
+
+	// Enhanced animation variants for sophisticated phase transitions
 	const containerVariants: Variants = {
 		entrance: {
 			opacity: 1,
 			scale: 1,
-			transition: { ...MOTION_SPRING_CONFIGS.GENTLE, delay: 0.2 },
+			transition: { ...MOTION_SPRING_CONFIGS.GENTLE, delay: 0.1 }, // Adjusted for 4 second total
 		},
 		logo: {
 			opacity: 1,
@@ -610,24 +452,11 @@ export const InitialLoadingScreen: React.FC = () => {
 			scale: 1,
 			transition: MOTION_SPRING_CONFIGS.GENTLE,
 		},
-		completion: {
-			opacity: 1,
-			scale: 1,
-			transition: MOTION_SPRING_CONFIGS.GENTLE,
-		},
-		ready: {
-			opacity: 0.95,
-			scale: 0.99,
-			transition: MOTION_SPRING_CONFIGS.QUICK_FADE,
-		},
 		exit: {
-			opacity: [1, 1, 0],
-			scale: [1, 1.15, 0],
-			x: [0, 0, 0],
-			y: [0, 0, 0],
+			opacity: 0,
+			scale: 0, // Direct collapse without breathe out
 			transition: {
-				duration: 0.8,
-				times: [0, 0.3, 1],
+				duration: 0.4, // Adjusted for 4 second total
 				ease: "easeInOut",
 			},
 		},
@@ -640,7 +469,7 @@ export const InitialLoadingScreen: React.FC = () => {
 			opacity: 1,
 			scale: 1,
 			y: 0,
-			transition: { ...MOTION_SPRING_CONFIGS.SNAPPY, delay: 0.1 },
+			transition: { ...MOTION_SPRING_CONFIGS.SNAPPY, delay: 0.05 }, // Adjusted for 4 second total
 		},
 		content: {
 			opacity: 1,
@@ -654,26 +483,11 @@ export const InitialLoadingScreen: React.FC = () => {
 			y: 0,
 			transition: MOTION_SPRING_CONFIGS.GENTLE,
 		},
-		completion: {
-			opacity: 1,
-			scale: 1,
-			y: 0,
-			transition: MOTION_SPRING_CONFIGS.GENTLE,
-		},
-		ready: {
-			opacity: 0.9,
-			scale: 0.98,
-			y: 5,
-			transition: MOTION_SPRING_CONFIGS.QUICK_FADE,
-		},
 		exit: {
-			opacity: [1, 1, 0],
-			scale: [1, 1.2, 0],
-			y: [0, 0, 0],
-			rotate: [0, 0, 0],
+			opacity: 0,
+			scale: 0, // Direct collapse without breathe out
 			transition: {
-				duration: 0.8,
-				times: [0, 0.3, 1],
+				duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 				ease: "easeInOut",
 			},
 		},
@@ -686,7 +500,7 @@ export const InitialLoadingScreen: React.FC = () => {
 			opacity: 0.8,
 			scale: 1,
 			y: 0,
-			transition: { ...MOTION_SPRING_CONFIGS.GENTLE, delay: 0.3 },
+			transition: { ...MOTION_SPRING_CONFIGS.GENTLE, delay: 0.21 }, // 30% reduction: 0.3 * 0.7 = 0.21
 		},
 		content: {
 			opacity: 1,
@@ -700,26 +514,11 @@ export const InitialLoadingScreen: React.FC = () => {
 			y: 0,
 			transition: MOTION_SPRING_CONFIGS.GENTLE,
 		},
-		completion: {
-			opacity: 1,
-			scale: 1,
-			y: 0,
-			transition: MOTION_SPRING_CONFIGS.GENTLE,
-		},
-		ready: {
-			opacity: 0.8,
-			scale: 0.98,
-			y: 5,
-			transition: MOTION_SPRING_CONFIGS.QUICK_FADE,
-		},
 		exit: {
-			opacity: [1, 1, 0],
-			scale: [1, 1.1, 0],
-			y: [0, 0, 0],
-			x: [0, 0, 0],
+			opacity: 0,
+			scale: 0, // Direct collapse without breathe out
 			transition: {
-				duration: 0.8,
-				times: [0, 0.3, 1],
+				duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 				ease: "easeInOut",
 			},
 		},
@@ -742,7 +541,7 @@ export const InitialLoadingScreen: React.FC = () => {
 							width: "100vw",
 							height: "100vh",
 							position: "fixed",
-							backgroundColor: "#000", // always black
+							backgroundColor: "#000",
 						}}
 						initial={{ opacity: 0, scale: 1.05, y: 20 }}
 						animate={{
@@ -752,17 +551,13 @@ export const InitialLoadingScreen: React.FC = () => {
 							transition: MOTION_SPRING_CONFIGS.GENTLE,
 						}}
 						exit={{
-							opacity: [1, 1, 0],
-							scale: [1, 1.15, 0],
-							y: [0, 0, 0],
-							rotate: [0, 0, 0],
+							opacity: 0,
+							scale: 0, // Direct collapse without breathe out
 							transition: {
-								duration: 0.8,
-								times: [0, 0.3, 1],
+								duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 								ease: "easeInOut",
 							},
-						}}
-						transition={{}}>
+						}}>
 						{/* Perfect viewport-centered content container */}
 						<div
 							className="absolute inset-0"
@@ -778,54 +573,40 @@ export const InitialLoadingScreen: React.FC = () => {
 								className="flex flex-col items-center justify-center text-center"
 								style={{
 									width: "100%",
-									maxWidth: "28rem", // max-w-md equivalent
+									maxWidth: "28rem",
 									margin: "0 auto",
-									gap: "1.5rem", // space-y-6 equivalent
+									gap: "1.5rem",
 									willChange: "transform, opacity",
-									// Ensure content is always centered
 									position: "relative",
 									zIndex: 1,
 								}}
 								variants={containerVariants}
 								initial="entrance"
 								animate={currentPhase.phase}>
-								{/* Logo with enhanced glow system and refined bounce */}
+								{/* Logo with enhanced glow system */}
 								<motion.div
 									className="relative"
 									variants={logoVariants}
 									initial="entrance"
-									animate={currentPhase.phase}
-									exit={{
-										opacity: [1, 1, 0],
-										scale: [1, 1.2, 0],
-										y: [0, 0, 0],
-										rotate: [0, 0, 0],
-										transition: {
-											duration: 0.8,
-											times: [0, 0.3, 1],
-											ease: "easeInOut",
-										},
-									}}>
+									animate={currentPhase.phase}>
 									<SosheIQLogo
 										className="relative z-10"
 										style={{
-											height: `${Math.min(SPACING.CINEMATIC_MD, 80)}px`,
+											height: "120px",
 											width: "auto",
 											filter: "drop-shadow(0 0 24px rgba(59, 130, 246, 0.5))",
 											willChange: "transform, filter",
 										}}
 									/>
 
-									{/* Enhanced primary glow layer with sophisticated breathing momentum */}
+									{/* Enhanced primary glow layer */}
 									<AnimatePresence>
 										{showGlow && (
 											<motion.div
 												className="absolute rounded-full blur-lg"
 												style={{
-													height: `${
-														Math.min(SPACING.CINEMATIC_MD, 80) + 30
-													}px`,
-													width: `${Math.min(SPACING.CINEMATIC_MD, 80) + 30}px`,
+													height: "150px",
+													width: "150px",
 													background:
 														"radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(6, 182, 212, 0.2) 50%, transparent 100%)",
 													top: "-15px",
@@ -838,12 +619,10 @@ export const InitialLoadingScreen: React.FC = () => {
 												initial={{ opacity: 0 }}
 												animate={{ opacity: 1 }}
 												exit={{
-													opacity: [1, 1, 0],
-													scale: [1, 1.25, 0],
-													y: [0, 0, 0],
+													opacity: 0,
+													scale: 0,
 													transition: {
-														duration: 0.8,
-														times: [0, 0.3, 1],
+														duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 														ease: "easeInOut",
 													},
 												}}
@@ -851,16 +630,14 @@ export const InitialLoadingScreen: React.FC = () => {
 										)}
 									</AnimatePresence>
 
-									{/* Enhanced secondary glow layer with sophisticated momentum curves */}
+									{/* Enhanced secondary glow layer */}
 									<AnimatePresence>
 										{showGlow && (
 											<motion.div
 												className="absolute rounded-full blur-xl"
 												style={{
-													height: `${
-														Math.min(SPACING.CINEMATIC_MD, 80) + 60
-													}px`,
-													width: `${Math.min(SPACING.CINEMATIC_MD, 80) + 60}px`,
+													height: "180px",
+													width: "180px",
 													background:
 														"radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 40%, transparent 70%)",
 													top: "-30px",
@@ -870,15 +647,13 @@ export const InitialLoadingScreen: React.FC = () => {
 													animation: `breathingGlowSecondary 4800ms ${EASING_CURVES.breathingMomentum} infinite`,
 													opacity: glowOpacity,
 												}}
-												initial={{ opacity: 1 }}
+												initial={{ opacity: 0 }}
 												animate={{ opacity: 1 }}
 												exit={{
-													opacity: [1, 1, 0],
-													scale: [1, 1.3, 0],
-													y: [0, 0, 0],
+													opacity: 0,
+													scale: 0,
 													transition: {
-														duration: 0.8,
-														times: [0, 0.3, 1],
+														duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 														ease: "easeInOut",
 													},
 												}}
@@ -893,35 +668,22 @@ export const InitialLoadingScreen: React.FC = () => {
 									style={{ padding: "0 1rem" }}
 									variants={textVariants}
 									initial="entrance"
-									animate={currentPhase.phase}
-									exit="exit">
+									animate={currentPhase.phase}>
 									<motion.p
 										className="font-semibold text-sky-300"
 										style={{
-											fontSize: `${Math.min(TYPOGRAPHY.SIZES.LG, 18)}px`,
-											lineHeight: TYPOGRAPHY.LINE_HEIGHTS.RELAXED,
-											letterSpacing: TYPOGRAPHY.LETTER_SPACING.WIDE,
+											fontSize: "18px",
+											lineHeight: 1.6,
+											letterSpacing: "0.025em",
 											textShadow: "0 0 20px rgba(56, 189, 248, 0.5)",
 											willChange: "transform, opacity",
 										}}
 										key={currentPhase.message}
 										initial={{ opacity: 0, scale: 0.95, y: 20 }}
 										animate={{ opacity: 1, scale: 1, y: 0 }}
-										exit={{
-											opacity: [1, 1, 0],
-											scale: [1, 1.1, 0],
-											y: [0, 0, 0],
-											x: [0, 0, 0],
-											rotate: [0, 0, 0],
-											transition: {
-												duration: 0.8,
-												times: [0, 0.3, 1],
-												ease: "easeInOut",
-											},
-										}}
 										transition={
 											currentPhase.phase === "entrance"
-												? { ...MOTION_SPRING_CONFIGS.GENTLE, delay: 0.8 }
+												? { ...MOTION_SPRING_CONFIGS.GENTLE, delay: 0.56 } // 30% reduction: 0.8 * 0.7 = 0.56
 												: MOTION_SPRING_CONFIGS.GENTLE
 										}>
 										{currentPhase.message}
@@ -935,10 +697,8 @@ export const InitialLoadingScreen: React.FC = () => {
 									initial={{ opacity: 0, scaleX: 0.95, y: 20 }}
 									animate={{
 										opacity: [
-											"content", // Progress bar appears in content phase (after 0.5s)
+											"content", // Progress bar appears in content phase
 											"progress",
-											"completion",
-											"ready",
 											"exit",
 										].includes(currentPhase.phase)
 											? 1
@@ -947,15 +707,11 @@ export const InitialLoadingScreen: React.FC = () => {
 										y: 0,
 									}}
 									exit={{
-										opacity: [1, 1, 0],
-										scaleX: [1, 1.1, 0],
-										scaleY: [1, 1.1, 0],
-										y: [0, 0, 0],
-										x: [0, 0, 0],
-										rotate: [0, 0, 0],
+										opacity: 0,
+										scaleX: 0,
+										scaleY: 0,
 										transition: {
-											duration: 0.8,
-											times: [0, 0.3, 1],
+											duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
 											ease: "easeInOut",
 										},
 									}}
@@ -963,14 +719,14 @@ export const InitialLoadingScreen: React.FC = () => {
 									<motion.div
 										className="relative overflow-hidden backdrop-blur-sm"
 										style={{
-											height: `${SPACING.XS}px`,
-											borderRadius: `${SPACING.XS / 2}px`,
+											height: "6px",
+											borderRadius: "3px",
 											background: "rgba(30, 41, 59, 0.8)",
-											boxShadow: SHADOWS.CINEMATIC_SOFT,
+											boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
 											scale: completionScaleSpring,
 											willChange: "transform",
 										}}>
-										{/* Enhanced progress fill with sophisticated gradient and glow */}
+										{/* Enhanced progress fill */}
 										<motion.div
 											className="absolute left-0 top-0 h-full rounded-full"
 											style={{
@@ -980,19 +736,11 @@ export const InitialLoadingScreen: React.FC = () => {
 												transformOrigin: "left",
 												willChange: "width, transform, filter",
 												filter: progressBrightness,
-												boxShadow: useTransform(
-													completionGlowSpring,
-													[0, 0.5, 1],
-													[
-														"0 0 16px rgba(59, 130, 246, 0.4)",
-														"0 0 24px rgba(59, 130, 246, 0.6), 0 0 48px rgba(6, 182, 212, 0.4)",
-														"0 0 32px rgba(59, 130, 246, 0.8), 0 0 64px rgba(6, 182, 212, 0.6)",
-													]
-												),
+												boxShadow: progressBoxShadow,
 											}}
 										/>
 
-										{/* Sophisticated shimmer effect overlay with Motion controls */}
+										{/* Sophisticated shimmer effect */}
 										<motion.div
 											className="absolute inset-0 overflow-hidden rounded-full"
 											style={{
@@ -1006,39 +754,30 @@ export const InitialLoadingScreen: React.FC = () => {
 										/>
 									</motion.div>
 
-									{/* Enhanced progress percentage with sophisticated typography */}
+									{/* Enhanced progress percentage */}
 									<motion.div
 										className="text-center mt-3"
 										style={{
 											fontFamily: '"Courier New", monospace',
-											fontSize: `${TYPOGRAPHY.SIZES.SM}px`,
-											color: useTransform(
-												completionGlowSpring,
-												[0, 1],
-												["rgba(56, 189, 248, 0.8)", "rgba(255, 255, 255, 1)"]
-											),
-											letterSpacing: TYPOGRAPHY.LETTER_SPACING.WIDER,
-											textShadow: useTransform(
-												completionGlowSpring,
-												[0, 1],
-												[
-													"0 0 10px rgba(56, 189, 248, 0.3)",
-													"0 0 20px rgba(255, 255, 255, 0.6)",
-												]
-											),
+											fontSize: "14px",
+											color: progressTextColor,
+											letterSpacing: "0.05em",
+											textShadow: progressTextShadow,
 											willChange: "transform, opacity",
 											scale: completionScaleSpring,
 										}}
 										initial={{ opacity: 0 }}
 										animate={{ opacity: 1 }}
-										transition={{ delay: 0.5 }}>
+										transition={{ delay: 0.35 }}>
+										{" "}
+										{/* 30% reduction: 0.5 * 0.7 = 0.35 */}
 										<motion.span>{displayedPercentage}</motion.span>%
 									</motion.div>
 								</motion.div>
 							</motion.div>
 						</div>
 
-						{/* Sophisticated vignette overlay for cinematic depth */}
+						{/* Sophisticated vignette overlay */}
 						<div
 							className="absolute inset-0 pointer-events-none"
 							style={{
