@@ -101,6 +101,33 @@ const MOTION_SPRING_CONFIGS = {
 	},
 } as const;
 
+// Firefly particle system - authentic firefly field effect
+const FIREFLY_COUNT = 25; // Optimal count for realistic firefly field
+const FIREFLY_BLUE = "rgba(59, 130, 246, 0.8)"; // Primary logo blue
+const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.6)"; // Lighter accent blue
+
+// Generate fireflies with natural characteristics
+const generateFireflies = () => {
+	return Array.from({ length: FIREFLY_COUNT }, (_, i) => ({
+		id: i,
+		// Fireflies use consistent blue color palette
+		color: Math.random() > 0.7 ? FIREFLY_LIGHT_BLUE : FIREFLY_BLUE,
+		size: Math.random() * 3 + 2, // 2-5px (small like real fireflies)
+		initialX: Math.random() * 100, // 0-100%
+		initialY: Math.random() * 100, // 0-100%
+		// Natural firefly movement patterns
+		driftRange: Math.random() * 40 + 15, // 15-55px gentle drift
+		duration: Math.random() * 12 + 8, // 8-20s slow, natural movement
+		delay: Math.random() * 5, // 0-5s staggered appearance
+		// Firefly-specific properties
+		pulseSpeed: Math.random() * 2 + 1.5, // 1.5-3.5s pulse cycle
+		glowIntensity: Math.random() * 0.4 + 0.6, // 0.6-1.0 bright glow
+		flickerPattern: Math.random(), // 0-1 for flicker variation
+		floatDirection: Math.random() * Math.PI * 2, // Random float direction
+		verticalBias: Math.random() * 0.3 + 0.1, // 0.1-0.4 upward tendency
+	}));
+};
+
 // Enhanced keyframe animations with sophisticated momentum curves
 const KEYFRAMES = {
 	breathingGlow: `
@@ -127,6 +154,28 @@ const KEYFRAMES = {
 			100% { transform: translateX(100%) skewX(-15deg); }
 		}
 	`,
+	fireflyFloat: `
+		@keyframes fireflyFloat {
+			0% { transform: translateY(0px) translateX(0px) scale(1); }
+			25% { transform: translateY(-8px) translateX(5px) scale(1.1); }
+			50% { transform: translateY(3px) translateX(-3px) scale(0.9); }
+			75% { transform: translateY(-5px) translateX(2px) scale(1.05); }
+			100% { transform: translateY(0px) translateX(0px) scale(1); }
+		}
+	`,
+	fireflyGlow: `
+		@keyframes fireflyGlow {
+			0% { opacity: 0.3; filter: blur(1px) brightness(1.2); box-shadow: 0 0 8px currentColor; }
+			50% { opacity: 1; filter: blur(2px) brightness(1.8); box-shadow: 0 0 16px currentColor, 0 0 24px currentColor; }
+			100% { opacity: 0.3; filter: blur(1px) brightness(1.2); box-shadow: 0 0 8px currentColor; }
+		}
+	`,
+	fireflyFlicker: `
+		@keyframes fireflyFlicker {
+			0%, 90%, 100% { opacity: 1; }
+			95% { opacity: 0.2; }
+		}
+	`,
 } as const;
 
 // Add style tag to inject keyframes
@@ -142,7 +191,7 @@ export const InitialLoadingScreen: React.FC = () => {
 	const [isVisible, setIsVisible] = useState(true);
 	const [animationComplete, setAnimationComplete] = useState(false);
 	const [showGlow, setShowGlow] = useState(false);
-	const [glowOpacity, setGlowOpacity] = useState(0.8);
+	const [glowOpacity, setGlowOpacity] = useState(0); // Start at 0 for smooth ease-in
 	const [currentPhase, setCurrentPhase] = useState<LoadingPhase>({
 		phase: "entrance",
 		message: "Initializing SosheIQ...",
@@ -150,6 +199,7 @@ export const InitialLoadingScreen: React.FC = () => {
 	});
 	const [isCollapsing, setIsCollapsing] = useState(false);
 	const [isClient, setIsClient] = useState(false); // Hydration safety
+	const [fireflies] = useState(() => generateFireflies()); // Firefly field
 
 	// Motion values - ALWAYS called in the same order
 	const progress = useMotionValue(0);
@@ -237,7 +287,33 @@ export const InitialLoadingScreen: React.FC = () => {
 				message: "Initializing SosheIQ...",
 				progress: 0,
 			});
-			setShowGlow(true);
+			// Delay glow activation by 0.7 seconds with smooth opacity ramp
+			setTimeout(() => {
+				setShowGlow(true);
+				// Gradually increase glow opacity - faster population to full capacity
+				const startTime = Date.now();
+				const duration = 1250; // 1.25 seconds (1600ms - 350ms = 1250ms)
+				const targetOpacity = 0.6; // Target opacity for breathing base
+
+				const animateGlowOpacity = () => {
+					const elapsed = Date.now() - startTime;
+					const progress = Math.min(elapsed / duration, 1);
+
+					// Smooth ease-in-out curve
+					const easedProgress =
+						progress < 0.5
+							? 2 * progress * progress
+							: 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+					setGlowOpacity(easedProgress * targetOpacity);
+
+					if (progress < 1) {
+						requestAnimationFrame(animateGlowOpacity);
+					}
+				};
+
+				requestAnimationFrame(animateGlowOpacity);
+			}, 350);
 			await new Promise((resolve) =>
 				setTimeout(resolve, LOADING_SEQUENCE.ENTRANCE_DURATION)
 			);
@@ -462,29 +538,25 @@ export const InitialLoadingScreen: React.FC = () => {
 		},
 	};
 
-	// Enhanced logo variants with natural bounce physics
+	// Enhanced logo variants with natural bounce physics - NO OPACITY CONTROL
 	const logoVariants: Variants = {
-		entrance: { opacity: 0, scale: 0.8, y: 20 },
+		entrance: { scale: 0.8, y: 20 },
 		logo: {
-			opacity: 1,
 			scale: 1,
 			y: 0,
 			transition: { ...MOTION_SPRING_CONFIGS.SNAPPY, delay: 0.05 }, // Adjusted for 4 second total
 		},
 		content: {
-			opacity: 1,
 			scale: 1,
 			y: 0,
 			transition: MOTION_SPRING_CONFIGS.GENTLE,
 		},
 		progress: {
-			opacity: 1,
 			scale: 1,
 			y: 0,
 			transition: MOTION_SPRING_CONFIGS.GENTLE,
 		},
 		exit: {
-			opacity: 0,
 			scale: 0, // Direct collapse without breathe out
 			transition: {
 				duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
@@ -519,6 +591,50 @@ export const InitialLoadingScreen: React.FC = () => {
 			scale: 0, // Direct collapse without breathe out
 			transition: {
 				duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
+				ease: "easeInOut",
+			},
+		},
+	};
+
+	// Firefly variants for natural, gentle floating effect
+	const fireflyVariants: Variants = {
+		entrance: {
+			opacity: 0,
+			scale: 0,
+		},
+		logo: {
+			opacity: 0.4,
+			scale: 0.8,
+			transition: {
+				...MOTION_SPRING_CONFIGS.GENTLE,
+				duration: 1.2, // Slower, more natural entrance
+				ease: "easeOut",
+			},
+		},
+		content: {
+			opacity: 0.7,
+			scale: 1,
+			transition: {
+				...MOTION_SPRING_CONFIGS.GENTLE,
+				duration: 1.5,
+				ease: "easeOut",
+			},
+		},
+		progress: {
+			opacity: 1,
+			scale: 1,
+			transition: {
+				...MOTION_SPRING_CONFIGS.GENTLE,
+				duration: 1.8,
+				ease: "easeOut",
+			},
+		},
+		exit: {
+			opacity: 0,
+			scale: 0,
+			transition: {
+				...MOTION_SPRING_CONFIGS.GENTLE,
+				duration: 2,
 				ease: "easeInOut",
 			},
 		},
@@ -561,6 +677,79 @@ export const InitialLoadingScreen: React.FC = () => {
 								ease: "easeInOut",
 							},
 						}}>
+						{/* Firefly Field Background - Authentic firefly effect */}
+						{fireflies.map((firefly) => (
+							<motion.div
+								key={firefly.id}
+								className="absolute rounded-full"
+								style={{
+									width: firefly.size,
+									height: firefly.size,
+									backgroundColor: firefly.color,
+									left: `${firefly.initialX}%`,
+									top: `${firefly.initialY}%`,
+									filter: `blur(1px) brightness(1.5)`,
+									boxShadow: `
+										0 0 ${firefly.size * 3}px ${firefly.color},
+										0 0 ${firefly.size * 6}px ${firefly.color.replace(/[\d\.]+\)$/g, "0.3)")},
+										0 0 ${firefly.size * 9}px ${firefly.color.replace(/[\d\.]+\)$/g, "0.1)")}
+									`,
+									zIndex: 0,
+									willChange: "transform, opacity, filter",
+								}}
+								variants={fireflyVariants}
+								initial="entrance"
+								animate={currentPhase.phase}
+								whileInView={{
+									// Natural firefly floating movement
+									y: [
+										0,
+										-firefly.driftRange * firefly.verticalBias,
+										firefly.driftRange * 0.3,
+										-firefly.driftRange * firefly.verticalBias * 0.5,
+										0,
+									],
+									x: [
+										0,
+										Math.cos(firefly.floatDirection) * firefly.driftRange * 0.4,
+										Math.cos(firefly.floatDirection + Math.PI) *
+											firefly.driftRange *
+											0.2,
+										Math.cos(firefly.floatDirection + Math.PI * 0.5) *
+											firefly.driftRange *
+											0.1,
+										0,
+									],
+									// Gentle firefly pulsing
+									scale: [1, 1.2, 0.9, 1.1, 1],
+									// Firefly glow pattern with flicker
+									opacity: [
+										0.3,
+										firefly.glowIntensity,
+										0.1 + firefly.flickerPattern * 0.2,
+										firefly.glowIntensity * 0.8,
+										0.4,
+									],
+									// Enhanced glow effects
+									filter: [
+										`blur(1px) brightness(1.2)`,
+										`blur(2px) brightness(1.8)`,
+										`blur(0.5px) brightness(1.1)`,
+										`blur(1.5px) brightness(1.6)`,
+										`blur(1px) brightness(1.2)`,
+									],
+								}}
+								transition={{
+									duration: firefly.duration,
+									delay: firefly.delay,
+									ease: "easeInOut",
+									repeat: Infinity,
+									repeatType: "loop",
+									times: [0, 0.3, 0.5, 0.8, 1],
+								}}
+							/>
+						))}
+
 						{/* Perfect viewport-centered content container */}
 						<div
 							className="absolute inset-0"
@@ -586,139 +775,112 @@ export const InitialLoadingScreen: React.FC = () => {
 								variants={containerVariants}
 								initial="entrance"
 								animate={currentPhase.phase}>
-								{/* Logo with enhanced radial glow system */}
+								{/* Logo with enhanced glow system - Properly anchored */}
 								<motion.div
-									className="relative"
+									className="relative flex items-center justify-center"
 									variants={logoVariants}
 									initial="entrance"
-									animate={currentPhase.phase}>
-									{/* Outer radial glow ring with pulsing */}
-									<AnimatePresence>
-										{showGlow && (
-											<motion.div
-												className="absolute rounded-full"
-												style={{
-													width: "220px",
-													height: "220px",
-													top: "50%",
-													left: "50%",
-													transform: "translate(-50%, -50%)",
-													background:
-														"radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.15) 40%, transparent 80%)",
-													willChange: "transform, opacity",
-													filter: "blur(12px)",
-												}}
-												initial={{ opacity: 0, scale: 0.8 }}
-												animate={{
-													opacity: [0.3, 0.7, 0.3],
-													scale: [0.8, 1.3, 0.8],
-												}}
-												exit={{
-													opacity: 0,
-													scale: 0.5,
-													transition: {
-														duration: 0.6,
-														ease: "easeInOut",
-													},
-												}}
-												transition={{
-													duration: 3.5,
-													ease: "easeInOut",
-													repeat: Infinity,
-													repeatType: "loop",
-												}}
-											/>
-										)}
-									</AnimatePresence>
+									animate={currentPhase.phase}
+									style={{
+										width: "260px",
+										height: "156px",
+										opacity: currentPhase.phase === "entrance" ? 0 : 1, // Manual opacity control for container
+									}}>
+									{/* Primary glow - Controlled only by glowOpacity state */}
+									<motion.div
+										className="absolute rounded-full"
+										style={{
+											top: "-30px",
+											left: "-30px",
+											right: "-30px",
+											bottom: "-30px",
+											background:
+												"radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 30%, rgba(59, 130, 246, 0.04) 60%, transparent 85%)",
+											filter: "blur(26px)",
+											willChange: "opacity, transform",
+											zIndex: 1,
+											opacity: glowOpacity, // ONLY controlled by state
+										}}
+										whileInView={
+											showGlow && glowOpacity > 0.1 // Only start breathing when visible
+												? {
+														scale: [1, 1.15, 1], // Increased from 1.05 to 1.15
+														filter: ["blur(26px)", "blur(35px)", "blur(26px)"], // Increased blur range
+												  }
+												: {}
+										}
+										transition={{
+											duration: 3.7,
+											ease: "easeInOut",
+											repeat: Infinity,
+											repeatType: "loop",
+										}}
+									/>
 
-									{/* Middle radial glow ring */}
-									<AnimatePresence>
-										{showGlow && (
-											<motion.div
-												className="absolute rounded-full"
-												style={{
-													width: "180px",
-													height: "180px",
-													top: "50%",
-													left: "50%",
-													transform: "translate(-50%, -50%)",
-													background:
-														"radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, rgba(6, 182, 212, 0.2) 50%, transparent 90%)",
-													willChange: "transform, opacity",
-													filter: "blur(8px)",
-												}}
-												initial={{ opacity: 0, scale: 0.9 }}
-												animate={{
-													opacity: [0.4, 0.8, 0.4],
-													scale: [0.9, 1.2, 0.9],
-												}}
-												exit={{
-													opacity: 0,
-													scale: 0.6,
-													transition: {
-														duration: 0.6,
-														ease: "easeInOut",
-													},
-												}}
-												transition={{
-													duration: 2.8,
-													ease: "easeInOut",
-													repeat: Infinity,
-													repeatType: "loop",
-													delay: 0.7,
-												}}
-											/>
-										)}
-									</AnimatePresence>
+									{/* Secondary glow - Controlled only by glowOpacity state */}
+									<motion.div
+										className="absolute rounded-full"
+										style={{
+											top: "-3px",
+											left: "-6px",
+											right: "-6px",
+											bottom: "-3px",
+											background:
+												"radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, rgba(6, 182, 212, 0.02) 70%, transparent 90%)",
+											filter: "blur(19.5px)",
+											willChange: "opacity, transform",
+											zIndex: 2,
+											opacity: glowOpacity * 0.8, // ONLY controlled by state
+										}}
+										whileInView={
+											showGlow && glowOpacity > 0.1 // Only start breathing when visible
+												? {
+														scale: [1, 1.18, 1.25, 1.18, 1], // Increased all scale values
+														filter: [
+															"blur(19.5px)",
+															"blur(28px)", // Increased blur values
+															"blur(32px)",
+															"blur(28px)",
+															"blur(19.5px)",
+														],
+												  }
+												: {}
+										}
+										transition={{
+											duration: 4.8,
+											ease: "easeInOut",
+											repeat: Infinity,
+											repeatType: "loop",
+											delay: 0.5,
+										}}
+									/>
 
-									{/* Inner core glow */}
-									<AnimatePresence>
-										{showGlow && (
-											<motion.div
-												className="absolute rounded-full"
-												style={{
-													width: "140px",
-													height: "140px",
-													top: "50%",
-													left: "50%",
-													transform: "translate(-50%, -50%)",
-													background:
-														"radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(59, 130, 246, 0.3) 60%, transparent 100%)",
-													willChange: "transform, opacity",
-													filter: "blur(4px)",
-												}}
-												initial={{ opacity: 0, scale: 1 }}
-												animate={{
-													opacity: [0.2, 0.5, 0.2],
-													scale: [1, 1.1, 1],
-												}}
-												exit={{
-													opacity: 0,
-													scale: 0.8,
-													transition: {
-														duration: 0.6,
-														ease: "easeInOut",
-													},
-												}}
-												transition={{
-													duration: 2.2,
-													ease: "easeInOut",
-													repeat: Infinity,
-													repeatType: "loop",
-													delay: 1.2,
-												}}
-											/>
-										)}
-									</AnimatePresence>
+									{/* Tertiary inner glow - Controlled only by glowOpacity state */}
+									<motion.div
+										className="absolute rounded-full"
+										style={{
+											top: "8px",
+											left: "22px",
+											right: "22px",
+											bottom: "8px",
+											background:
+												"radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.05) 50%, transparent 80%)",
+											filter: "blur(13px)",
+											willChange: "opacity, transform",
+											zIndex: 3,
+											opacity: glowOpacity * 0.6, // ONLY controlled by state
+										}}
+									/>
 
-									{/* Logo with enhanced drop shadow */}
+									{/* Logo - Perfectly centered with subtle drop-shadow */}
 									<SosheIQLogo
 										className="relative z-10"
 										style={{
 											height: "120px",
 											width: "auto",
-											filter:
-												"drop-shadow(0 0 20px rgba(59, 130, 246, 0.6)) drop-shadow(0 0 40px rgba(6, 182, 212, 0.4))",
+											filter: `drop-shadow(0 0 12px rgba(59, 130, 246, ${
+												glowOpacity * 0.3
+											}))`, // Dynamic drop-shadow based on glow state
 											willChange: "transform, filter",
 										}}
 									/>

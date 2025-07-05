@@ -201,12 +201,10 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 		hidden: {
 			opacity: 0,
 			scale: 0.8,
-			rotate: -10,
 		},
 		visible: {
 			opacity: 1,
 			scale: 1,
-			rotate: 0,
 			transition: {
 				duration: 0.8,
 				ease: "easeOut",
@@ -305,94 +303,81 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 						maxWidth: "28rem",
 						gap: "2rem",
 					}}>
-					{/* Logo with Breathing Animation */}
+					{/* Logo with Static Position and Pulsing Glow */}
 					<motion.div
-						className="relative"
+						className="relative flex items-center justify-center"
 						variants={logoVariants}
-						animate={breathingControls}>
-						<motion.div
-							style={{
-								filter: logoGlow,
-								willChange: "transform, filter",
-							}}>
-							<SosheIQLogo
-								className="relative z-10"
-								style={{
-									height: "100px",
-									width: "auto",
-								}}
-							/>
-						</motion.div>
-
-						{/* Enhanced radial glow rings with pulsing */}
+						style={{
+							width: "260px", // Increased by 30%: 200px * 1.3 = 260px
+							height: "156px", // Increased by 30%: 120px * 1.3 = 156px
+						}}>
+						{/* Soft glow layers - pulsing opacity only - Extended 30% farther */}
 						<motion.div
 							className="absolute rounded-full"
 							style={{
-								width: "200px",
-								height: "200px",
-								top: "50%",
-								left: "50%",
-								transform: "translate(-50%, -50%)",
+								top: "-30px", // Extended outward by 30px
+								left: "-30px",
+								right: "-30px",
+								bottom: "-30px",
 								background:
-									"radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0.2) 30%, transparent 70%)",
-								scale: breathingScaleSpring,
-								willChange: "transform",
-								filter: "blur(8px)",
+									"radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 30%, rgba(59, 130, 246, 0.04) 60%, transparent 85%)",
+								filter: "blur(26px)", // Increased blur by 30%: 20px * 1.3 = 26px
+								willChange: "opacity",
+								zIndex: 1,
 							}}
 							animate={{
 								opacity: [0.3, 0.8, 0.3],
-								scale: [0.8, 1.2, 0.8],
-							}}
-							transition={{
-								duration: 2.5,
-								ease: "easeInOut",
-								repeat: Infinity,
-								repeatType: "loop",
-							}}
-						/>
-						<motion.div
-							className="absolute rounded-full"
-							style={{
-								width: "150px",
-								height: "150px",
-								top: "50%",
-								left: "50%",
-								transform: "translate(-50%, -50%)",
-								background:
-									"radial-gradient(circle, rgba(6, 182, 212, 0.5) 0%, rgba(6, 182, 212, 0.3) 40%, transparent 80%)",
-								scale: secondaryGlowScale,
-								willChange: "transform",
-								filter: "blur(4px)",
-							}}
-							animate={{
-								opacity: [0.4, 0.9, 0.4],
-								scale: [0.9, 1.1, 0.9],
 							}}
 							transition={{
 								duration: 3,
 								ease: "easeInOut",
 								repeat: Infinity,
 								repeatType: "loop",
-								delay: 0.5,
 							}}
 						/>
-						{/* Inner core glow */}
+
+						{/* Secondary soft glow - Extended 30% farther */}
 						<motion.div
 							className="absolute rounded-full"
 							style={{
-								width: "120px",
-								height: "120px",
-								top: "50%",
-								left: "50%",
-								transform: "translate(-50%, -50%)",
+								top: "-3px", // Reduced from 10px to extend farther: 10px - 13px = -3px
+								left: "-6px", // Reduced from 20px to extend farther: 20px - 26px = -6px
+								right: "-6px",
+								bottom: "-3px",
 								background:
-									"radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(59, 130, 246, 0.4) 50%, transparent 100%)",
-								willChange: "transform",
-								filter: "blur(2px)",
+									"radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, rgba(6, 182, 212, 0.02) 70%, transparent 90%)",
+								filter: "blur(19.5px)", // Increased blur by 30%: 15px * 1.3 = 19.5px
+								willChange: "opacity",
+								zIndex: 2,
 							}}
 							animate={{
-								opacity: [0.2, 0.6, 0.2],
-								scale: [1, 1.05, 1],
+								opacity: [0.2, 0.7, 0.2],
+							}}
+							transition={{
+								duration: 2.5,
+								ease: "easeInOut",
+								repeat: Infinity,
+								repeatType: "loop",
+								delay: 0.5,
+							}}
+						/>
+
+						{/* Tertiary inner glow - Extended 30% farther */}
+						<motion.div
+							className="absolute rounded-full"
+							style={{
+								top: "8px", // Reduced from 20px to extend farther: 20px - 12px = 8px
+								left: "22px", // Reduced from 40px to extend farther: 40px - 18px = 22px
+								right: "22px",
+								bottom: "8px",
+								background:
+									"radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.05) 50%, transparent 80%)",
+								filter: "blur(13px)", // Increased blur by 30%: 10px * 1.3 = 13px
+								willChange: "opacity",
+								zIndex: 3,
+							}}
+							animate={{
+								opacity: [0.4, 0.9, 0.4],
 							}}
 							transition={{
 								duration: 2,
@@ -402,6 +387,20 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 								delay: 1,
 							}}
 						/>
+
+						{/* Static Logo */}
+						<motion.div
+							className="relative z-10"
+							style={{
+								filter: "drop-shadow(0 0 20px rgba(59, 130, 246, 0.3))",
+							}}>
+							<SosheIQLogo
+								style={{
+									height: "100px",
+									width: "auto",
+								}}
+							/>
+						</motion.div>
 					</motion.div>
 
 					{/* Pulsing Text with Glow */}
@@ -484,12 +483,16 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 					</motion.div>
 				</motion.div>
 
-				{/* Ambient Background Glow - Subtle on black background */}
+				{/* Ambient Background Glow - Extended 30% farther */}
 				<motion.div
-					className="absolute inset-0 pointer-events-none"
+					className="absolute pointer-events-none"
 					style={{
+						top: "-30%", // Extended outward by 30%
+						left: "-30%",
+						right: "-30%",
+						bottom: "-30%",
 						background:
-							"radial-gradient(circle at center, rgba(59, 130, 246, 0.02) 0%, transparent 70%)",
+							"radial-gradient(circle at center, rgba(59, 130, 246, 0.025) 0%, rgba(59, 130, 246, 0.015) 40%, rgba(59, 130, 246, 0.008) 60%, transparent 85%)", // Extended gradient reach
 					}}
 					animate={{
 						opacity: [0.3, 0.6, 0.3],
