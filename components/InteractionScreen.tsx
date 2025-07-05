@@ -352,6 +352,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	const [cinematicSequenceComplete, setCinematicSequenceComplete] =
 		useState(false);
 	const [isReplaying, setIsReplaying] = useState(false);
+	const [isCinematicFadingOut, setIsCinematicFadingOut] = useState(false);
+	const [isGlobalFading, setIsGlobalFading] = useState(false);
 
 	const menuRef = useRef<HTMLDivElement>(null);
 	const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -491,12 +493,14 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 										}, 400);
 									}, 800);
 								} else {
-									// Desktop: Skip modal and show buttons directly
-									setHasCompletedFirstLoad(true);
-									setShowReplayButton(true);
+									// Desktop: After a 2s pause, dim and show the scenario context modal (same as mobile)
 									setTimeout(() => {
-										setButtonsVisible(true);
-									}, 200);
+										setScreenDimmed(true);
+										setTimeout(() => {
+											setShowScenarioContextModal(true);
+											setScenarioContextModalVisible(true);
+										}, 400);
+									}, 2000);
 								}
 							}, 1000);
 						}, 1200);
@@ -515,9 +519,8 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 	// Enhanced replay cinematic animation
 	const replayCinematic = () => {
-		// Start replay transition
 		setIsReplaying(true);
-
+		setIsCinematicFadingOut(true);
 		// First, fade out all text elements
 		setNameOpacity(0);
 		setPersonalityOpacity(0);
@@ -531,7 +534,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		// Wait for text elements to fade out completely (800ms for transition)
 		setTimeout(() => {
 			// Now fade to black by dimming the screen completely
-			setScreenDimmed(true);
+			setIsGlobalFading(true);
 
 			// After fade to black, reset all elements
 			setTimeout(() => {
@@ -540,10 +543,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				setCinematicSequenceComplete(false);
 				setHasCompletedFirstLoad(false);
 				setCinematicPhase("image");
+				setIsCinematicFadingOut(false); // Reset fade-out state
 
 				// Brighten screen and start new sequence
 				setTimeout(() => {
-					setScreenDimmed(false);
+					setIsGlobalFading(false);
 					setIsReplaying(false);
 
 					const startCinematicSequence = () => {
@@ -587,12 +591,14 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 													}, 400);
 												}, 800);
 											} else {
-												// Desktop: Skip modal and show buttons directly
-												setHasCompletedFirstLoad(true);
-												setShowReplayButton(true);
+												// Desktop: After a 2s pause, dim and show the scenario context modal (same as mobile)
 												setTimeout(() => {
-													setButtonsVisible(true);
-												}, 200);
+													setScreenDimmed(true);
+													setTimeout(() => {
+														setShowScenarioContextModal(true);
+														setScenarioContextModalVisible(true);
+													}, 400);
+												}, 2000);
 											}
 										}, 1000);
 									}, 1000);
@@ -609,19 +615,39 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 	// Handle scenario context modal confirmation
 	const handleScenarioContextConfirm = () => {
-		// Brighten the screen and show buttons
-		setScenarioContextModalVisible(false);
-		setTimeout(() => {
-			setShowScenarioContextModal(false);
-			setScreenDimmed(false);
-			setHasCompletedFirstLoad(true);
-			setShowReplayButton(true);
+		if (window.innerWidth >= 768) {
+			// Desktop: fade to black then fade back in
+			setScenarioContextModalVisible(false);
+			// Trigger full black overlay
+			setIsGlobalFading(true);
 
-			// Show buttons with subtle animation
 			setTimeout(() => {
+				// Hide modal completely while black
+				setShowScenarioContextModal(false);
+				// Prepare main UI
+				setHasCompletedFirstLoad(true);
+				setShowReplayButton(true);
 				setButtonsVisible(true);
-			}, 200);
-		}, 300);
+
+				// Fade back to chat interface
+				setTimeout(() => {
+					setIsGlobalFading(false);
+				}, 400);
+			}, 500);
+		} else {
+			// Mobile – retain existing behaviour
+			setScenarioContextModalVisible(false);
+			setTimeout(() => {
+				setShowScenarioContextModal(false);
+				setScreenDimmed(false);
+				setHasCompletedFirstLoad(true);
+				setShowReplayButton(true);
+
+				setTimeout(() => {
+					setButtonsVisible(true);
+				}, 200);
+			}, 300);
+		}
 	};
 
 	// Get the scenario context from conversation history
@@ -678,6 +704,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 
 	return (
 		<div className="w-full max-w-7xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl relative overflow-hidden">
+			{/* Global fade overlay for smooth cross-fades (desktop & mobile) */}
+			<div
+				className="fixed inset-0 z-[11000] bg-black pointer-events-none transition-opacity duration-700"
+				style={{ opacity: isGlobalFading ? 1 : 0 }}
+			/>
+
 			{/* Goal Achieved Toast */}
 			{showGoalAchievedToast.show && (
 				<GoalAchievedToast
@@ -758,6 +790,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							onViewImage={onViewImage}
 							uiExclusionZones={[]}
 							isHidden={false}
+							isCinematicFadingOut={isCinematicFadingOut}
 						/>
 						{/* Replay button (desktop, bottom left of AI image) */}
 						{showReplayButton && buttonsVisible && (
@@ -822,6 +855,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						onViewImage={onViewImage}
 						uiExclusionZones={uiExclusionZones}
 						isHidden={showChatOverlay}
+						isCinematicFadingOut={isCinematicFadingOut}
 					/>
 					{/* SosheIQ Logo and Header (top) */}
 					{!showChatOverlay && (
@@ -939,6 +973,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							onReplayCinematic={replayCinematic}
 							onViewImage={onViewImage}
 							uiExclusionZones={[]} // No exclusions needed for desktop
+							isCinematicFadingOut={isCinematicFadingOut}
 						/>
 						{/* Desktop Banner Area */}
 						<TopBannerContainer

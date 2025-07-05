@@ -33,6 +33,7 @@ interface AIVisualCueProps {
 	}>; // Areas to exclude from image clicks
 	isHidden?: boolean; // New prop: completely hide the component
 	isFullScreen?: boolean; // New prop: indicates if the component is in fullscreen cinematic mode
+	isCinematicFadingOut?: boolean; // New prop: triggers synchronized fade-out of overlay
 }
 
 export const AIVisualCue: React.FC<AIVisualCueProps> = ({
@@ -56,6 +57,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	uiExclusionZones = [],
 	isHidden = false,
 	isFullScreen = false,
+	isCinematicFadingOut = false,
 }) => {
 	// Add state for click detection
 	const [clickStartTime, setClickStartTime] = useState<number>(0);
@@ -271,17 +273,45 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								}
 							}}></div>
 					)}
-					{/* Cinematic Text Overlay */}
-					{showOverlayText && isFullScreen && (
-						<div className="absolute inset-0 z-10 flex flex-col items-center justify-end px-8 pb-36 md:items-start md:px-24 md:pb-32">
+					{/* Cinematic Text Overlay - Show on all fullscreen overlays (mobile and desktop) */}
+					{showOverlayText && (
+						<div
+							className={`absolute inset-0 z-10 flex flex-col justify-end px-8 pb-36 ${
+								isFullScreen
+									? "md:items-start md:px-24 md:pb-32"
+									: "items-center md:hidden"
+							} items-center`}
+							style={{
+								opacity: isCinematicFadingOut ? 0 : 1,
+								transition: "opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+							}}>
 							{/* Stronger fade at the bottom for readability */}
-							<div className="absolute inset-0 w-full pointer-events-none bg-gradient-to-t from-black/95 via-black/70 to-transparent" />
-							<div className="relative z-10 flex w-full max-w-xl flex-col items-center text-center md:items-start md:text-left">
+							<div
+								className="absolute inset-0 w-full pointer-events-none bg-gradient-to-t from-black/95 via-black/70 to-transparent"
+								style={{
+									opacity: isCinematicFadingOut
+										? 0
+										: hasCompletedFirstLoad
+										? 1
+										: nameOpacity || 0,
+									transition: "opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+								}}
+							/>
+							<div
+								className={`relative z-10 flex w-full max-w-xl flex-col ${
+									isFullScreen
+										? "md:items-start md:text-left"
+										: "items-center text-center"
+								}`}>
 								{aiName && (
 									<h2
 										className="text-3xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-5xl"
 										style={{
-											opacity: hasCompletedFirstLoad ? 1 : nameOpacity || 0,
+											opacity: isCinematicFadingOut
+												? 0
+												: hasCompletedFirstLoad
+												? 1
+												: nameOpacity || 0,
 											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
 											transform: hasCompletedFirstLoad
 												? "translateY(0)"
@@ -295,7 +325,9 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 									<p
 										className="mt-2 text-lg font-medium text-sky-100 drop-shadow-md md:text-xl"
 										style={{
-											opacity: hasCompletedFirstLoad
+											opacity: isCinematicFadingOut
+												? 0
+												: hasCompletedFirstLoad
 												? 1
 												: personalityOpacity || 0,
 											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -311,7 +343,9 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 									<p
 										className="text-base font-normal text-slate-200/90 drop-shadow md:text-lg"
 										style={{
-											opacity: hasCompletedFirstLoad
+											opacity: isCinematicFadingOut
+												? 0
+												: hasCompletedFirstLoad
 												? 1
 												: encounterTypeOpacity || 0,
 											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -327,7 +361,9 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 									<p
 										className="mt-4 text-base font-light italic text-slate-100/90 drop-shadow md:text-lg"
 										style={{
-											opacity: hasCompletedFirstLoad
+											opacity: isCinematicFadingOut
+												? 0
+												: hasCompletedFirstLoad
 												? 1
 												: bodyLanguageOpacity || 0,
 											transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
