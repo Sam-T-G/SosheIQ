@@ -103,6 +103,7 @@ const HomePage: React.FC = () => {
 
 	const [zeroEngagementStreak, setZeroEngagementStreak] = useState<number>(0);
 	const [isAppLoading, setIsAppLoading] = useState<boolean>(true); // For initial app load
+	const [mainAppVisible, setMainAppVisible] = useState<boolean>(false); // For new loading screen
 	const [isLoading, setIsLoading] = useState<boolean>(false); // General loading for phase changes, setup, analysis
 	const [isAiResponding, setIsAiResponding] = useState<boolean>(false); // Specific for AI turn processing (image and text)
 	const [isFadingToBlack, setIsFadingToBlack] = useState<boolean>(false); // For session end fade to black
@@ -148,7 +149,7 @@ const HomePage: React.FC = () => {
 	const isMobileLandscape = useMobileLandscape();
 
 	useEffect(() => {
-		const initServices = async () => {
+		const initializeApp = async () => {
 			try {
 				const res = await fetch("/api/init");
 				const data = await res.json();
@@ -156,29 +157,53 @@ const HomePage: React.FC = () => {
 				if (!data.apiKey) {
 					setError(getErrorMessage("API_KEY_MISSING").userMessage);
 					setIsAppLoading(false);
+					setMainAppVisible(true); // Show app even if there's an error
 					return;
 				}
 
 				geminiService.current = new GeminiService(data.apiKey);
 				imagenService.current = new ImagenService(data.apiKey);
+
+				// Wait for loading screen completion
+				const checkLoadingComplete = () => {
+					const isComplete = document.body.getAttribute(
+						"data-loading-complete"
+					);
+					const isReadyForCrossfade = document.body.getAttribute(
+						"data-loading-ready-for-crossfade"
+					);
+
+					if (isComplete && isReadyForCrossfade) {
+						setTimeout(() => {
+							setMainAppVisible(true);
+							setTimeout(() => setIsAppLoading(false), 800);
+						}, 200);
+					} else {
+						setTimeout(checkLoadingComplete, 100);
+					}
+				};
+
+				checkLoadingComplete();
+
+				// Fallback timeout
+				setTimeout(() => {
+					if (isAppLoading) {
+						setMainAppVisible(true);
+						setTimeout(() => setIsAppLoading(false), 500);
+					}
+				}, 10000);
 			} catch (err: unknown) {
 				const errorMessage =
 					err instanceof Error ? err.message : "Unknown error occurred";
 				console.error("Failed to fetch API key:", errorMessage);
 				setError(getErrorMessage("FETCH_FAILED").userMessage);
-			} finally {
-				// Check if mobile for extended loading duration
-				const isMobile = window.innerWidth <= 768;
-				const loadingDuration = isMobile ? 4500 : 1500; // Extended for mobile fade to black
-
-				setTimeout(() => {
-					setIsAppLoading(false);
-				}, loadingDuration);
+				setIsAppLoading(false);
+				setMainAppVisible(true); // Show app even if there's an error
 			}
 		};
 
-		initServices();
-	}, []);
+		initializeApp();
+	}, [isAppLoading]);
 
 	// Effect to handle the temporary glow state for the goal banner
 	useEffect(() => {
@@ -1295,89 +1320,92 @@ const HomePage: React.FC = () => {
 
 			{isAppLoading && <InitialLoadingScreen />}
 
-			{/* Fade to Black Overlay */}
-			{isFadingToBlack && (
-				<div className="fixed inset-0 z-[1000] animate-session-fade-to-black pointer-events-none" />
-			)}
-
-			{/* Outermost div now visible by default */}
-			<div
-				className={`flex flex-col h-screen ${
-					isAppLoading ? "invisible" : "visible"
-				}`}>
-				{/* Hide Header in mobile landscape and when modal is active */}
-				{!isMobileLandscape && !isModalActive && (
-					<Header
-						onLogoClick={() => {
-							if (currentPhase === GamePhase.INTERACTION) {
-								setShowConfirmEndDialog(true);
-							} else {
-								handleNavigate(GamePhase.HERO);
-							}
-						}}
-						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-						onNavigateToLogin={handleNavigateToLogin}
-					/>
-				)}
-
-				{/* Main content area gets a quick, direct fade-in */}
-				<main
-					className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] relative ${
-						currentPhase === GamePhase.HERO ||
-						currentPhase === GamePhase.ABOUT ||
-						currentPhase === GamePhase.PRIVACY ||
-						currentPhase === GamePhase.TERMS ||
-						currentPhase === GamePhase.SAFETY ||
-						currentPhase === GamePhase.LOGIN
-							? "justify-center overflow-hidden"
-							: currentPhase === GamePhase.SETUP
-							? "justify-start py-4 overflow-y-auto"
-							: "overflow-hidden"
-					} ${isModalActive ? "pointer-events-none" : ""}`}
-					style={isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}}>
-					{renderContent()}
-				</main>
-
-				{/* Hide Footer in mobile landscape and during INTERACTION phase */}
-				{!isMobileLandscape &&
-					currentPhase !== GamePhase.INTERACTION &&
-					!isModalActive && (
-						<Footer
-							onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-							onNavigateToInstructions={() =>
-								handleNavigate(GamePhase.INSTRUCTIONS)
-							}
-							onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
-							onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
-							onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
-						/>
+			{mainAppVisible && (
+				<>
+					{/* Fade to Black Overlay */}
+					{isFadingToBlack && (
+						<div className="fixed inset-0 z-[1000] animate-session-fade-to-black pointer-events-none" />
 					)}
 
-				{imageGalleryConfig.isOpen && (
-					<ImageViewerOverlay
-						images={imageGalleryConfig.images}
-						startIndex={imageGalleryConfig.startIndex}
-						onClose={handleCloseImageGallery}
-					/>
-				)}
-				{showHelp && <HelpAndTipsOverlay onClose={handleToggleHelp} />}
-				{showRandomConfirmDialog && (
-					<ConfirmationDialog
-						isOpen={showRandomConfirmDialog}
-						onConfirm={handleConfirmRandom}
-						onCancel={() => setShowRandomConfirmDialog(false)}
-						title="Start a Random Scenario?"
-						description="This will generate a completely random scenario, including the AI's personality and the setting. You will be taken to the login screen first."
-					/>
-				)}
-				{showConfirmEndDialog && (
-					<ConfirmEndInteractionDialog
-						isOpen={showConfirmEndDialog}
-						onConfirm={handleConfirmEndInteraction}
-						onCancel={() => setShowConfirmEndDialog(false)}
-					/>
-				)}
-			</div>
+					{/* Main application content */}
+					<div className="flex flex-col h-screen">
+						{/* Hide Header in mobile landscape and when modal is active */}
+						{!isMobileLandscape && !isModalActive && (
+							<Header
+								onLogoClick={() => {
+									if (currentPhase === GamePhase.INTERACTION) {
+										setShowConfirmEndDialog(true);
+									} else {
+										handleNavigate(GamePhase.HERO);
+									}
+								}}
+								onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+								onNavigateToLogin={handleNavigateToLogin}
+							/>
+						)}
+
+						{/* Main content area gets a quick, direct fade-in */}
+						<main
+							className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] relative ${
+								currentPhase === GamePhase.HERO ||
+								currentPhase === GamePhase.ABOUT ||
+								currentPhase === GamePhase.PRIVACY ||
+								currentPhase === GamePhase.TERMS ||
+								currentPhase === GamePhase.SAFETY ||
+								currentPhase === GamePhase.LOGIN
+									? "justify-center overflow-hidden"
+									: currentPhase === GamePhase.SETUP
+									? "justify-start py-4 overflow-y-auto"
+									: "overflow-hidden"
+							} ${isModalActive ? "pointer-events-none" : ""}`}
+							style={
+								isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}
+							}>
+							{renderContent()}
+						</main>
+
+						{/* Hide Footer in mobile landscape and during INTERACTION phase */}
+						{!isMobileLandscape &&
+							currentPhase !== GamePhase.INTERACTION &&
+							!isModalActive && (
+								<Footer
+									onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+									onNavigateToInstructions={() =>
+										handleNavigate(GamePhase.INSTRUCTIONS)
+									}
+									onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
+									onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
+									onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
+								/>
+							)}
+
+						{imageGalleryConfig.isOpen && (
+							<ImageViewerOverlay
+								images={imageGalleryConfig.images}
+								startIndex={imageGalleryConfig.startIndex}
+								onClose={handleCloseImageGallery}
+							/>
+						)}
+						{showHelp && <HelpAndTipsOverlay onClose={handleToggleHelp} />}
+						{showRandomConfirmDialog && (
+							<ConfirmationDialog
+								isOpen={showRandomConfirmDialog}
+								onConfirm={handleConfirmRandom}
+								onCancel={() => setShowRandomConfirmDialog(false)}
+								title="Start a Random Scenario?"
+								description="This will generate a completely random scenario, including the AI's personality and the setting. You will be taken to the login screen first."
+							/>
+						)}
+						{showConfirmEndDialog && (
+							<ConfirmEndInteractionDialog
+								isOpen={showConfirmEndDialog}
+								onConfirm={handleConfirmEndInteraction}
+								onCancel={() => setShowConfirmEndDialog(false)}
+							/>
+						)}
+					</div>
+				</>
+			)}
 		</>
 	);
 };

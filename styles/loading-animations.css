@@ -1,0 +1,286 @@
+/**
+ * Loading Screen Package - Required CSS Animations
+ * Contains all keyframe animations and styles needed for the loading screen
+ */
+
+/* === Enhanced Breathing Glow Animations === */
+@keyframes breathingGlow {
+	0% {
+		transform: translateX(-50%) scale(1);
+		opacity: 0.4;
+		filter: brightness(0.8) blur(12px);
+	}
+	25% {
+		transform: translateX(-50%) scale(1.05);
+		opacity: 0.6;
+		filter: brightness(1.1) blur(16px);
+	}
+	50% {
+		transform: translateX(-50%) scale(1.1);
+		opacity: 0.8;
+		filter: brightness(1.2) blur(20px);
+	}
+	75% {
+		transform: translateX(-50%) scale(1.05);
+		opacity: 0.6;
+		filter: brightness(1.1) blur(16px);
+	}
+	100% {
+		transform: translateX(-50%) scale(1);
+		opacity: 0.4;
+		filter: brightness(0.8) blur(12px);
+	}
+}
+
+@keyframes breathingGlowSecondary {
+	0% {
+		transform: translateX(-50%) scale(1);
+		opacity: 0.2;
+		filter: brightness(0.9) blur(16px);
+	}
+	25% {
+		transform: translateX(-50%) scale(1.08);
+		opacity: 0.3;
+		filter: brightness(1.1) blur(20px);
+	}
+	50% {
+		transform: translateX(-50%) scale(1.15);
+		opacity: 0.4;
+		filter: brightness(1.3) blur(24px);
+	}
+	75% {
+		transform: translateX(-50%) scale(1.08);
+		opacity: 0.3;
+		filter: brightness(1.1) blur(20px);
+	}
+	100% {
+		transform: translateX(-50%) scale(1);
+		opacity: 0.2;
+		filter: brightness(0.9) blur(16px);
+	}
+}
+
+/* === Shimmer Effect Animation === */
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%) skewX(-15deg);
+	}
+	100% {
+		transform: translateX(100%) skewX(-15deg);
+	}
+}
+
+/* === Utility CSS Classes === */
+
+/* Ensure proper full-screen coverage */
+.loading-screen-container {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 10000;
+	background-color: #000000;
+	overflow: hidden;
+}
+
+/* Perfect centering utility */
+.loading-screen-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 100vh;
+	min-width: 100vw;
+}
+
+/* Content container */
+.loading-screen-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	width: 100%;
+	max-width: 28rem; /* 448px */
+	margin: 0 auto;
+	gap: 1.5rem; /* 24px */
+	position: relative;
+	z-index: 1;
+	padding: 1rem;
+}
+
+/* Logo container with glow support */
+.loading-screen-logo {
+	position: relative;
+	filter: drop-shadow(0 0 24px rgba(59, 130, 246, 0.5));
+}
+
+/* Text styling */
+.loading-screen-text {
+	font-weight: 600;
+	color: rgb(125, 211, 252); /* text-sky-300 */
+	text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+	letter-spacing: 0.025em; /* tracking-wide */
+	line-height: 1.4;
+}
+
+/* Progress bar container */
+.loading-screen-progress-container {
+	width: 100%;
+	max-width: 20rem; /* 320px */
+	padding: 0 1rem;
+}
+
+.loading-screen-progress-bar {
+	position: relative;
+	overflow: hidden;
+	backdrop-filter: blur(4px);
+	background: rgba(30, 41, 59, 0.8);
+	border-radius: 3px;
+	height: 6px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.loading-screen-progress-fill {
+	height: 100%;
+	background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #0ea5e9 100%);
+	border-radius: 3px;
+	transform-origin: left;
+}
+
+/* Progress percentage display */
+.loading-screen-percentage {
+	text-align: center;
+	font-family: "Courier New", monospace;
+	font-size: 0.875rem; /* 14px */
+	color: rgba(56, 189, 248, 0.8);
+	letter-spacing: 0.05em; /* tracking-wider */
+	margin-top: 0.75rem; /* 12px */
+	text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+/* Vignette overlay */
+.loading-screen-vignette {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: radial-gradient(
+			ellipse at center,
+			transparent 60%,
+			rgba(0, 0, 0, 0.05) 95%
+		),
+		linear-gradient(
+			0deg,
+			rgba(15, 23, 42, 0.1) 0%,
+			transparent 20%,
+			transparent 80%,
+			rgba(15, 23, 42, 0.1) 100%
+		);
+}
+
+/* === Responsive Design === */
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+	.loading-screen-content {
+		gap: 1.25rem; /* Slightly reduced gap */
+		padding: 1.5rem;
+	}
+
+	.loading-screen-text {
+		font-size: 1rem; /* 16px */
+	}
+
+	.loading-screen-percentage {
+		font-size: 0.75rem; /* 12px */
+	}
+
+	.loading-screen-logo {
+		filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.4));
+	}
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+	.loading-screen-content {
+		max-width: 32rem; /* 512px */
+	}
+
+	.loading-screen-text {
+		font-size: 1.125rem; /* 18px */
+	}
+}
+
+/* Desktop optimizations */
+@media (min-width: 1024px) {
+	.loading-screen-content {
+		max-width: 36rem; /* 576px */
+	}
+
+	.loading-screen-text {
+		font-size: 1.25rem; /* 20px */
+	}
+}
+
+/* === Accessibility === */
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	@keyframes breathingGlow {
+		0%,
+		100% {
+			transform: translateX(-50%) scale(1);
+			opacity: 0.4;
+			filter: brightness(0.8) blur(12px);
+		}
+	}
+
+	@keyframes breathingGlowSecondary {
+		0%,
+		100% {
+			transform: translateX(-50%) scale(1);
+			opacity: 0.2;
+			filter: brightness(0.9) blur(16px);
+		}
+	}
+
+	@keyframes shimmer {
+		0%,
+		100% {
+			transform: translateX(0) skewX(0deg);
+		}
+	}
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+	.loading-screen-text {
+		color: #ffffff;
+		text-shadow: none;
+	}
+
+	.loading-screen-percentage {
+		color: #ffffff;
+		text-shadow: none;
+	}
+
+	.loading-screen-progress-fill {
+		background: #ffffff;
+	}
+}
+
+/* === Dark mode specific adjustments === */
+@media (prefers-color-scheme: dark) {
+	.loading-screen-container {
+		background-color: #000000;
+	}
+}
+
+/* === Print styles (hide loading screen) === */
+@media print {
+	.loading-screen-container {
+		display: none !important;
+	}
+}
