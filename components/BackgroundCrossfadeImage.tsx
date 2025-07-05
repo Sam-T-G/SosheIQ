@@ -4,11 +4,12 @@ interface BackgroundCrossfadeImageProps {
 	src: string | null;
 	parallax?: boolean;
 	className?: string;
+	objectPosition?: string;
 }
 
 export const BackgroundCrossfadeImage: React.FC<
 	BackgroundCrossfadeImageProps
-> = ({ src, parallax = false, className = "" }) => {
+> = ({ src, parallax = false, className = "", objectPosition = "center" }) => {
 	const [displayed, setDisplayed] = useState<string | null>(null);
 	const [incoming, setIncoming] = useState<string | null>(null);
 	const [isAnimating, setIsAnimating] = useState(false);
@@ -68,8 +69,9 @@ export const BackgroundCrossfadeImage: React.FC<
 			{displayed && (
 				<img
 					src={displayed}
-					className="absolute inset-0 w-full h-full object-cover object-center"
+					className={`absolute inset-0 w-full h-full object-cover`}
 					style={{
+						objectPosition: objectPosition,
 						opacity: incoming && isAnimating ? 0 : 1,
 						filter: incoming && isAnimating ? "saturate(0.8)" : "saturate(1)",
 						transition: `opacity ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}, filter ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}`,
@@ -86,8 +88,9 @@ export const BackgroundCrossfadeImage: React.FC<
 			{incoming && (
 				<img
 					src={incoming}
-					className="absolute inset-0 w-full h-full object-cover object-center"
+					className={`absolute inset-0 w-full h-full object-cover`}
 					style={{
+						objectPosition: objectPosition,
 						opacity: isAnimating ? 1 : 0,
 						filter: isAnimating ? "saturate(1)" : "saturate(0.8)",
 						transition: `opacity ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}, filter ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}`,

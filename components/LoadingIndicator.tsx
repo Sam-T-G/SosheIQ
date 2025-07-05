@@ -1,6 +1,7 @@
 /**
  * Motion-Enhanced Session Loading Screen
  * Features persistent animations with floating particles, breathing effects, and pulsing elements
+ * Now with AI-contextual text cycling based on user's scenario details
  * Inspired by Motion React best practices and modern loading UX patterns
  */
 
@@ -18,10 +19,14 @@ import {
 	Variants,
 } from "motion/react";
 import { SosheIQLogo } from "./SosheIQLogo";
+import { useAILoadingMessages } from "../hooks/useAILoadingMessages";
+import type { ScenarioDetails } from "../types";
 
 interface LoadingIndicatorProps {
 	message?: string;
 	extraClasses?: string;
+	scenarioDetails?: ScenarioDetails;
+	testMode?: boolean; // Enable random test data generation
 }
 
 // Enhanced Motion spring configurations for persistent animations
@@ -54,36 +59,45 @@ const MOTION_SPRING_CONFIGS = {
 	},
 } as const;
 
-// Floating particle configuration
-const PARTICLE_COUNT = 12;
-const PARTICLE_COLORS = [
-	"rgba(59, 130, 246, 0.4)", // blue-500
-	"rgba(6, 182, 212, 0.4)", // cyan-500
-	"rgba(14, 165, 233, 0.4)", // sky-500
-	"rgba(99, 102, 241, 0.3)", // indigo-500
-	"rgba(139, 92, 246, 0.3)", // violet-500
-];
+// Firefly particle system - authentic firefly field effect (copied from InitialLoadingScreen)
+const FIREFLY_COUNT = 40;
+const FIREFLY_BLUE = "rgba(59, 130, 246, 0.9)";
+const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.8)";
 
-// Generate floating particles with random properties
-const generateParticles = () => {
-	return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+const generateFireflies = () => {
+	return Array.from({ length: FIREFLY_COUNT }, (_, i) => ({
 		id: i,
-		color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
-		size: Math.random() * 8 + 4, // 4-12px
-		initialX: Math.random() * 100, // 0-100%
-		initialY: Math.random() * 100, // 0-100%
-		driftRange: Math.random() * 40 + 20, // 20-60px drift
-		duration: Math.random() * 8 + 6, // 6-14s duration
-		delay: Math.random() * 4, // 0-4s delay
+		color: Math.random() > 0.7 ? FIREFLY_LIGHT_BLUE : FIREFLY_BLUE,
+		size: Math.random() * 3 + 2, // 2-5px
+		initialX: Math.random() * 100,
+		initialY: Math.random() * 100,
+		driftRange: Math.random() * 40 + 15,
+		duration: Math.random() * 12 + 8,
+		delay: Math.random() * 5,
+		pulseSpeed: Math.random() * 2 + 1.5,
+		glowIntensity: Math.random() * 0.3 + 0.7,
+		flickerPattern: Math.random(),
+		floatDirection: Math.random() * Math.PI * 2,
+		verticalBias: Math.random() * 0.3 + 0.1,
 	}));
 };
 
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 	message = "Loading...",
 	extraClasses = "",
+	scenarioDetails,
+	testMode = false,
 }) => {
 	const [isClient, setIsClient] = useState(false);
-	const [particles] = useState(() => generateParticles());
+	const [fireflies] = useState(() => generateFireflies());
+
+	// Use AI loading messages hook for dynamic text cycling
+	const { currentMessage } = useAILoadingMessages({
+		scenarioDetails,
+		isLoading: true,
+		baseMessage: message,
+		testMode,
+	});
 
 	// Motion values for breathing and pulsing effects
 	const breathingScale = useMotionValue(1);
@@ -121,6 +135,9 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 		[0.95, 1.05],
 		[1.1, 1.3]
 	);
+
+	// Revolution animation for logo (orbital revolution)
+	const revolutionControls = useAnimation();
 
 	// Hydration safety
 	useEffect(() => {
@@ -163,7 +180,18 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 				repeatType: "loop",
 			},
 		});
-	}, [breathingControls, pulseControls, particleControls]);
+
+		// Revolution animation for logo
+		revolutionControls.start({
+			rotate: [0, 360],
+			transition: {
+				duration: 8,
+				ease: "linear",
+				repeat: Infinity,
+				repeatType: "loop",
+			},
+		});
+	}, [breathingControls, pulseControls, particleControls, revolutionControls]);
 
 	useEffect(() => {
 		if (isClient) {
@@ -264,34 +292,70 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 				initial="hidden"
 				animate="visible"
 				exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.6 } }}>
-				{/* Floating Particles Background */}
-				{particles.map((particle) => (
+				{/* Firefly Field Background - Authentic firefly effect */}
+				{fireflies.map((firefly) => (
 					<motion.div
-						key={particle.id}
+						key={firefly.id}
 						className="absolute rounded-full"
 						style={{
-							width: particle.size,
-							height: particle.size,
-							backgroundColor: particle.color,
-							left: `${particle.initialX}%`,
-							top: `${particle.initialY}%`,
-							filter: "blur(1px)",
+							width: firefly.size,
+							height: firefly.size,
+							backgroundColor: firefly.color,
+							left: `${firefly.initialX}%`,
+							top: `${firefly.initialY}%`,
+							filter: `blur(1px) brightness(1.5)`,
+							boxShadow: `
+								0 0 ${firefly.size * 4}px ${firefly.color},
+								0 0 ${firefly.size * 8}px ${firefly.color.replace(/\[\d\.]+\)$/g, "0.4)")},
+								0 0 ${firefly.size * 12}px ${firefly.color.replace(/\[\d\.]+\)$/g, "0.2)")}
+							`,
+							zIndex: 0,
+							willChange: "transform, opacity, filter",
 						}}
-						variants={particleVariants}
-						initial="hidden"
-						animate="visible"
+						initial={{ opacity: 0, scale: 0 }}
+						animate={{ opacity: 1, scale: 1 }}
 						whileInView={{
-							y: [0, -particle.driftRange, particle.driftRange * 0.5, 0],
-							x: [0, particle.driftRange * 0.3, -particle.driftRange * 0.2, 0],
-							scale: [1, 1.2, 0.8, 1],
-							opacity: [0.4, 0.8, 0.3, 0.6],
+							y: [
+								0,
+								-firefly.driftRange * firefly.verticalBias,
+								firefly.driftRange * 0.3,
+								-firefly.driftRange * firefly.verticalBias * 0.5,
+								0,
+							],
+							x: [
+								0,
+								Math.cos(firefly.floatDirection) * firefly.driftRange * 0.4,
+								Math.cos(firefly.floatDirection + Math.PI) *
+									firefly.driftRange *
+									0.2,
+								Math.cos(firefly.floatDirection + Math.PI * 0.5) *
+									firefly.driftRange *
+									0.1,
+								0,
+							],
+							scale: [1, 1.2, 0.9, 1.1, 1],
+							opacity: [
+								0.4,
+								firefly.glowIntensity,
+								0.2 + firefly.flickerPattern * 0.3,
+								firefly.glowIntensity * 0.9,
+								0.5,
+							],
+							filter: [
+								`blur(1px) brightness(1.4)`,
+								`blur(2px) brightness(2.2)`,
+								`blur(0.5px) brightness(1.3)`,
+								`blur(1.5px) brightness(2.0)`,
+								`blur(1px) brightness(1.4)`,
+							],
 						}}
 						transition={{
-							duration: particle.duration,
-							delay: particle.delay,
+							duration: firefly.duration,
+							delay: firefly.delay,
 							ease: "easeInOut",
 							repeat: Infinity,
 							repeatType: "loop",
+							times: [0, 0.3, 0.5, 0.8, 1],
 						}}
 					/>
 				))}
@@ -303,130 +367,73 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 						maxWidth: "28rem",
 						gap: "2rem",
 					}}>
-					{/* Logo with Static Position and Pulsing Glow */}
-					<motion.div
-						className="relative flex items-center justify-center"
-						variants={logoVariants}
+					{/* Logo - statically centered, no revolution */}
+					<div
 						style={{
-							width: "260px", // Increased by 30%: 200px * 1.3 = 260px
-							height: "156px", // Increased by 30%: 120px * 1.3 = 156px
+							zIndex: 2,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							width: 260,
+							height: 156,
+							position: "relative",
 						}}>
-						{/* Soft glow layers - pulsing opacity only - Extended 30% farther */}
-						<motion.div
-							className="absolute rounded-full"
-							style={{
-								top: "-30px", // Extended outward by 30px
-								left: "-30px",
-								right: "-30px",
-								bottom: "-30px",
-								background:
-									"radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 30%, rgba(59, 130, 246, 0.04) 60%, transparent 85%)",
-								filter: "blur(26px)", // Increased blur by 30%: 20px * 1.3 = 26px
-								willChange: "opacity",
-								zIndex: 1,
-							}}
-							animate={{
-								opacity: [0.3, 0.8, 0.3],
-							}}
-							transition={{
-								duration: 3,
-								ease: "easeInOut",
-								repeat: Infinity,
-								repeatType: "loop",
-							}}
-						/>
+						<SosheIQLogo />
+					</div>
 
-						{/* Secondary soft glow - Extended 30% farther */}
-						<motion.div
-							className="absolute rounded-full"
-							style={{
-								top: "-3px", // Reduced from 10px to extend farther: 10px - 13px = -3px
-								left: "-6px", // Reduced from 20px to extend farther: 20px - 26px = -6px
-								right: "-6px",
-								bottom: "-3px",
-								background:
-									"radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, rgba(6, 182, 212, 0.02) 70%, transparent 90%)",
-								filter: "blur(19.5px)", // Increased blur by 30%: 15px * 1.3 = 19.5px
-								willChange: "opacity",
-								zIndex: 2,
-							}}
-							animate={{
-								opacity: [0.2, 0.7, 0.2],
-							}}
-							transition={{
-								duration: 2.5,
-								ease: "easeInOut",
-								repeat: Infinity,
-								repeatType: "loop",
-								delay: 0.5,
-							}}
-						/>
-
-						{/* Tertiary inner glow - Extended 30% farther */}
-						<motion.div
-							className="absolute rounded-full"
-							style={{
-								top: "8px", // Reduced from 20px to extend farther: 20px - 12px = 8px
-								left: "22px", // Reduced from 40px to extend farther: 40px - 18px = 22px
-								right: "22px",
-								bottom: "8px",
-								background:
-									"radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.05) 50%, transparent 80%)",
-								filter: "blur(13px)", // Increased blur by 30%: 10px * 1.3 = 13px
-								willChange: "opacity",
-								zIndex: 3,
-							}}
-							animate={{
-								opacity: [0.4, 0.9, 0.4],
-							}}
-							transition={{
-								duration: 2,
-								ease: "easeInOut",
-								repeat: Infinity,
-								repeatType: "loop",
-								delay: 1,
-							}}
-						/>
-
-						{/* Static Logo */}
-						<motion.div
-							className="relative z-10"
-							style={{
-								filter: "drop-shadow(0 0 20px rgba(59, 130, 246, 0.3))",
-							}}>
-							<SosheIQLogo
+					{/* Dynamic AI-Contextual Text with Sophisticated Transitions */}
+					<motion.div className="text-center" variants={textVariants}>
+						<AnimatePresence mode="wait">
+							<motion.p
+								key={currentMessage}
+								className="font-semibold text-sky-300"
 								style={{
-									height: "100px",
-									width: "auto",
+									fontSize: "18px",
+									lineHeight: 1.6,
+									letterSpacing: "0.025em",
+									willChange: "opacity, text-shadow, transform, filter",
+									opacity: pulseOpacitySpring,
+									textShadow: textGlow,
+									minHeight: "2.4rem", // Prevent layout shift
 								}}
-							/>
-						</motion.div>
+								initial={{
+									opacity: 0,
+									y: 15,
+									scale: 0.92,
+									filter: "blur(4px)",
+								}}
+								animate={{
+									opacity: 1,
+									y: 0,
+									scale: 1,
+									filter: "blur(0px)",
+									transition: {
+										duration: 0.5,
+										ease: [0.25, 0.46, 0.45, 0.94], // Dramatic reveal curve
+										opacity: { duration: 0.4 },
+										filter: { duration: 0.3, delay: 0.1 },
+									},
+								}}
+								exit={{
+									opacity: 0,
+									y: -12,
+									scale: 0.94,
+									filter: "blur(2px)",
+									transition: {
+										duration: 0.35,
+										ease: [0.4, 0.0, 0.2, 1], // Smooth momentum
+									},
+								}}>
+								{currentMessage}
+							</motion.p>
+						</AnimatePresence>
 					</motion.div>
 
-					{/* Pulsing Text with Glow */}
-					<motion.div
-						className="text-center"
-						variants={textVariants}
-						animate={pulseControls}>
-						<motion.p
-							className="font-semibold text-sky-300"
-							style={{
-								fontSize: "18px",
-								lineHeight: 1.6,
-								letterSpacing: "0.025em",
-								willChange: "opacity, text-shadow",
-								opacity: pulseOpacitySpring,
-								textShadow: textGlow,
-							}}>
-							{message}
-						</motion.p>
-					</motion.div>
-
-					{/* Persistent Loading Indicator Dots */}
+					{/* Synchronized Loading Indicator Dots */}
 					<motion.div className="flex space-x-2" variants={textVariants}>
 						{[0, 1, 2].map((i) => (
 							<motion.div
-								key={i}
+								key={`${currentMessage}-${i}`} // Re-trigger animation on message change
 								className="w-3 h-3 bg-sky-400 rounded-full"
 								animate={{
 									scale: [1, 1.5, 1],

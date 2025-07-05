@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import { LoadingIndicator } from "../components/LoadingIndicator";
 
 const LoadingDemo: React.FC = () => {
+	const [isLoading, setIsLoading] = useState(false);
+	const [testMode, setTestMode] = useState(true); // Enable test mode by default
 	const [currentMessage, setCurrentMessage] = useState("Loading...");
 	const [isVisible, setIsVisible] = useState(true);
 
@@ -31,6 +33,21 @@ const LoadingDemo: React.FC = () => {
 		setTimeout(() => {
 			setIsVisible(true);
 		}, 100);
+	};
+
+	const startDemo = () => {
+		setIsLoading(true);
+		setCurrentMessage("Loading...");
+
+		// Stop after a reasonable time for demo purposes
+		setTimeout(() => {
+			setIsLoading(false);
+		}, 12000); // 12 seconds should be enough to see the full cycle
+	};
+
+	const resetDemo = () => {
+		setIsLoading(false);
+		setCurrentMessage("Loading...");
 	};
 
 	return (
@@ -105,6 +122,33 @@ const LoadingDemo: React.FC = () => {
 							</button>
 						</div>
 					</div>
+
+					<div className="flex items-center gap-4">
+						<label className="flex items-center gap-2 text-gray-300">
+							<input
+								type="checkbox"
+								checked={testMode}
+								onChange={(e) => setTestMode(e.target.checked)}
+								className="w-4 h-4 text-sky-600 bg-slate-700 border-slate-600 rounded focus:ring-sky-500"
+							/>
+							<span>Test Mode (Random AI Character Data)</span>
+						</label>
+					</div>
+
+					<div className="flex gap-4">
+						<button
+							onClick={startDemo}
+							disabled={isLoading}
+							className="bg-sky-600 hover:bg-sky-700 disabled:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+							{isLoading ? "Demo Running..." : "Start Demo"}
+						</button>
+
+						<button
+							onClick={resetDemo}
+							className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+							Reset
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -135,10 +179,29 @@ const LoadingDemo: React.FC = () => {
 			{/* Background for better contrast */}
 			<div className="fixed inset-0 bg-black z-0" />
 
-			{/* Loading Screen */}
-			{isVisible && (
-				<LoadingIndicator message={currentMessage} extraClasses="z-[10000]" />
-			)}
+			{/* Demo Area */}
+			<div className="relative w-full h-96 bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden">
+				{isLoading ? (
+					<LoadingIndicator
+						message={currentMessage}
+						extraClasses="z-[10000]"
+						testMode={testMode}
+					/>
+				) : (
+					<div className="flex items-center justify-center h-full text-gray-400">
+						<div className="text-center">
+							<div className="text-6xl mb-4">⚡</div>
+							<p className="text-lg">
+								Click "Start Demo" to test the AI loading animation
+							</p>
+							<p className="text-sm mt-2">
+								With test mode enabled, you'll see contextual messages based on
+								randomly generated AI character data
+							</p>
+						</div>
+					</div>
+				)}
+			</div>
 		</>
 	);
 };

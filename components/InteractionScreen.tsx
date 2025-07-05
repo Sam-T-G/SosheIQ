@@ -727,6 +727,52 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				</div>
 			)}
 
+			{/* Desktop Cinematic Overlay (matches mobile cinematic, only before hasCompletedFirstLoad) */}
+			{!hasCompletedFirstLoad && (
+				<div
+					className="hidden md:block fixed inset-0 z-[9997] bg-black transition-opacity duration-700 animate-fadeIn"
+					style={{ pointerEvents: isReplaying ? "none" : "auto" }}>
+					<div className="relative w-full h-full flex items-center justify-center">
+						<AIVisualCue
+							imageBase64={aiImageBase64}
+							bodyLanguageDescription={bodyLanguageForDisplay}
+							isLoading={isLoadingAI && !aiImageBase64}
+							aiName={scenarioDetails.aiName}
+							aiPersona={personalityDisplayText}
+							aiEnvironment={
+								scenarioDetails.customContext ||
+								scenarioDetails.customEnvironment ||
+								scenarioDetails.environment
+							}
+							showOverlayText={true}
+							isFullScreen={true}
+							cinematicPhase={cinematicPhase}
+							imageOpacity={imageOpacity}
+							nameOpacity={nameOpacity}
+							personalityOpacity={personalityOpacity}
+							encounterTypeOpacity={encounterTypeOpacity}
+							bodyLanguageOpacity={bodyLanguageOpacity}
+							hasCompletedFirstLoad={hasCompletedFirstLoad}
+							showReplayButton={showReplayButton && buttonsVisible}
+							onReplayCinematic={replayCinematic}
+							onViewImage={onViewImage}
+							uiExclusionZones={[]}
+							isHidden={false}
+						/>
+						{/* Replay button (desktop, bottom left of AI image) */}
+						{showReplayButton && buttonsVisible && (
+							<button
+								onClick={replayCinematic}
+								className="absolute left-8 bottom-8 z-[9998] px-8 py-4 rounded-full bg-slate-900/80 border border-slate-700/70 shadow-2xl backdrop-blur-md text-sky-100 font-semibold text-lg hover:bg-slate-800/90 active:bg-slate-900/95 transition-all duration-200 animate-replay-button-fade-in animate-subtle-shimmer focus:outline-none"
+								tabIndex={0}
+								aria-label="Replay cinematic introduction">
+								Replay Intro
+							</button>
+						)}
+					</div>
+				</div>
+			)}
+
 			{/* AI Visual Cue Panel (Left on Desktop, Top on Mobile Main View) */}
 			<div
 				className={`
@@ -854,59 +900,62 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					)}
 				</div>
 				{/* Desktop: normal panel with top text and card styling */}
-				<div className="hidden md:flex flex-col flex-grow min-h-0 gap-4">
-					<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
-						<h2 className="text-lg font-semibold text-sky-400 drop-shadow-sm">
-							{scenarioDetails.aiName}
-						</h2>
-						<p
-							className="text-xs text-gray-400 truncate"
-							title={personalityDisplayText}>
-							{personalityDisplayText}
-						</p>
-						<p className="text-xs text-gray-400">
-							{scenarioDetails.customEnvironment || scenarioDetails.environment}
-						</p>
+				{hasCompletedFirstLoad && (
+					<div className="hidden md:flex flex-col flex-grow min-h-0 gap-4">
+						<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
+							<h2 className="text-lg font-semibold text-sky-400 drop-shadow-sm">
+								{scenarioDetails.aiName}
+							</h2>
+							<p
+								className="text-xs text-gray-400 truncate"
+								title={personalityDisplayText}>
+								{personalityDisplayText}
+							</p>
+							<p className="text-xs text-gray-400">
+								{scenarioDetails.customEnvironment ||
+									scenarioDetails.environment}
+							</p>
+						</div>
+						<AIVisualCue
+							imageBase64={aiImageBase64}
+							bodyLanguageDescription={bodyLanguageForDisplay}
+							isLoading={isLoadingAI && !aiImageBase64}
+							aiName={scenarioDetails.aiName}
+							aiPersona={personalityDisplayText}
+							aiEnvironment={
+								scenarioDetails.customContext ||
+								scenarioDetails.customEnvironment ||
+								scenarioDetails.environment
+							}
+							showOverlayText={!!aiImageBase64 && !showChatOverlay}
+							cinematicPhase={cinematicPhase}
+							imageOpacity={imageOpacity}
+							nameOpacity={nameOpacity}
+							personalityOpacity={personalityOpacity}
+							encounterTypeOpacity={encounterTypeOpacity}
+							bodyLanguageOpacity={bodyLanguageOpacity}
+							hasCompletedFirstLoad={hasCompletedFirstLoad}
+							showReplayButton={showReplayButton}
+							onReplayCinematic={replayCinematic}
+							onViewImage={onViewImage}
+							uiExclusionZones={[]} // No exclusions needed for desktop
+						/>
+						{/* Desktop Banner Area */}
+						<TopBannerContainer
+							activeAction={activeAction}
+							isActionPaused={isActionPaused}
+							displayedGoal={displayedGoal}
+							isPinnable={isPinnable}
+							isGoalPinned={isGoalPinned}
+							onPinGoal={onPinGoal}
+							onUnpinGoal={onUnpinGoal}
+							onFastForwardAction={onFastForwardAction}
+							isLoadingAI={isLoadingAI}
+							goalJustChanged={goalJustChanged}
+							isOverlay={false}
+						/>
 					</div>
-					<AIVisualCue
-						imageBase64={aiImageBase64}
-						bodyLanguageDescription={bodyLanguageForDisplay}
-						isLoading={isLoadingAI && !aiImageBase64}
-						aiName={scenarioDetails.aiName}
-						aiPersona={personalityDisplayText}
-						aiEnvironment={
-							scenarioDetails.customContext ||
-							scenarioDetails.customEnvironment ||
-							scenarioDetails.environment
-						}
-						showOverlayText={!!aiImageBase64 && !showChatOverlay}
-						cinematicPhase={cinematicPhase}
-						imageOpacity={imageOpacity}
-						nameOpacity={nameOpacity}
-						personalityOpacity={personalityOpacity}
-						encounterTypeOpacity={encounterTypeOpacity}
-						bodyLanguageOpacity={bodyLanguageOpacity}
-						hasCompletedFirstLoad={hasCompletedFirstLoad}
-						showReplayButton={showReplayButton}
-						onReplayCinematic={replayCinematic}
-						onViewImage={onViewImage}
-						uiExclusionZones={[]} // No exclusions needed for desktop
-					/>
-					{/* Desktop Banner Area */}
-					<TopBannerContainer
-						activeAction={activeAction}
-						isActionPaused={isActionPaused}
-						displayedGoal={displayedGoal}
-						isPinnable={isPinnable}
-						isGoalPinned={isGoalPinned}
-						onPinGoal={onPinGoal}
-						onUnpinGoal={onUnpinGoal}
-						onFastForwardAction={onFastForwardAction}
-						isLoadingAI={isLoadingAI}
-						goalJustChanged={goalJustChanged}
-						isOverlay={false}
-					/>
-				</div>
+				)}
 				{/* Progress bar for desktop, hidden on mobile where it's in the chat overlay */}
 				<div className="pt-4 w-full px-2 flex-shrink-0 hidden md:block mt-auto relative z-20">
 					<label

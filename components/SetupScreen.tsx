@@ -623,7 +623,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 								<InfoCard
 									Icon={FastForwardIcon}
 									title="Example Context for an Action"
-									description="Context like “You are both walking out of the office building” can trigger an ‘Active Action’ banner in the simulation."
+									description={
+										"Context like \"You are both walking out of the office building\" can trigger an 'Active Action' banner in the simulation."
+									}
 								/>
 							</div>
 						</div>

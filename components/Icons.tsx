@@ -303,14 +303,54 @@ export const TrendingUpIcon: React.FC<IconProps> = ({ className }) => (
 export const TargetIcon: React.FC<IconProps> = ({ className }) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
-		className={className || "h-6 w-6"}
 		fill="none"
 		viewBox="0 0 24 24"
 		stroke="currentColor"
-		strokeWidth={2}>
-		<circle cx="12" cy="12" r="10" />
-		<circle cx="12" cy="12" r="6" />
-		<circle cx="12" cy="12" r="2" />
+		strokeWidth={1.5}
+		className={className || "w-6 h-6"}>
+		{/* Outer circle */}
+		<circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+		{/* Middle circle */}
+		<circle cx="12" cy="12" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+		{/* Center dot */}
+		<circle cx="12" cy="12" r="2" fill="currentColor" />
+		{/* Crosshair lines */}
+		<line
+			x1="12"
+			y1="3"
+			x2="12"
+			y2="7"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
+		<line
+			x1="12"
+			y1="17"
+			x2="12"
+			y2="21"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
+		<line
+			x1="3"
+			y1="12"
+			x2="7"
+			y2="12"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
+		<line
+			x1="17"
+			y1="12"
+			x2="21"
+			y2="12"
+			stroke="currentColor"
+			strokeWidth="1.5"
+			strokeLinecap="round"
+		/>
 	</svg>
 );
 
@@ -923,7 +963,7 @@ export const ScaleIcon: React.FC<IconProps> = ({ className }) => (
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
-			d="M12 3v17.25m0 0c-1.472 0-2.882.265-4.185.75M12 20.25c1.472 0 2.882.265 4.185.75M18.75 4.97A48.416 48.416 0 0012 4.5c-2.291 0-4.545.16-6.75.47m13.5 0c1.01.143 2.01.317 3 .52m-3-.52l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.988 5.988 0 01-2.153.24c-1.06.052-2.112.09-3.168.09a5.988 5.988 0 01-2.153-.24c-.482-.174-.71-.703-.588-1.202L18.75 4.971zm-16.5.52c.99-.203 1.99-.377 3-.52m0 0l2.62 10.726c.122.499-.106 1.028-.589 1.202a5.989 5.989 0 01-2.153.24c-1.06.052-2.112.09-3.168.09a5.989 5.989 0 01-2.153-.24c-.482-.174-.71-.703-.588-1.202L5.25 4.97z"
+			d="M12 3v1.5M12 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-2.978 7.22L12 18M3 9.75h1.5M12 9.75h-1.5m-3.75 0h1.5m-1.5 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 00-2.978 7.22L12 18.75m-9-9l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01.278 6.471l-3.278.729a9 9 0 01-6.086-.711l-.108-.054a9 9 0 00-6.208-.682L3 9.75z"
 		/>
 	</svg>
 );

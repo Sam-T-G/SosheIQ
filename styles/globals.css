@@ -3,19 +3,15 @@
 @tailwind utilities;
 
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh; /* Ensure body takes at least full viewport height and can grow */
-  
-  /* NEW: Animated Gradient Background */
-  color: #f3f4f6; /* gray-100 */
-  background: linear-gradient(-45deg, #0f172a, #0c4a6e, #115e59, #0f172a); /* slate-900, sky-800, teal-800, slate-900 */
-  background-size: 400% 400%;
-  animation: gradient-move 25s ease-in-out infinite;
+	margin: 0;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+		"Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+		sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	min-height: 100vh; /* Ensure body takes at least full viewport height and can grow */
+	color: #f3f4f6; /* gray-100 */
+	background: #000; /* Pure black background */
 }
 
 @keyframes gradient-move {
@@ -30,805 +26,845 @@ body {
 	}
 }
 
-
 html {
-  min-height: 100vh; /* Ensure html also supports full height */
+	min-height: 100vh; /* Ensure html also supports full height */
 }
 
 /* #__next is the main container for the app's flex layout */
 #__next {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh; /* Ensures #__next fills viewport and can grow */
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh; /* Ensures #__next fills viewport and can grow */
 }
 
 @keyframes fadeInSlideUp {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0px);
-  }
+	0% {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0px);
+	}
 }
 
 @keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
 }
 
 @keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
 }
 
 @keyframes heroButtonAppear {
-  0% {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0px) scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: translateY(10px) scale(0.95);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0px) scale(1);
+	}
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.6);
-  }
-  50% {
-    box-shadow: 0 0 16px 6px rgba(16, 185, 129, 0.9);
-  }
+	0%,
+	100% {
+		box-shadow: 0 0 8px 2px rgba(16, 185, 129, 0.6);
+	}
+	50% {
+		box-shadow: 0 0 16px 6px rgba(16, 185, 129, 0.9);
+	}
 }
 .animate-pulse-glow {
-  animation: pulse-glow 2s infinite ease-in-out;
+	animation: pulse-glow 2s infinite ease-in-out;
 }
 
 /* New Pinned Goal Animation */
 @keyframes pinned-goal-glow {
-  0%, 100% {
-    box-shadow: 0 0 12px 2px rgba(20, 184, 166, 0.4); /* teal-500 */
-    border-color: rgba(45, 212, 191, 0.7); /* teal-400 */
-  }
-  50% {
-    box-shadow: 0 0 24px 6px rgba(20, 184, 166, 0.7);
-    border-color: rgba(94, 234, 212, 1); /* teal-300 */
-  }
+	0%,
+	100% {
+		box-shadow: 0 0 12px 2px rgba(20, 184, 166, 0.4); /* teal-500 */
+		border-color: rgba(45, 212, 191, 0.7); /* teal-400 */
+	}
+	50% {
+		box-shadow: 0 0 24px 6px rgba(20, 184, 166, 0.7);
+		border-color: rgba(94, 234, 212, 1); /* teal-300 */
+	}
 }
 .animate-pinned-goal-glow {
-  animation: pinned-goal-glow 2.5s infinite ease-in-out;
+	animation: pinned-goal-glow 2.5s infinite ease-in-out;
 }
-
 
 @keyframes zoomInFeature {
-  0% {
-    opacity: 0;
-    transform: scale(0.9) translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0px);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(0.9) translateY(10px);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) translateY(0px);
+	}
 }
 .animate-zoomInFeature {
-  animation: zoomInFeature 0.4s ease-out forwards;
-  opacity: 0; /* Initial state before animation starts */
+	animation: zoomInFeature 0.4s ease-out forwards;
+	opacity: 0; /* Initial state before animation starts */
 }
 
 @keyframes letter-fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
 }
 .animate-letter-fade-in {
-  opacity: 0;
-  animation: letter-fade-in 0.3s ease-out forwards;
+	opacity: 0;
+	animation: letter-fade-in 0.3s ease-out forwards;
 }
 
 /* Goal Banner Animation */
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(-100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 .animate-slideDown {
-  animation: slideDown 0.5s ease-out forwards;
+	animation: slideDown 0.5s ease-out forwards;
 }
 
 /* Persistent Feedback Badge Animation */
 @keyframes popInAndSettle {
-  0% { opacity: 0; transform: scale(0.5) translateX(-10px); }
-  70% { opacity: 1; transform: scale(1.1) translateX(0); }
-  100% { transform: scale(1) translateX(0); }
+	0% {
+		opacity: 0;
+		transform: scale(0.5) translateX(-10px);
+	}
+	70% {
+		opacity: 1;
+		transform: scale(1.1) translateX(0);
+	}
+	100% {
+		transform: scale(1) translateX(0);
+	}
 }
 .animate-popInAndSettle {
-  animation: popInAndSettle 0.4s ease-out forwards;
+	animation: popInAndSettle 0.4s ease-out forwards;
 }
 
 /* Final location badge pop-in */
 @keyframes badgePlopIn {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(0);
+	}
+	60% {
+		opacity: 1;
+		transform: scale(1.1);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 .animate-badge-plop {
-  opacity: 0;
-  animation: badgePlopIn 0.8s ease-out forwards;
+	opacity: 0;
+	animation: badgePlopIn 0.8s ease-out forwards;
 }
-
 
 /* Fading Trait Badge Animation (now persistent) */
 @keyframes popInSettleFadeOut {
-  0% { opacity: 0; transform: scale(0.5); }
-  20% { opacity: 1; transform: scale(1.1); }
-  80% { opacity: 1; transform: scale(1); }
-  100% { opacity: 1; transform: scale(1); }
+	0% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	20% {
+		opacity: 1;
+		transform: scale(1.1);
+	}
+	80% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 @keyframes thinking-dot-bounce {
-  0%, 80%, 100% {
-    transform: scale(0.6);
-  }
-  40% {
-    transform: scale(1);
-  }
+	0%,
+	80%,
+	100% {
+		transform: scale(0.6);
+	}
+	40% {
+		transform: scale(1);
+	}
 }
 
 .thinking-dot {
-  animation: thinking-dot-bounce 1.4s infinite ease-in-out both;
+	animation: thinking-dot-bounce 1.4s infinite ease-in-out both;
 }
 
 .thinking-dot:nth-child(1) {
-  animation-delay: -0.32s;
+	animation-delay: -0.32s;
 }
 
 .thinking-dot:nth-child(2) {
-  animation-delay: -0.16s;
+	animation-delay: -0.16s;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+	width: 8px;
+	height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+	background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #4a5568; /* slate-600 */
-  border-radius: 4px;
+	background-color: #4a5568; /* slate-600 */
+	border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #718096; /* slate-500 */
+	background-color: #718096; /* slate-500 */
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 10px 2px rgba(45, 212, 191, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 20px 5px rgba(45, 212, 191, 0.7);
-  }
+	0%,
+	100% {
+		box-shadow: 0 0 10px 2px rgba(45, 212, 191, 0.4);
+	}
+	50% {
+		box-shadow: 0 0 20px 5px rgba(45, 212, 191, 0.7);
+	}
 }
 
 .animate-glow-pulse {
-  animation: glow-pulse 2.5s infinite ease-in-out;
+	animation: glow-pulse 2.5s infinite ease-in-out;
 }
 
 @keyframes slideOutToLeft {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-50px);
-  }
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(-50px);
+	}
 }
 .animate-slideOutToLeft {
-  animation: slideOutToLeft 0.3s ease-out forwards;
+	animation: slideOutToLeft 0.3s ease-out forwards;
 }
 
 @keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(50px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 .animate-slideInFromRight {
-  animation: slideInFromRight 0.35s ease-out forwards;
+	animation: slideInFromRight 0.35s ease-out forwards;
 }
 
 @keyframes image-cross-fade-in {
-  0% {
-    opacity: 0;
-    transform: scale(1.05);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(1.05);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 .animate-image-cross-fade-in {
-  animation: image-cross-fade-in 0.75s ease-in-out forwards;
+	animation: image-cross-fade-in 0.75s ease-in-out forwards;
 }
 
 @keyframes pulse-glow-fab {
-  0%, 100% {
-    box-shadow: 0 0 12px 2px rgba(14, 165, 233, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 24px 8px rgba(14, 165, 233, 0.8);
-  }
+	0%,
+	100% {
+		box-shadow: 0 0 12px 2px rgba(14, 165, 233, 0.5);
+	}
+	50% {
+		box-shadow: 0 0 24px 8px rgba(14, 165, 233, 0.8);
+	}
 }
 .animate-pulse-glow-fab {
-  animation: pulse-glow-fab 2.5s infinite ease-in-out;
+	animation: pulse-glow-fab 2.5s infinite ease-in-out;
 }
 
 @keyframes goal-toast-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -100px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
+	from {
+		opacity: 0;
+		transform: translate(-50%, -100px);
+	}
+	to {
+		opacity: 1;
+		transform: translate(-50%, 0);
+	}
 }
 
 .animate-goal-toast {
-    animation: goal-toast-in 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+	animation: goal-toast-in 0.5s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
 }
 
 @keyframes countdown-bar-width {
-  from {
-    width: 100%;
-  }
-  to {
-    width: 0%;
-  }
+	from {
+		width: 100%;
+	}
+	to {
+		width: 0%;
+	}
 }
 
 .animate-countdown-bar {
-  animation: countdown-bar-width 7000ms linear forwards;
+	animation: countdown-bar-width 7000ms linear forwards;
 }
 
 @keyframes pulse-glow-slow {
-  0%, 100% {
-    background-color: #4A5568; /* slate-600 */
-    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.0); /* sky-400 */
-  }
-  50% {
-    background-color: #38bdf8; /* sky-400 */
-    box-shadow: 0 0 12px 4px rgba(56, 189, 248, 0.5);
-  }
+	0%,
+	100% {
+		background-color: #4a5568; /* slate-600 */
+		box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); /* sky-400 */
+	}
+	50% {
+		background-color: #38bdf8; /* sky-400 */
+		box-shadow: 0 0 12px 4px rgba(56, 189, 248, 0.5);
+	}
 }
 .animate-pulse-glow-slow {
-  animation: pulse-glow-slow 3s infinite ease-in-out;
+	animation: pulse-glow-slow 3s infinite ease-in-out;
 }
 
 /* Animations for Gesture Input */
 @keyframes slide-down-fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 .animate-slide-down-fade-in {
-    animation: slide-down-fade-in 0.3s ease-out forwards;
+	animation: slide-down-fade-in 0.3s ease-out forwards;
 }
 
 @keyframes slide-up-fade-out {
-    from {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
 }
 .animate-slide-up-fade-out {
-    animation: slide-up-fade-out 0.3s ease-out forwards;
+	animation: slide-up-fade-out 0.3s ease-out forwards;
 }
 
 /* NEW Loading Screen Animations */
 @keyframes logo-glow-pulse {
-  0%, 100% {
-    opacity: 0.5;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
+	0%,
+	100% {
+		opacity: 0.5;
+		transform: scale(0.8);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.2);
+	}
 }
 .animate-logo-glow-pulse {
-  animation: logo-glow-pulse 3s infinite ease-in-out;
+	animation: logo-glow-pulse 3s infinite ease-in-out;
 }
 
 @keyframes subtle-pulse {
-  0%, 100% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
+	0%,
+	100% {
+		opacity: 0.7;
+	}
+	50% {
+		opacity: 1;
+	}
 }
 .animate-subtle-pulse {
-  animation: subtle-pulse 2.5s infinite ease-in-out;
+	animation: subtle-pulse 2.5s infinite ease-in-out;
 }
 
 @keyframes loading-bar-sweep {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(100%);
-  }
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(100%);
+	}
 }
 .animate-loading-bar-sweep {
-  width: 50%; /* The width of the sweeping part */
-  animation: loading-bar-sweep 2s infinite linear;
+	width: 50%; /* The width of the sweeping part */
+	animation: loading-bar-sweep 2s infinite linear;
 }
-
 
 /* NEW Badge Animation Keyframes */
 @keyframes badge-slide-in-right {
-  /* The "from" state is now implicitly the initial state set on the class */
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1.2);
-  }
+	/* The "from" state is now implicitly the initial state set on the class */
+	to {
+		opacity: 1;
+		transform: translateX(0) scale(1.2);
+	}
 }
 
 .animate-badge-slide-in-right {
-  /* Set initial state before animation starts to prevent flash */
-  opacity: 0;
-  transform: translateX(80px) scale(1.2);
-  /* Use a cubic bezier for a smooth overshoot and settle effect. This removes the "jerk". */
-  animation: badge-slide-in-right 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+	/* Set initial state before animation starts to prevent flash */
+	opacity: 0;
+	transform: translateX(80px) scale(1.2);
+	/* Use a cubic bezier for a smooth overshoot and settle effect. This removes the "jerk". */
+	animation: badge-slide-in-right 0.9s cubic-bezier(0.34, 1.56, 0.64, 1)
+		forwards;
 }
 
 @keyframes badge-pop-out {
-  from {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.5);
-  }
+	from {
+		opacity: 1;
+		transform: scale(1.2);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.5);
+	}
 }
 
 .animate-badge-pop-out {
-  /* Set initial state for this animation */
-  opacity: 1;
-  transform: scale(1.2);
-  animation: badge-pop-out 0.4s ease-in forwards;
+	/* Set initial state for this animation */
+	opacity: 1;
+	transform: scale(1.2);
+	animation: badge-pop-out 0.4s ease-in forwards;
 }
 
 /* Subtle Pan animation for background images */
 @keyframes subtle-pan {
-  0% {
-    transform: scale(1.25) translate(2%, 2%);
-  }
-  25% {
-    transform: scale(1.25) translate(-2%, 2%);
-  }
-  50% {
-    transform: scale(1.25) translate(-2%, -2%);
-  }
-  75% {
-    transform: scale(1.25) translate(2%, -2%);
-  }
-  100% {
-    transform: scale(1.25) translate(2%, 2%);
-  }
+	0% {
+		transform: scale(1.25) translate(2%, 2%);
+	}
+	25% {
+		transform: scale(1.25) translate(-2%, 2%);
+	}
+	50% {
+		transform: scale(1.25) translate(-2%, -2%);
+	}
+	75% {
+		transform: scale(1.25) translate(2%, -2%);
+	}
+	100% {
+		transform: scale(1.25) translate(2%, 2%);
+	}
 }
 
 .animate-subtle-pan {
-  animation: subtle-pan 40s infinite linear;
+	animation: subtle-pan 40s infinite linear;
 }
 
 /* Modern, sleek, world-class moving glow animation for active action banner */
 @keyframes sweep-glow {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(200%);
-  }
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(200%);
+	}
 }
 
 .active-action-glow {
-  position: relative;
-  overflow: hidden;
+	position: relative;
+	overflow: hidden;
 }
 
 .active-action-glow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 50%;
-  height: 100%;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(56, 189, 248, 0.08) 20%,
-    rgba(56, 189, 248, 0.15) 40%,
-    rgba(56, 189, 248, 0.2) 50%,
-    rgba(56, 189, 248, 0.15) 60%,
-    rgba(56, 189, 248, 0.08) 80%,
-    transparent 100%
-  );
-  filter: blur(8px);
-  animation: sweep-glow 5s infinite cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 5;
-  pointer-events: none;
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 50%;
+	height: 100%;
+	background: linear-gradient(
+		to right,
+		transparent 0%,
+		rgba(56, 189, 248, 0.08) 20%,
+		rgba(56, 189, 248, 0.15) 40%,
+		rgba(56, 189, 248, 0.2) 50%,
+		rgba(56, 189, 248, 0.15) 60%,
+		rgba(56, 189, 248, 0.08) 80%,
+		transparent 100%
+	);
+	filter: blur(8px);
+	animation: sweep-glow 5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+	z-index: 5;
+	pointer-events: none;
 }
 
 /* New animation for the badge info popover */
 .animate-fadeIn {
-  animation: fadeIn 0.2s ease-out forwards;
+	animation: fadeIn 0.2s ease-out forwards;
 }
 
 /* New Setup Screen Animations */
 @keyframes accordion-slide-down {
-  from {
-    max-height: 0;
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    max-height: 1500px; /* Large enough to not clip content */
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		max-height: 0;
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		max-height: 1500px; /* Large enough to not clip content */
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 .animate-accordion-slide-down {
-  animation: accordion-slide-down 0.5s ease-in-out forwards;
+	animation: accordion-slide-down 0.5s ease-in-out forwards;
 }
 
 /* === Dropdown Menu Pop Animations === */
 @keyframes fadeInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: translateY(16px) scale(0.98);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }
 .animate-fadeInUp {
-  animation: fadeInUp 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation: fadeInUp 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes fadeOutDown {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-  }
+	0% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(16px) scale(0.98);
+	}
 }
 .animate-fadeOutDown {
-  animation: fadeOutDown 0.18s cubic-bezier(0.55, 0, 0.55, 0.2) both;
+	animation: fadeOutDown 0.18s cubic-bezier(0.55, 0, 0.55, 0.2) both;
 }
 
 /* === Progress Bar Completion Animations === */
 @keyframes progress-completion {
-  0% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-  }
+	0% {
+		box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+	}
+	70% {
+		box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+	}
 }
 .animate-progress-completion {
-  animation: progress-completion 1.5s ease-out forwards;
+	animation: progress-completion 1.5s ease-out forwards;
 }
 
 @keyframes completion-sparkle {
-  0% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+	0% {
+		opacity: 0;
+	}
+	50% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
 }
 .animate-completion-sparkle {
-  animation: completion-sparkle 1.5s ease-out forwards;
+	animation: completion-sparkle 1.5s ease-out forwards;
 }
 
 @keyframes sparkle-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
 }
 .animate-sparkle-sweep {
-  animation: sparkle-sweep 1.5s ease-out forwards;
+	animation: sparkle-sweep 1.5s ease-out forwards;
 }
 
 @keyframes sparkle-pulse {
-  0%, 100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.5);
-  }
-  50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.2);
-  }
+	0%,
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0.5);
+	}
+	50% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.2);
+	}
 }
 .animate-sparkle-pulse {
-  animation: sparkle-pulse 1.5s ease-out forwards;
+	animation: sparkle-pulse 1.5s ease-out forwards;
 }
 
 @keyframes sparkle-pulse-delayed {
-  0%, 30% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
+	0%,
+	30% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	60% {
+		opacity: 1;
+		transform: scale(1.2);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
 }
 .animate-sparkle-pulse-delayed {
-  animation: sparkle-pulse-delayed 1.5s ease-out forwards;
+	animation: sparkle-pulse-delayed 1.5s ease-out forwards;
 }
 
 @keyframes sparkle-pulse-delayed-2 {
-  0%, 60% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  90% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
+	0%,
+	60% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
+	90% {
+		opacity: 1;
+		transform: scale(1.2);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(0.5);
+	}
 }
 .animate-sparkle-pulse-delayed-2 {
-  animation: sparkle-pulse-delayed-2 1.5s ease-out forwards;
+	animation: sparkle-pulse-delayed-2 1.5s ease-out forwards;
 }
 
 /* === Action Completion and Stow-Away Animations === */
 @keyframes action-completion {
-  0% {
-    transform: scale(1);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
-  50% {
-    transform: scale(1.02);
-    box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3), 0 4px 6px -2px rgba(14, 165, 233, 0.2);
-  }
-  100% {
-    transform: scale(1);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  }
+	0% {
+		transform: scale(1);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+			0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
+	50% {
+		transform: scale(1.02);
+		box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.3),
+			0 4px 6px -2px rgba(14, 165, 233, 0.2);
+	}
+	100% {
+		transform: scale(1);
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+			0 2px 4px -1px rgba(0, 0, 0, 0.06);
+	}
 }
 .animate-action-completion {
-  animation: action-completion 1.5s ease-out forwards;
+	animation: action-completion 1.5s ease-out forwards;
 }
 
 @keyframes goal-completion {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.01);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.02);
-  }
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.01);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(1.02);
+	}
 }
 .animate-goal-completion {
-  animation: goal-completion 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  will-change: transform, opacity;
+	animation: goal-completion 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+	will-change: transform, opacity;
 }
 
 @keyframes stow-away {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    max-height: 200px;
-    z-index: 15;
-  }
-  30% {
-    opacity: 0.8;
-    transform: translateY(-5px) scale(0.98);
-    max-height: 200px;
-    z-index: 15;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-    max-height: 0;
-    z-index: 5;
-  }
+	0% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		max-height: 200px;
+		z-index: 15;
+	}
+	30% {
+		opacity: 0.8;
+		transform: translateY(-5px) scale(0.98);
+		max-height: 200px;
+		z-index: 15;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-20px) scale(0.95);
+		max-height: 0;
+		z-index: 5;
+	}
 }
 .animate-stow-away {
-  animation: stow-away 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  overflow: hidden;
+	animation: stow-away 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	overflow: hidden;
 }
 
 /* === Desktop Banner Animations (Subtle Pop-In) === */
 @keyframes slideInFromUnder {
-  0% {
-    opacity: 0;
-    transform: translateY(15px) scale(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: translateY(15px) scale(0.98);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }
 .animate-slideInFromUnder {
-  animation: slideInFromUnder 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+	animation: slideInFromUnder 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 /* Desktop-specific stow-away animation (subtle slide out) */
 @keyframes stow-away-desktop {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    max-height: 200px;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-15px) scale(0.98);
-    max-height: 0;
-  }
+	0% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+		max-height: 200px;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-15px) scale(0.98);
+		max-height: 0;
+	}
 }
 .animate-stow-away-desktop {
-  animation: stow-away-desktop 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  overflow: hidden;
+	animation: stow-away-desktop 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		forwards;
+	overflow: hidden;
 }
 
 /* === Mobile Banner Animations (Subtle Slide From Top) === */
 @keyframes slideInFromUnderMobile {
-  0% {
-    opacity: 0;
-    transform: translateY(-40px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	0% {
+		opacity: 0;
+		transform: translateY(-40px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 .animate-slideInFromUnderMobile {
-  animation: slideInFromUnderMobile 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  will-change: transform, opacity;
+	animation: slideInFromUnderMobile 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		forwards;
+	will-change: transform, opacity;
 }
 
 /* Mobile-specific stow-away animation (subtle slide to top) */
 @keyframes stow-away-mobile {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-    max-height: 200px;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-40px);
-    max-height: 0;
-  }
+	0% {
+		opacity: 1;
+		transform: translateY(0);
+		max-height: 200px;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-40px);
+		max-height: 0;
+	}
 }
 .animate-stow-away-mobile {
-  animation: stow-away-mobile 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  overflow: hidden;
-  will-change: transform, opacity, max-height;
+	animation: stow-away-mobile 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+	overflow: hidden;
+	will-change: transform, opacity, max-height;
 }
 
 /* === Mobile Full Screen Image Parallax Drift Animation === */
 @keyframes parallax-drift {
-  0% {
-    transform: scale(1.07) translate(0px, 0px);
-  }
-  25% {
-    transform: scale(1.07) translate(8px, 6px);
-  }
-  50% {
-    transform: scale(1.07) translate(16px, 12px);
-  }
-  75% {
-    transform: scale(1.07) translate(8px, 6px);
-  }
-  100% {
-    transform: scale(1.07) translate(0px, 0px);
-  }
+	0% {
+		transform: scale(1.07) translate(0px, 0px);
+	}
+	25% {
+		transform: scale(1.07) translate(8px, 6px);
+	}
+	50% {
+		transform: scale(1.07) translate(16px, 12px);
+	}
+	75% {
+		transform: scale(1.07) translate(8px, 6px);
+	}
+	100% {
+		transform: scale(1.07) translate(0px, 0px);
+	}
 }
 .animate-parallax-drift {
-  animation: parallax-drift 32s ease-in-out infinite;
-  will-change: transform;
+	animation: parallax-drift 32s ease-in-out infinite;
+	will-change: transform;
 }
 
 /* === Cinematic First Load Animations === */
 @keyframes cinematic-fade-in-up {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	0% {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes cinematic-image-reveal {
-  0% {
-    opacity: 0;
-    transform: scale(1.05);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(1.05);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 .animate-cinematic-fade-in-up {
-  animation: cinematic-fade-in-up 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+	animation: cinematic-fade-in-up 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		forwards;
 }
 
 .animate-cinematic-image-reveal {
-  animation: cinematic-image-reveal 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+	animation: cinematic-image-reveal 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		forwards;
 }
 
 /* Replay button animations */
@@ -1001,29 +1037,28 @@ html {
 }
 
 .animate-cinematic-modal-title {
-	animation: cinematic-modal-title 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+	animation: cinematic-modal-title 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		forwards;
 }
 
 .animate-cinematic-modal-content {
-	animation: cinematic-modal-content 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s both;
+	animation: cinematic-modal-content 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		0.2s both;
 }
 
 .animate-cinematic-button-appear {
-	animation: cinematic-button-appear 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s both;
+	animation: cinematic-button-appear 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+		0.4s both;
 }
 
 .modal-content-glow {
-  box-shadow: 
-    0 0 20px rgba(255, 255, 255, 0.1),
-    0 0 40px rgba(14, 165, 233, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	box-shadow: 0 0 20px rgba(255, 255, 255, 0.1),
+		0 0 40px rgba(14, 165, 233, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .modal-content-glow:hover {
-  box-shadow: 
-    0 0 25px rgba(255, 255, 255, 0.15),
-    0 0 50px rgba(14, 165, 233, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	box-shadow: 0 0 25px rgba(255, 255, 255, 0.15),
+		0 0 50px rgba(14, 165, 233, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* Enhanced cinematic classes */
@@ -1040,7 +1075,7 @@ html {
 }
 
 .animate-cinematic-dramatic-reveal {
-	animation: cinematic-dramatic-reveal 1.0s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	animation: cinematic-dramatic-reveal 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .animate-screen-dim {
@@ -1065,21 +1100,15 @@ html {
 
 /* Enhanced modal styling */
 .modal-glow {
-	box-shadow: 
-		0 0 0 1px rgba(59, 130, 246, 0.1),
-		0 4px 6px -1px rgba(0, 0, 0, 0.1),
-		0 2px 4px -1px rgba(0, 0, 0, 0.06),
-		0 0 0 4px rgba(59, 130, 246, 0.05),
-		0 0 20px rgba(59, 130, 246, 0.1);
+	box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1),
+		0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06),
+		0 0 0 4px rgba(59, 130, 246, 0.05), 0 0 20px rgba(59, 130, 246, 0.1);
 }
 
 .modal-glow:hover {
-	box-shadow: 
-		0 0 0 1px rgba(59, 130, 246, 0.15),
-		0 4px 6px -1px rgba(0, 0, 0, 0.1),
-		0 2px 4px -1px rgba(0, 0, 0, 0.06),
-		0 0 0 4px rgba(59, 130, 246, 0.08),
-		0 0 25px rgba(59, 130, 246, 0.15);
+	box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15),
+		0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06),
+		0 0 0 4px rgba(59, 130, 246, 0.08), 0 0 25px rgba(59, 130, 246, 0.15);
 }
 
 /* Subtle shimmer animation for buttons */
@@ -1116,319 +1145,321 @@ html {
 
 /* Smooth chat overlay open/close for mobile */
 @keyframes chat-overlay-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.96) translateY(30px);
-    filter: blur(8px);
-  }
-  60% {
-    opacity: 0.7;
-    transform: scale(1.01) translateY(6px);
-    filter: blur(2px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(0.96) translateY(30px);
+		filter: blur(8px);
+	}
+	60% {
+		opacity: 0.7;
+		transform: scale(1.01) translateY(6px);
+		filter: blur(2px);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+		filter: blur(0);
+	}
 }
 @keyframes chat-overlay-out {
-  0% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.98) translateY(20px);
-    filter: blur(6px);
-  }
+	0% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+		filter: blur(0);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(0.98) translateY(20px);
+		filter: blur(6px);
+	}
 }
 .animate-chat-overlay-in {
-  animation: chat-overlay-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+	animation: chat-overlay-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 .animate-chat-overlay-out {
-  animation: chat-overlay-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+	animation: chat-overlay-out 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* Simple button hover animations */
 @keyframes button-shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
 }
 
 .animate-button-shimmer {
-  animation: button-shimmer 0.6s ease-out;
+	animation: button-shimmer 0.6s ease-out;
 }
 
 /* Loading screen fade to black animations */
 @keyframes loading-fade-to-black {
-  0% {
-    opacity: 1;
-    background-color: rgb(15, 23, 42); /* slate-900 */
-  }
-  100% {
-    opacity: 1;
-    background-color: rgb(0, 0, 0); /* black */
-  }
+	0% {
+		opacity: 1;
+		background-color: rgb(15, 23, 42); /* slate-900 */
+	}
+	100% {
+		opacity: 1;
+		background-color: rgb(0, 0, 0); /* black */
+	}
 }
 
 @keyframes loading-content-fade-out {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
+	0% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	100% {
+		opacity: 0;
+		transform: scale(0.95);
+	}
 }
 
 .animate-loading-fade-to-black {
-  animation: loading-fade-to-black 1.5s ease-in-out forwards;
+	animation: loading-fade-to-black 1.5s ease-in-out forwards;
 }
 
 .animate-loading-content-fade-out {
-  animation: loading-content-fade-out 1s ease-in-out forwards;
+	animation: loading-content-fade-out 1s ease-in-out forwards;
 }
 
 /* Session end fade to black animations */
 @keyframes session-fade-to-black {
-  0% {
-    opacity: 1;
-    background-color: transparent;
-  }
-  100% {
-    opacity: 1;
-    background-color: rgb(0, 0, 0);
-  }
+	0% {
+		opacity: 1;
+		background-color: transparent;
+	}
+	100% {
+		opacity: 1;
+		background-color: rgb(0, 0, 0);
+	}
 }
 
 @keyframes analysis-loading-fade-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 .animate-session-fade-to-black {
-  animation: session-fade-to-black 1.2s ease-in-out forwards;
+	animation: session-fade-to-black 1.2s ease-in-out forwards;
 }
 
 .animate-analysis-loading-fade-in {
-  animation: analysis-loading-fade-in 0.8s ease-in-out forwards;
+	animation: analysis-loading-fade-in 0.8s ease-in-out forwards;
 }
 
 /* Standardized Animation Classes */
 @keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateX(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
 @keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+	from {
+		opacity: 0;
+		transform: scale(0.9);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 @keyframes scaleOut {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.9);
-  }
+	from {
+		opacity: 1;
+		transform: scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.9);
+	}
 }
 
 @keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+	0% {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.05);
+	}
+	70% {
+		transform: scale(0.9);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: calc(200px + 100%) 0;
-  }
+	0% {
+		background-position: -200px 0;
+	}
+	100% {
+		background-position: calc(200px + 100%) 0;
+	}
 }
 
 @keyframes buttonPress {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  100% {
-    transform: scale(1);
-  }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(0.95);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 @keyframes buttonHover {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-2px);
-  }
+	0% {
+		transform: translateY(0);
+	}
+	100% {
+		transform: translateY(-2px);
+	}
 }
 
 @keyframes modalIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: scale(0.8) translateY(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
 }
 
 @keyframes modalOut {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.8) translateY(-20px);
-  }
+	from {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.8) translateY(-20px);
+	}
 }
 
 @keyframes pageEnter {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes pageExit {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
 }
 
 /* Standardized Animation Classes */
 .animate-slide-in-left {
-  animation: slideInLeft 300ms ease-out;
+	animation: slideInLeft 300ms ease-out;
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 300ms ease-out;
+	animation: slideInRight 300ms ease-out;
 }
 
 .animate-slide-in-down {
-  animation: slideInDown 300ms ease-out;
+	animation: slideInDown 300ms ease-out;
 }
 
 .animate-scale-in {
-  animation: scaleIn 250ms ease-out;
+	animation: scaleIn 250ms ease-out;
 }
 
 .animate-scale-out {
-  animation: scaleOut 200ms ease-in;
+	animation: scaleOut 200ms ease-in;
 }
 
 .animate-bounce-in {
-  animation: bounceIn 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+	animation: bounceIn 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .animate-shimmer {
-  animation: shimmer 1500ms ease-in-out infinite;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-  background-size: 200px 100%;
+	animation: shimmer 1500ms ease-in-out infinite;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.1),
+		transparent
+	);
+	background-size: 200px 100%;
 }
 
 .animate-button-press {
-  animation: buttonPress 150ms ease-out;
+	animation: buttonPress 150ms ease-out;
 }
 
 .animate-button-hover {
-  animation: buttonHover 200ms ease-out;
+	animation: buttonHover 200ms ease-out;
 }
 
 .animate-modal-in {
-  animation: modalIn 300ms ease-out;
+	animation: modalIn 300ms ease-out;
 }
 
 .animate-modal-out {
-  animation: modalOut 250ms ease-in;
+	animation: modalOut 250ms ease-in;
 }
 
 .animate-page-enter {
-  animation: pageEnter 400ms ease-out;
+	animation: pageEnter 400ms ease-out;
 }
 
 .animate-page-exit {
-  animation: pageExit 300ms ease-in;
+	animation: pageExit 300ms ease-in;
 }
-
-
-

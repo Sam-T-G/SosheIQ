@@ -768,7 +768,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 									<InfoCard
 										Icon={FastForwardIcon}
 										title="Example Context for an Action"
-										description="Context like “You are both walking out of an office building” can trigger an ‘Active Action’ banner in the simulation."
+										description="Context like “You are both walking out of an office building” can trigger an 'Active Action' banner in the simulation."
 									/>
 								</div>
 							</div>
@@ -862,7 +862,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 							)}
 
 							{scenario.conversationGoal && (
-								<SummaryItem Icon={FlagIcon} label="Your Goal">
+								<SummaryItem Icon={TargetIcon} label="Your Goal">
 									{scenario.conversationGoal}
 								</SummaryItem>
 							)}

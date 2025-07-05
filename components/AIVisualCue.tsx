@@ -32,6 +32,7 @@ interface AIVisualCueProps {
 		height: number;
 	}>; // Areas to exclude from image clicks
 	isHidden?: boolean; // New prop: completely hide the component
+	isFullScreen?: boolean; // New prop: indicates if the component is in fullscreen cinematic mode
 }
 
 export const AIVisualCue: React.FC<AIVisualCueProps> = ({
@@ -54,6 +55,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	onViewImage,
 	uiExclusionZones = [],
 	isHidden = false,
+	isFullScreen = false,
 }) => {
 	// Add state for click detection
 	const [clickStartTime, setClickStartTime] = useState<number>(0);
@@ -229,6 +231,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 					<BackgroundCrossfadeImage
 						src={imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null}
 						className="absolute inset-0 w-full h-full object-cover"
+						objectPosition={showOverlayText ? "center 33%" : "center"}
 					/>
 					{/* Clickable overlay for image viewing - Mobile Only */}
 					{onViewImage && showOverlayText && (
@@ -268,15 +271,15 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								}
 							}}></div>
 					)}
-					{/* Overlayed text for mobile, world-class style */}
-					{showOverlayText && (
-						<div className="md:hidden absolute inset-0 flex flex-col items-center justify-end pb-36 px-4 z-10">
+					{/* Cinematic Text Overlay */}
+					{showOverlayText && isFullScreen && (
+						<div className="absolute inset-0 z-10 flex flex-col items-center justify-end px-8 pb-36 md:items-start md:px-24 md:pb-32">
 							{/* Stronger fade at the bottom for readability */}
-							<div className="w-full bg-gradient-to-t from-black/90 via-black/50 to-transparent absolute inset-0 pointer-events-none" />
-							<div className="relative z-10 w-full flex flex-col items-center text-center gap-1">
+							<div className="absolute inset-0 w-full pointer-events-none bg-gradient-to-t from-black/95 via-black/70 to-transparent" />
+							<div className="relative z-10 flex w-full max-w-xl flex-col items-center text-center md:items-start md:text-left">
 								{aiName && (
 									<h2
-										className="text-2xl font-extrabold text-white drop-shadow-lg tracking-tight mb-0.5"
+										className="text-3xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-5xl"
 										style={{
 											opacity: hasCompletedFirstLoad ? 1 : nameOpacity || 0,
 											transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -290,7 +293,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								)}
 								{aiPersona && (
 									<p
-										className="text-base text-sky-200 font-medium drop-shadow-md"
+										className="mt-2 text-lg font-medium text-sky-100 drop-shadow-md md:text-xl"
 										style={{
 											opacity: hasCompletedFirstLoad
 												? 1
@@ -306,7 +309,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								)}
 								{aiEnvironment && (
 									<p
-										className="text-sm text-slate-200/90 font-normal"
+										className="text-base font-normal text-slate-200/90 drop-shadow md:text-lg"
 										style={{
 											opacity: hasCompletedFirstLoad
 												? 1
@@ -322,7 +325,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 								)}
 								{bodyLanguageDescription && (
 									<p
-										className="mt-1 text-sm text-slate-100/90 italic font-light"
+										className="mt-4 text-base font-light italic text-slate-100/90 drop-shadow md:text-lg"
 										style={{
 											opacity: hasCompletedFirstLoad
 												? 1
@@ -342,26 +345,49 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 
 					{/* Replay Button - Mobile Only */}
 					{showReplayButton && onReplayCinematic && hasCompletedFirstLoad && (
-						<div className="md:hidden absolute bottom-6 left-6 z-[9998] animate-replay-button-fade-in">
-							<button
-								onClick={onReplayCinematic}
-								className="group bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-3 replay-button-hover focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg"
-								aria-label="Replay introduction animation">
-								<svg
-									className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-180"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									xmlns="http://www.w3.org/2000/svg">
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-									/>
-								</svg>
-							</button>
-						</div>
+						<>
+							<div className="md:hidden absolute bottom-6 left-6 z-[9998] animate-replay-button-fade-in">
+								<button
+									onClick={onReplayCinematic}
+									className="group bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-3 replay-button-hover focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg"
+									aria-label="Replay introduction animation">
+									<svg
+										className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-180"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+										xmlns="http://www.w3.org/2000/svg">
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+										/>
+									</svg>
+								</button>
+							</div>
+							{/* Replay Button - Desktop Only */}
+							<div className="hidden md:block absolute bottom-6 left-6 z-[9998] animate-replay-button-fade-in">
+								<button
+									onClick={onReplayCinematic}
+									className="group bg-slate-900/80 border border-slate-700/70 rounded-full p-3 text-sky-100 shadow-xl backdrop-blur-md hover:bg-slate-800/90 active:bg-slate-900/95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:ring-offset-2 focus:ring-offset-slate-900/80"
+									aria-label="Replay introduction animation">
+									<svg
+										className="w-6 h-6 text-sky-200 transition-transform duration-300 group-hover:rotate-180"
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+										xmlns="http://www.w3.org/2000/svg">
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											strokeWidth={2}
+											d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+										/>
+									</svg>
+								</button>
+							</div>
+						</>
 					)}
 				</>
 			)}

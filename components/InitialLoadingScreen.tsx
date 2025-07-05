@@ -102,9 +102,9 @@ const MOTION_SPRING_CONFIGS = {
 } as const;
 
 // Firefly particle system - authentic firefly field effect
-const FIREFLY_COUNT = 25; // Optimal count for realistic firefly field
-const FIREFLY_BLUE = "rgba(59, 130, 246, 0.8)"; // Primary logo blue
-const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.6)"; // Lighter accent blue
+const FIREFLY_COUNT = 40; // Increased from 25 to 40 for more fireflies
+const FIREFLY_BLUE = "rgba(59, 130, 246, 0.9)"; // Increased opacity from 0.8 to 0.9
+const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.8)"; // Increased opacity from 0.6 to 0.8
 
 // Generate fireflies with natural characteristics
 const generateFireflies = () => {
@@ -121,7 +121,7 @@ const generateFireflies = () => {
 		delay: Math.random() * 5, // 0-5s staggered appearance
 		// Firefly-specific properties
 		pulseSpeed: Math.random() * 2 + 1.5, // 1.5-3.5s pulse cycle
-		glowIntensity: Math.random() * 0.4 + 0.6, // 0.6-1.0 bright glow
+		glowIntensity: Math.random() * 0.3 + 0.7, // Increased from 0.4 + 0.6 to 0.3 + 0.7 (0.7-1.0 range)
 		flickerPattern: Math.random(), // 0-1 for flicker variation
 		floatDirection: Math.random() * Math.PI * 2, // Random float direction
 		verticalBias: Math.random() * 0.3 + 0.1, // 0.1-0.4 upward tendency
@@ -200,6 +200,7 @@ export const InitialLoadingScreen: React.FC = () => {
 	const [isCollapsing, setIsCollapsing] = useState(false);
 	const [isClient, setIsClient] = useState(false); // Hydration safety
 	const [fireflies] = useState(() => generateFireflies()); // Firefly field
+	const [orbsDissolving, setOrbsDissolving] = useState(false); // Track orb dissolve state
 
 	// Motion values - ALWAYS called in the same order
 	const progress = useMotionValue(0);
@@ -257,6 +258,20 @@ export const InitialLoadingScreen: React.FC = () => {
 	const animationFrameRef = useRef<number>();
 	const completionTimeoutRef = useRef<NodeJS.Timeout>();
 	const startTimeRef = useRef<number>(Date.now());
+
+	// Simplified progress tracking effect to trigger orb dissolve at 98%
+	useEffect(() => {
+		const unsubscribe = progressSpring.on("change", (value) => {
+			if (value >= 98 && !orbsDissolving) {
+				console.log(
+					"InitialLoadingScreen: Progress reached 98%, starting orb dissolve"
+				);
+				setOrbsDissolving(true);
+			}
+		});
+
+		return () => unsubscribe();
+	}, [progressSpring, orbsDissolving]);
 
 	// Callback hooks - ALWAYS called in the same order
 	const triggerShimmerSequence = useCallback(async () => {
@@ -544,7 +559,7 @@ export const InitialLoadingScreen: React.FC = () => {
 		logo: {
 			scale: 1,
 			y: 0,
-			transition: { ...MOTION_SPRING_CONFIGS.SNAPPY, delay: 0.05 }, // Adjusted for 4 second total
+			transition: MOTION_SPRING_CONFIGS.GENTLE,
 		},
 		content: {
 			scale: 1,
@@ -630,11 +645,11 @@ export const InitialLoadingScreen: React.FC = () => {
 			},
 		},
 		exit: {
+			// Same exit animation as other elements - unified dissolve
 			opacity: 0,
-			scale: 0,
+			scale: 0.95,
 			transition: {
-				...MOTION_SPRING_CONFIGS.GENTLE,
-				duration: 2,
+				duration: 0.6,
 				ease: "easeInOut",
 			},
 		},
@@ -690,9 +705,9 @@ export const InitialLoadingScreen: React.FC = () => {
 									top: `${firefly.initialY}%`,
 									filter: `blur(1px) brightness(1.5)`,
 									boxShadow: `
-										0 0 ${firefly.size * 3}px ${firefly.color},
-										0 0 ${firefly.size * 6}px ${firefly.color.replace(/[\d\.]+\)$/g, "0.3)")},
-										0 0 ${firefly.size * 9}px ${firefly.color.replace(/[\d\.]+\)$/g, "0.1)")}
+										0 0 ${firefly.size * 4}px ${firefly.color}, 
+										0 0 ${firefly.size * 8}px ${firefly.color.replace(/[\d\.]+\)$/g, "0.4)")},
+										0 0 ${firefly.size * 12}px ${firefly.color.replace(/[\d\.]+\)$/g, "0.2)")}
 									`,
 									zIndex: 0,
 									willChange: "transform, opacity, filter",
@@ -722,21 +737,21 @@ export const InitialLoadingScreen: React.FC = () => {
 									],
 									// Gentle firefly pulsing
 									scale: [1, 1.2, 0.9, 1.1, 1],
-									// Firefly glow pattern with flicker
+									// Firefly glow pattern with flicker - enhanced brightness
 									opacity: [
-										0.3,
+										0.4, // Increased from 0.3
 										firefly.glowIntensity,
-										0.1 + firefly.flickerPattern * 0.2,
-										firefly.glowIntensity * 0.8,
-										0.4,
+										0.2 + firefly.flickerPattern * 0.3, // Increased base and multiplier
+										firefly.glowIntensity * 0.9, // Increased from 0.8
+										0.5, // Increased from 0.4
 									],
-									// Enhanced glow effects
+									// Enhanced glow effects - brighter and more pronounced
 									filter: [
-										`blur(1px) brightness(1.2)`,
-										`blur(2px) brightness(1.8)`,
-										`blur(0.5px) brightness(1.1)`,
-										`blur(1.5px) brightness(1.6)`,
-										`blur(1px) brightness(1.2)`,
+										`blur(1px) brightness(1.4)`, // Increased from 1.2
+										`blur(2px) brightness(2.2)`, // Increased from 1.8
+										`blur(0.5px) brightness(1.3)`, // Increased from 1.1
+										`blur(1.5px) brightness(2.0)`, // Increased from 1.6
+										`blur(1px) brightness(1.4)`, // Increased from 1.2
 									],
 								}}
 								transition={{
@@ -1011,6 +1026,120 @@ export const InitialLoadingScreen: React.FC = () => {
 							`,
 							}}
 						/>
+
+						{/* Subtle Orbit Animation (firefly style) */}
+						<AnimatePresence>
+							{isVisible && (
+								<motion.div
+									className="absolute inset-0 pointer-events-none"
+									animate={{ rotate: 360 }}
+									initial={{ opacity: 1, scale: 1 }}
+									exit={{
+										opacity: 0,
+										scale: 0.95,
+										transition: {
+											duration: 0.6,
+											ease: "easeInOut",
+										},
+									}}
+									transition={{
+										duration: 52,
+										ease: "linear",
+										repeat: Infinity,
+									}}>
+									{[0, 1, 2].map((i) => {
+										// Use firefly color palette and glow
+										const color = i === 0 ? FIREFLY_BLUE : FIREFLY_LIGHT_BLUE;
+										const size = 5;
+										const glowIntensity = 0.8 + 0.2 * Math.random();
+										const orbitRadius = 100 + i * 40; // Current orbit radius
+
+										return (
+											<motion.div
+												key={i}
+												className="absolute rounded-full"
+												style={{
+													top: "50%",
+													left: "50%",
+													width: size,
+													height: size,
+													backgroundColor: color,
+													transformOrigin: `${orbitRadius}px 0px`,
+													filter: `blur(1px) brightness(1.4)`,
+													boxShadow: `
+														0 0 ${size * 4}px ${color}, 
+														0 0 ${size * 8}px ${color.replace(/[\d\.]+\)$/g, "0.4)")},
+														0 0 ${size * 12}px ${color.replace(/[\d\.]+\)$/g, "0.2)")}
+													`,
+												}}
+												animate={
+													orbsDissolving
+														? {
+																// Continue all animations but fade opacity to 0
+																opacity: 0,
+																scale: [1, 1.2, 0.9, 1.1, 1],
+																filter: [
+																	`blur(1px) brightness(1.4)`,
+																	`blur(2px) brightness(2.2)`,
+																	`blur(0.5px) brightness(1.2)`,
+																	`blur(1.5px) brightness(1.8)`,
+																	`blur(1px) brightness(1.4)`,
+																],
+														  }
+														: {
+																// Normal firefly glow animation
+																opacity: [
+																	0.4,
+																	glowIntensity,
+																	0.2 + 0.3 * Math.random(),
+																	glowIntensity * 0.9,
+																	0.5,
+																],
+																scale: [1, 1.2, 0.9, 1.1, 1],
+																filter: [
+																	`blur(1px) brightness(1.4)`,
+																	`blur(2px) brightness(2.2)`,
+																	`blur(0.5px) brightness(1.2)`,
+																	`blur(1.5px) brightness(1.8)`,
+																	`blur(1px) brightness(1.4)`,
+																],
+														  }
+												}
+												transition={
+													orbsDissolving
+														? {
+																// Different transition for each property
+																opacity: {
+																	duration: 1.5,
+																	ease: "easeInOut",
+																	delay: 0.1 * i,
+																},
+																scale: {
+																	duration: 5.2 + i * 0.9,
+																	repeat: Infinity,
+																	repeatType: "mirror",
+																	ease: "easeInOut",
+																},
+																filter: {
+																	duration: 5.2 + i * 0.9,
+																	repeat: Infinity,
+																	repeatType: "mirror",
+																	ease: "easeInOut",
+																},
+														  }
+														: {
+																duration: 5.2 + i * 0.9,
+																repeat: Infinity,
+																repeatType: "mirror",
+																ease: "easeInOut",
+														  }
+												}
+											/>
+										);
+									})}
+								</motion.div>
+							)}
+						</AnimatePresence>
 					</motion.div>
 				)}
 			</AnimatePresence>

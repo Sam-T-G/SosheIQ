@@ -1181,7 +1181,12 @@ const HomePage: React.FC = () => {
 			} else if (currentPhase === GamePhase.LOGIN) {
 				message = "Logging in...";
 			}
-			return <LoadingIndicator message={message} />;
+			return (
+				<LoadingIndicator
+					message={message}
+					scenarioDetails={scenarioDetails || undefined}
+				/>
+			);
 		}
 
 		switch (currentPhase) {

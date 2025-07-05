@@ -402,7 +402,10 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
 	if (isLoadingReport || !hasTriedToLoad) {
 		return (
-			<LoadingIndicator message="Generating your performance analysis..." />
+			<LoadingIndicator
+				message="Generating your performance analysis..."
+				scenarioDetails={scenarioDetails}
+			/>
 		);
 	}
 
