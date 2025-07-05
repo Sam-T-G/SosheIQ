@@ -543,18 +543,21 @@ export const InitialLoadingScreen: React.FC = () => {
 							position: "fixed",
 							backgroundColor: "#000",
 						}}
-						initial={{ opacity: 0, scale: 1.05, y: 20 }}
+						initial={{ opacity: 0, scale: 0.95, y: 10 }}
 						animate={{
 							opacity: 1,
 							scale: 1,
 							y: 0,
-							transition: MOTION_SPRING_CONFIGS.GENTLE,
+							transition: {
+								...MOTION_SPRING_CONFIGS.GENTLE,
+								duration: 0.8,
+							},
 						}}
 						exit={{
 							opacity: 0,
-							scale: 0, // Direct collapse without breathe out
+							scale: 0.95,
 							transition: {
-								duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
+								duration: 0.6,
 								ease: "easeInOut",
 							},
 						}}>
@@ -583,83 +586,142 @@ export const InitialLoadingScreen: React.FC = () => {
 								variants={containerVariants}
 								initial="entrance"
 								animate={currentPhase.phase}>
-								{/* Logo with enhanced glow system */}
+								{/* Logo with enhanced radial glow system */}
 								<motion.div
 									className="relative"
 									variants={logoVariants}
 									initial="entrance"
 									animate={currentPhase.phase}>
+									{/* Outer radial glow ring with pulsing */}
+									<AnimatePresence>
+										{showGlow && (
+											<motion.div
+												className="absolute rounded-full"
+												style={{
+													width: "220px",
+													height: "220px",
+													top: "50%",
+													left: "50%",
+													transform: "translate(-50%, -50%)",
+													background:
+														"radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.15) 40%, transparent 80%)",
+													willChange: "transform, opacity",
+													filter: "blur(12px)",
+												}}
+												initial={{ opacity: 0, scale: 0.8 }}
+												animate={{
+													opacity: [0.3, 0.7, 0.3],
+													scale: [0.8, 1.3, 0.8],
+												}}
+												exit={{
+													opacity: 0,
+													scale: 0.5,
+													transition: {
+														duration: 0.6,
+														ease: "easeInOut",
+													},
+												}}
+												transition={{
+													duration: 3.5,
+													ease: "easeInOut",
+													repeat: Infinity,
+													repeatType: "loop",
+												}}
+											/>
+										)}
+									</AnimatePresence>
+
+									{/* Middle radial glow ring */}
+									<AnimatePresence>
+										{showGlow && (
+											<motion.div
+												className="absolute rounded-full"
+												style={{
+													width: "180px",
+													height: "180px",
+													top: "50%",
+													left: "50%",
+													transform: "translate(-50%, -50%)",
+													background:
+														"radial-gradient(circle, rgba(6, 182, 212, 0.4) 0%, rgba(6, 182, 212, 0.2) 50%, transparent 90%)",
+													willChange: "transform, opacity",
+													filter: "blur(8px)",
+												}}
+												initial={{ opacity: 0, scale: 0.9 }}
+												animate={{
+													opacity: [0.4, 0.8, 0.4],
+													scale: [0.9, 1.2, 0.9],
+												}}
+												exit={{
+													opacity: 0,
+													scale: 0.6,
+													transition: {
+														duration: 0.6,
+														ease: "easeInOut",
+													},
+												}}
+												transition={{
+													duration: 2.8,
+													ease: "easeInOut",
+													repeat: Infinity,
+													repeatType: "loop",
+													delay: 0.7,
+												}}
+											/>
+										)}
+									</AnimatePresence>
+
+									{/* Inner core glow */}
+									<AnimatePresence>
+										{showGlow && (
+											<motion.div
+												className="absolute rounded-full"
+												style={{
+													width: "140px",
+													height: "140px",
+													top: "50%",
+													left: "50%",
+													transform: "translate(-50%, -50%)",
+													background:
+														"radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(59, 130, 246, 0.3) 60%, transparent 100%)",
+													willChange: "transform, opacity",
+													filter: "blur(4px)",
+												}}
+												initial={{ opacity: 0, scale: 1 }}
+												animate={{
+													opacity: [0.2, 0.5, 0.2],
+													scale: [1, 1.1, 1],
+												}}
+												exit={{
+													opacity: 0,
+													scale: 0.8,
+													transition: {
+														duration: 0.6,
+														ease: "easeInOut",
+													},
+												}}
+												transition={{
+													duration: 2.2,
+													ease: "easeInOut",
+													repeat: Infinity,
+													repeatType: "loop",
+													delay: 1.2,
+												}}
+											/>
+										)}
+									</AnimatePresence>
+
+									{/* Logo with enhanced drop shadow */}
 									<SosheIQLogo
 										className="relative z-10"
 										style={{
 											height: "120px",
 											width: "auto",
-											filter: "drop-shadow(0 0 24px rgba(59, 130, 246, 0.5))",
+											filter:
+												"drop-shadow(0 0 20px rgba(59, 130, 246, 0.6)) drop-shadow(0 0 40px rgba(6, 182, 212, 0.4))",
 											willChange: "transform, filter",
 										}}
 									/>
-
-									{/* Enhanced primary glow layer */}
-									<AnimatePresence>
-										{showGlow && (
-											<motion.div
-												className="absolute rounded-full blur-lg"
-												style={{
-													height: "150px",
-													width: "150px",
-													background:
-														"radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(6, 182, 212, 0.2) 50%, transparent 100%)",
-													top: "-15px",
-													left: "50%",
-													transform: "translateX(-50%)",
-													willChange: "transform, opacity",
-													animation: `breathingGlow 3700ms ${EASING_CURVES.breathingMomentum} infinite`,
-													opacity: glowOpacity,
-												}}
-												initial={{ opacity: 0 }}
-												animate={{ opacity: 1 }}
-												exit={{
-													opacity: 0,
-													scale: 0,
-													transition: {
-														duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
-														ease: "easeInOut",
-													},
-												}}
-											/>
-										)}
-									</AnimatePresence>
-
-									{/* Enhanced secondary glow layer */}
-									<AnimatePresence>
-										{showGlow && (
-											<motion.div
-												className="absolute rounded-full blur-xl"
-												style={{
-													height: "180px",
-													width: "180px",
-													background:
-														"radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.1) 40%, transparent 70%)",
-													top: "-30px",
-													left: "50%",
-													transform: "translateX(-50%)",
-													willChange: "transform, opacity",
-													animation: `breathingGlowSecondary 4800ms ${EASING_CURVES.breathingMomentum} infinite`,
-													opacity: glowOpacity,
-												}}
-												initial={{ opacity: 0 }}
-												animate={{ opacity: 1 }}
-												exit={{
-													opacity: 0,
-													scale: 0,
-													transition: {
-														duration: 0.56, // 30% reduction: 0.8 * 0.7 = 0.56 seconds
-														ease: "easeInOut",
-													},
-												}}
-											/>
-										)}
-									</AnimatePresence>
 								</motion.div>
 
 								{/* Loading message with refined bounce entrance */}
