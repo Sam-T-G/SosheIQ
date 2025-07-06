@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import Head from "next/head";
+import { AnimatePresence, motion } from "motion/react";
 import { v4 as uuidv4 } from "uuid";
 import { HeroScreen } from "../components/HeroScreen";
 import { AboutScreen } from "../components/AboutScreen";
@@ -1200,126 +1201,141 @@ const HomePage: React.FC = () => {
 			);
 		}
 
-		switch (currentPhase) {
-			case GamePhase.HERO:
-				return (
-					<HeroScreen
-						onStart={() => handleLoginFlow("start_guided")}
-						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
-						onStartRandom={() => setShowRandomConfirmDialog(true)}
-						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-						onNavigateToLogin={handleNavigateToLogin}
-						onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
-					/>
-				);
-			case GamePhase.LOGIN:
-				return (
-					<LoginScreen
-						onNavigateToHome={() => handleNavigate(GamePhase.HERO)}
-						onContinueAsGuest={handleContinueFromLogin}
-						onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
-						onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
-					/>
-				);
-			case GamePhase.ABOUT:
-				return <AboutScreen onBack={() => handleNavigate(GamePhase.HERO)} />;
-			case GamePhase.PRIVACY:
-				return (
-					<PrivacyPolicyScreen onBack={() => handleNavigate(GamePhase.HERO)} />
-				);
-			case GamePhase.TERMS:
-				return (
-					<TermsOfServiceScreen onBack={() => handleNavigate(GamePhase.HERO)} />
-				);
-			case GamePhase.SAFETY:
-				return <SafetyScreen onBack={() => handleNavigate(GamePhase.HERO)} />;
-			case GamePhase.INSTRUCTIONS:
-				return <InstructionsScreen onNavigate={handleNavigate} />;
-			case GamePhase.SETUP:
-				if (setupMode === "guided") {
-					return (
-						<GuidedSetup
-							onStart={handleStartInteraction}
-							onSwitchToAdvanced={() => setSetupMode("advanced")}
-						/>
-					);
-				}
-				return (
-					<SetupScreen
-						onStart={handleStartInteraction}
-						onBack={() => setSetupMode("guided")}
-					/>
-				);
-			case GamePhase.INTERACTION:
-				if (!scenarioDetails)
-					return <LoadingIndicator message="Loading scenario..." />;
+		return (
+			<AnimatePresence mode="wait" initial={false}>
+				{(() => {
+					switch (currentPhase) {
+						case GamePhase.HERO:
+							return (
+								<motion.div
+									key="hero"
+									initial={{ opacity: 0 }}
+									animate={{ opacity: 1 }}
+									exit={{ opacity: 0 }}
+									transition={{ duration: 0.6, ease: "easeInOut" }}>
+									<HeroScreen
+										onStart={() => handleLoginFlow("start_guided")}
+										onShowInstructions={() =>
+											handleNavigate(GamePhase.INSTRUCTIONS)
+										}
+										onStartRandom={() => setShowRandomConfirmDialog(true)}
+										onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
+										onNavigateToLogin={handleNavigateToLogin}
+										onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
+									/>
+								</motion.div>
+							);
+						case GamePhase.LOGIN:
+							return (
+								<LoginScreen
+									onNavigateToHome={() => handleNavigate(GamePhase.HERO)}
+									onContinueAsGuest={handleContinueFromLogin}
+									onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
+									onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
+								/>
+							);
+						case GamePhase.ABOUT:
+							return (
+								<AboutScreen onBack={() => handleNavigate(GamePhase.HERO)} />
+							);
+						case GamePhase.PRIVACY:
+							return (
+								<PrivacyPolicyScreen
+									onBack={() => handleNavigate(GamePhase.HERO)}
+								/>
+							);
+						case GamePhase.TERMS:
+							return (
+								<TermsOfServiceScreen
+									onBack={() => handleNavigate(GamePhase.HERO)}
+								/>
+							);
+						case GamePhase.SAFETY:
+							return (
+								<SafetyScreen onBack={() => handleNavigate(GamePhase.HERO)} />
+							);
+						case GamePhase.INSTRUCTIONS:
+							return <InstructionsScreen onNavigate={handleNavigate} />;
+						case GamePhase.SETUP:
+							if (setupMode === "guided") {
+								return (
+									<GuidedSetup
+										onStart={handleStartInteraction}
+										onSwitchToAdvanced={() => setSetupMode("advanced")}
+									/>
+								);
+							}
+							return (
+								<SetupScreen
+									onStart={handleStartInteraction}
+									onBack={() => setSetupMode("guided")}
+								/>
+							);
+						case GamePhase.INTERACTION:
+							if (!scenarioDetails)
+								return <LoadingIndicator message="Loading scenario..." />;
 
-				const isPinnable = !!displayedGoal && !scenarioDetails.conversationGoal;
-				const isGoalPinned =
-					!!scenarioDetails.conversationGoal &&
-					scenarioDetails.conversationGoal === displayedGoal?.text;
+							const isPinnable =
+								!!displayedGoal && !scenarioDetails.conversationGoal;
+							const isGoalPinned =
+								!!scenarioDetails.conversationGoal &&
+								scenarioDetails.conversationGoal === displayedGoal?.text;
 
-				return (
-					<InteractionScreen
-						scenarioDetails={scenarioDetails}
-						conversationHistory={conversationHistory}
-						currentEngagement={currentEngagement}
-						displayedGoal={displayedGoal}
-						activeAction={activeAction}
-						isActionPaused={isActionPaused}
-						isPinnable={isPinnable}
-						isGoalPinned={isGoalPinned}
-						onPinGoal={handlePinGoal}
-						onUnpinGoal={handleUnpinGoal}
-						isContinueActionSuggested={isContinueActionSuggested}
-						onSendMessage={handleSendMessage}
-						onRetryMessage={handleRetryMessage}
-						onEndConversation={handleAttemptEndConversation}
-						onFastForwardAction={handleFastForwardAction}
-						onContinueWithoutSpeaking={handleContinueWithoutSpeaking}
-						aiImageBase64={currentAIImage}
-						isLoadingAI={isAiResponding}
-						onToggleHelp={handleToggleHelp}
-						onViewImage={handleViewImage}
-						initialAiBodyLanguage={initialAiBodyLanguage}
-						goalJustChanged={goalJustChanged}
-						onAnimationComplete={handleLastMessageAnimationComplete}
-						showGoalAchievedToast={showGoalAchievedToast}
-						onGoToAnalysis={handleGoToAnalysis}
-						onCloseGoalToast={() =>
-							setShowGoalAchievedToast({ show: false, text: "" })
-						}
-						pendingFeedback={pendingFeedback}
-						onFeedbackAnimationComplete={handleFeedbackAnimationComplete}
-						onModalStateChange={setIsModalActive}
-					/>
-				);
-			case GamePhase.ANALYSIS:
-				if (!scenarioDetails)
-					return (
-						<LoadingIndicator message="Loading scenario for analysis..." />
-					);
-				return (
-					<AnalysisScreen
-						report={analysisReport}
-						isLoadingReport={isLoading && !analysisReport && !error}
-						errorReport={error}
-						onRestart={handleRestart}
-						scenarioDetails={scenarioDetails}
-					/>
-				);
-			default:
-				return (
-					<HeroScreen
-						onStart={() => handleLoginFlow("start_guided")}
-						onShowInstructions={() => handleNavigate(GamePhase.INSTRUCTIONS)}
-						onStartRandom={() => setShowRandomConfirmDialog(true)}
-						onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-						onNavigateToLogin={handleNavigateToLogin}
-						onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
-					/>
-				);
-		}
+							return (
+								<InteractionScreen
+									scenarioDetails={scenarioDetails}
+									conversationHistory={conversationHistory}
+									currentEngagement={currentEngagement}
+									displayedGoal={displayedGoal}
+									activeAction={activeAction}
+									isActionPaused={isActionPaused}
+									isPinnable={isPinnable}
+									isGoalPinned={isGoalPinned}
+									onPinGoal={handlePinGoal}
+									onUnpinGoal={handleUnpinGoal}
+									isContinueActionSuggested={isContinueActionSuggested}
+									onSendMessage={handleSendMessage}
+									onRetryMessage={handleRetryMessage}
+									onEndConversation={handleAttemptEndConversation}
+									onFastForwardAction={handleFastForwardAction}
+									onContinueWithoutSpeaking={handleContinueWithoutSpeaking}
+									aiImageBase64={currentAIImage}
+									isLoadingAI={isAiResponding}
+									onToggleHelp={handleToggleHelp}
+									onViewImage={handleViewImage}
+									initialAiBodyLanguage={initialAiBodyLanguage}
+									goalJustChanged={goalJustChanged}
+									onAnimationComplete={handleLastMessageAnimationComplete}
+									showGoalAchievedToast={showGoalAchievedToast}
+									onGoToAnalysis={handleGoToAnalysis}
+									onCloseGoalToast={() =>
+										setShowGoalAchievedToast({ show: false, text: "" })
+									}
+									pendingFeedback={pendingFeedback}
+									onFeedbackAnimationComplete={handleFeedbackAnimationComplete}
+									onModalStateChange={setIsModalActive}
+								/>
+							);
+						case GamePhase.ANALYSIS:
+							if (!scenarioDetails)
+								return (
+									<LoadingIndicator message="Loading scenario for analysis..." />
+								);
+							return (
+								<AnalysisScreen
+									report={analysisReport}
+									isLoadingReport={isLoading && !analysisReport && !error}
+									errorReport={error}
+									onRestart={handleRestart}
+									scenarioDetails={scenarioDetails}
+								/>
+							);
+						default:
+							return null;
+					}
+				})()}
+			</AnimatePresence>
+		);
 	};
 
 	return (
@@ -1349,7 +1365,7 @@ const HomePage: React.FC = () => {
 							currentPhase === GamePhase.INTERACTION ||
 							currentPhase === GamePhase.ANALYSIS
 								? "bg-transparent"
-								: "bg-slate-900"
+								: "bg-transparent"
 						}`}>
 						{/* Hide Header in mobile landscape and when modal is active */}
 						{!isMobileLandscape && !isModalActive && (

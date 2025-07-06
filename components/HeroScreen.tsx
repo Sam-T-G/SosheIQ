@@ -6,6 +6,7 @@ import {
 	ArrowRightIcon,
 } from "./Icons";
 import { SosheIQLogo } from "./SosheIQLogo";
+import { motion } from "motion/react";
 
 interface HeroScreenProps {
 	onStart: () => void;
@@ -27,16 +28,34 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 	return (
 		<div className="relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center p-4 md:p-8 isolate">
 			{/* Background Gradients */}
-			<div
+			<motion.div
 				aria-hidden="true"
-				className="absolute -z-10 -top-40 -left-20 transform-gpu blur-3xl">
-				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0369a1] to-[#0f172a] opacity-30" />
-			</div>
-			<div
+				className="absolute -z-10 -top-40 -left-20 transform-gpu blur-3xl"
+				initial={{ opacity: 0.25 }}
+				animate={{ opacity: 0.4 }}
+				transition={{
+					duration: 6,
+					repeat: Infinity,
+					repeatType: "mirror",
+					ease: "easeInOut",
+				}}>
+				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0369a1] to-[#0f172a]" />
+			</motion.div>
+
+			<motion.div
 				aria-hidden="true"
-				className="absolute -z-10 -bottom-40 -right-20 transform-gpu blur-3xl">
-				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0f766e] to-[#0f172a] opacity-30" />
-			</div>
+				className="absolute -z-10 -bottom-40 -right-20 transform-gpu blur-3xl"
+				initial={{ opacity: 0.25 }}
+				animate={{ opacity: 0.4 }}
+				transition={{
+					duration: 6,
+					repeat: Infinity,
+					repeatType: "mirror",
+					ease: "easeInOut",
+					delay: 1.5,
+				}}>
+				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0f766e] to-[#0f172a]" />
+			</motion.div>
 
 			<SosheIQLogo
 				className="h-24 md:h-32 w-auto mb-6 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
