@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BackgroundCrossfadeImage } from "./BackgroundCrossfadeImage";
+import { motion, AnimatePresence, useAnimation } from "motion/react";
 
 interface AIVisualCueProps {
 	imageBase64: string | null;
@@ -69,6 +70,13 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	const [incomingImage, setIncomingImage] = useState<string | null>(null);
 	const [isAnimating, setIsAnimating] = useState<boolean>(false);
 	const [incomingLoaded, setIncomingLoaded] = useState<boolean>(false);
+
+	// Add state for replay button lingering animation
+	const [replayButtonVisible, setReplayButtonVisible] = useState(true);
+	const [replayButtonExiting, setReplayButtonExiting] = useState(false);
+
+	// Add ripple state
+	const [rippleActive, setRippleActive] = useState(false);
 
 	const prevImageBase64Ref = useRef<string | null>(null);
 	const displayedImageRef = useRef<string | null>(null);
@@ -203,6 +211,26 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 		return null;
 	}
 
+	// Handler for replay button click
+	const handleReplayClick = () => {
+		if (onReplayCinematic) onReplayCinematic();
+		setRippleActive(true);
+		setReplayButtonExiting(true);
+		setTimeout(() => {
+			setReplayButtonVisible(false);
+			setReplayButtonExiting(false);
+			setRippleActive(false);
+		}, 200); // Pop duration before exit
+	};
+
+	// Reset button visibility when it should reappear
+	useEffect(() => {
+		if (showReplayButton && hasCompletedFirstLoad) {
+			setReplayButtonVisible(true);
+			setReplayButtonExiting(false);
+		}
+	}, [showReplayButton, hasCompletedFirstLoad]);
+
 	return (
 		<div
 			className={
@@ -232,7 +260,9 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 				<>
 					<BackgroundCrossfadeImage
 						src={imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null}
-						className="absolute inset-0 w-full h-full object-cover"
+						className={`absolute inset-0 w-full h-full object-cover${
+							!hasCompletedFirstLoad ? " animate-image-cross-fade-in" : ""
+						}`}
 						objectPosition={showOverlayText ? "center 33%" : "center"}
 					/>
 					{/* Clickable overlay for image viewing - Mobile Only */}
@@ -287,7 +317,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 							}}>
 							{/* Stronger fade at the bottom for readability */}
 							<div
-								className="absolute inset-0 w-full pointer-events-none bg-gradient-to-t from-black/95 via-black/70 to-transparent"
+								className="absolute inset-0 w-full pointer-events-none bg-gradient-to-t from-black/70 via-black/40 to-transparent"
 								style={{
 									opacity: isCinematicFadingOut
 										? 0
@@ -380,51 +410,187 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 					)}
 
 					{/* Replay Button - Mobile Only */}
-					{showReplayButton && onReplayCinematic && hasCompletedFirstLoad && (
-						<>
-							<div className="md:hidden absolute bottom-6 left-6 z-[9998] animate-replay-button-fade-in">
-								<button
-									onClick={onReplayCinematic}
-									className="group bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-3 replay-button-hover focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg"
-									aria-label="Replay introduction animation">
-									<svg
-										className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-180"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-										xmlns="http://www.w3.org/2000/svg">
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-										/>
-									</svg>
-								</button>
-							</div>
-							{/* Replay Button - Desktop Only */}
-							<div className="hidden md:block absolute bottom-6 left-6 z-[9998] animate-replay-button-fade-in">
-								<button
-									onClick={onReplayCinematic}
-									className="group bg-slate-900/80 border border-slate-700/70 rounded-full p-3 text-sky-100 shadow-xl backdrop-blur-md hover:bg-slate-800/90 active:bg-slate-900/95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:ring-offset-2 focus:ring-offset-slate-900/80"
-									aria-label="Replay introduction animation">
-									<svg
-										className="w-6 h-6 text-sky-200 transition-transform duration-300 group-hover:rotate-180"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-										xmlns="http://www.w3.org/2000/svg">
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-										/>
-									</svg>
-								</button>
-							</div>
-						</>
-					)}
+					<AnimatePresence>
+						{showReplayButton &&
+							onReplayCinematic &&
+							hasCompletedFirstLoad &&
+							replayButtonVisible && (
+								<motion.div
+									className="md:hidden absolute bottom-6 left-6 z-[9998]"
+									initial={{ opacity: 0, scale: 0.85 }}
+									animate={
+										replayButtonExiting
+											? { opacity: 0.6, scale: 1.18 }
+											: { opacity: 0.6, scale: 1 }
+									}
+									exit={{
+										opacity: 0,
+										scale: 0.8,
+										transition: { duration: 0.3, ease: "easeInOut" },
+									}}
+									transition={{ type: "spring", bounce: 0.35, duration: 0.4 }}
+									key="replay-mobile"
+									style={{
+										pointerEvents: replayButtonExiting ? "none" : "auto",
+									}}>
+									{/* Glow effect */}
+									<motion.div
+										className="absolute inset-0 rounded-full"
+										style={{
+											zIndex: -1,
+											filter: "blur(12px)",
+											background:
+												"radial-gradient(circle, rgba(80,200,255,0.45) 0%, rgba(0,0,0,0) 80%)",
+										}}
+										animate={
+											replayButtonExiting
+												? { opacity: 1, scale: 1.18 }
+												: { opacity: 0.7, scale: 1.12 }
+										}
+										initial={{ opacity: 0.5, scale: 1 }}
+										whileHover={{ opacity: 1, scale: 1.18 }}
+										whileTap={{ opacity: 0.9, scale: 1.05 }}
+										exit={{
+											opacity: 0,
+											scale: 1.3,
+											transition: { duration: 0.3, ease: "easeInOut" },
+										}}
+										transition={{ type: "spring", bounce: 0.5, duration: 0.4 }}
+									/>
+									<motion.button
+										onClick={handleReplayClick}
+										className="group relative bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-3 replay-button-hover focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg"
+										aria-label="Replay introduction animation"
+										style={{ opacity: 0.6 }}
+										whileHover={{ scale: 1.08, opacity: 0.85 }}
+										whileTap={{ scale: 0.93, opacity: 1 }}
+										transition={{
+											type: "spring",
+											bounce: 0.4,
+											duration: 0.25,
+										}}>
+										{/* Ripple Glow Animation */}
+										{rippleActive && (
+											<motion.div
+												className="absolute inset-0 rounded-full pointer-events-none"
+												style={{
+													zIndex: 1,
+													background:
+														"radial-gradient(circle, rgba(80,200,255,0.7) 0%, rgba(80,200,255,0.0) 70%)",
+												}}
+												initial={{ scale: 0, opacity: 0.7 }}
+												animate={{ scale: 2.2, opacity: 0 }}
+												transition={{ duration: 0.5, ease: "easeOut" }}
+											/>
+										)}
+										<svg
+											className="w-5 h-5 text-white transition-transform duration-300 group-hover:rotate-180"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+											/>
+										</svg>
+									</motion.button>
+								</motion.div>
+							)}
+					</AnimatePresence>
+					{/* Replay Button - Desktop Only */}
+					<AnimatePresence>
+						{showReplayButton &&
+							onReplayCinematic &&
+							hasCompletedFirstLoad &&
+							replayButtonVisible && (
+								<motion.div
+									className="hidden md:block absolute bottom-6 left-6 z-[9998]"
+									initial={{ opacity: 0, scale: 0.85 }}
+									animate={
+										replayButtonExiting
+											? { opacity: 0.6, scale: 1.18 }
+											: { opacity: 0.6, scale: 1 }
+									}
+									exit={{
+										opacity: 0,
+										scale: 0.8,
+										transition: { duration: 0.3, ease: "easeInOut" },
+									}}
+									transition={{ type: "spring", bounce: 0.35, duration: 0.4 }}
+									key="replay-desktop"
+									style={{
+										pointerEvents: replayButtonExiting ? "none" : "auto",
+									}}>
+									{/* Glow effect */}
+									<motion.div
+										className="absolute inset-0 rounded-full"
+										style={{
+											zIndex: -1,
+											filter: "blur(16px)",
+											background:
+												"radial-gradient(circle, rgba(80,200,255,0.45) 0%, rgba(0,0,0,0) 80%)",
+										}}
+										animate={
+											replayButtonExiting
+												? { opacity: 1, scale: 1.18 }
+												: { opacity: 0.7, scale: 1.12 }
+										}
+										initial={{ opacity: 0.5, scale: 1 }}
+										whileHover={{ opacity: 1, scale: 1.18 }}
+										whileTap={{ opacity: 0.9, scale: 1.05 }}
+										exit={{
+											opacity: 0,
+											scale: 1.3,
+											transition: { duration: 0.3, ease: "easeInOut" },
+										}}
+										transition={{ type: "spring", bounce: 0.5, duration: 0.4 }}
+									/>
+									<motion.button
+										onClick={handleReplayClick}
+										className="group relative bg-slate-900/80 border border-slate-700/70 rounded-full p-3 text-sky-100 shadow-xl backdrop-blur-md hover:bg-slate-800/90 active:bg-slate-900/95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400/40 focus:ring-offset-2 focus:ring-offset-slate-900/80"
+										aria-label="Replay introduction animation"
+										style={{ opacity: 0.6 }}
+										whileHover={{ scale: 1.08, opacity: 0.85 }}
+										whileTap={{ scale: 0.93, opacity: 1 }}
+										transition={{
+											type: "spring",
+											bounce: 0.4,
+											duration: 0.25,
+										}}>
+										{/* Ripple Glow Animation */}
+										{rippleActive && (
+											<motion.div
+												className="absolute inset-0 rounded-full pointer-events-none"
+												style={{
+													zIndex: 1,
+													background:
+														"radial-gradient(circle, rgba(80,200,255,0.7) 0%, rgba(80,200,255,0.0) 70%)",
+												}}
+												initial={{ scale: 0, opacity: 0.7 }}
+												animate={{ scale: 2.2, opacity: 0 }}
+												transition={{ duration: 0.5, ease: "easeOut" }}
+											/>
+										)}
+										<svg
+											className="w-6 h-6 text-sky-200 transition-transform duration-300 group-hover:rotate-180"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+											xmlns="http://www.w3.org/2000/svg">
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+											/>
+										</svg>
+									</motion.button>
+								</motion.div>
+							)}
+					</AnimatePresence>
 				</>
 			)}
 		</div>

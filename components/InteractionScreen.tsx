@@ -20,6 +20,7 @@ import { RenderChatInterface } from "./RenderChatInterface";
 import { SosheIQLogo } from "./SosheIQLogo";
 import { TopBannerContainer } from "./TopBannerContainer";
 import { BackgroundCrossfadeImage } from "./BackgroundCrossfadeImage";
+import { motion, AnimatePresence } from "motion/react";
 
 interface InteractionScreenProps {
 	scenarioDetails: ScenarioDetails;
@@ -702,13 +703,57 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 		}
 	}, []);
 
+	// Add this useEffect near other effects in InteractionScreen
+	useEffect(() => {
+		const handleResize = () => {
+			if (
+				window.innerWidth < 768 &&
+				screenDimmed &&
+				!showScenarioContextModal
+			) {
+				setScreenDimmed(false);
+			}
+		};
+		window.addEventListener("resize", handleResize);
+		return () => window.removeEventListener("resize", handleResize);
+	}, [screenDimmed, showScenarioContextModal]);
+
+	// Ensure dim overlay is cleared whenever the scenario context modal is fully closed
+	useEffect(() => {
+		if (!showScenarioContextModal && screenDimmed) {
+			// In some edge-cases (e.g. device rotation from mobile → desktop whilst the
+			// modal is open) the overlay might persist. Guarantee it is removed once the
+			// modal disappears.
+			setScreenDimmed(false);
+		}
+	}, [showScenarioContextModal, screenDimmed]);
+
 	return (
-		<div className="w-full max-w-7xl h-[85vh] flex flex-col md:flex-row bg-slate-800 shadow-2xl rounded-xl relative overflow-hidden">
+		<div
+			className={`w-full max-w-7xl h-[85vh] flex flex-col md:flex-row shadow-2xl rounded-xl relative overflow-hidden ${
+				hasCompletedFirstLoad ? "bg-slate-800" : "bg-transparent"
+			}`}>
 			{/* Global fade overlay for smooth cross-fades (desktop & mobile) */}
-			<div
-				className="fixed inset-0 z-[11000] bg-black pointer-events-none transition-opacity duration-700"
-				style={{ opacity: isGlobalFading ? 1 : 0 }}
-			/>
+			<AnimatePresence>
+				{isGlobalFading && (
+					<motion.div
+						key="fade-black"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+						style={{
+							position: "fixed",
+							inset: 0,
+							zIndex: 20000,
+							background: "black",
+							pointerEvents: "none",
+							willChange: "opacity",
+						}}
+						aria-hidden="true"
+					/>
+				)}
+			</AnimatePresence>
 
 			{/* Goal Achieved Toast */}
 			{showGoalAchievedToast.show && (
@@ -719,18 +764,30 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				/>
 			)}
 
-			{/* Scenario Context Modal - Mobile Only */}
+			{/* Scenario Context Modal - Mobile & Desktop Overlay */}
+			<AnimatePresence>
+				{showScenarioContextModal && (
+					<motion.div
+						key="modal-overlay"
+						className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-md pointer-events-none"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+						aria-hidden="true"
+					/>
+				)}
+			</AnimatePresence>
 			{showScenarioContextModal && (
 				<div
-					className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/25 backdrop-blur-sm"
+					className="fixed inset-0 z-[10000] flex items-center justify-center"
 					style={{ pointerEvents: "auto" }}>
-					<div className="text-center transition-all duration-500 max-w-2xl mx-4 animate-modal-fade-in flex flex-col h-96">
+					<div className="text-center max-w-2xl mx-4 flex flex-col h-96">
 						<div className="flex-1 overflow-y-auto custom-scrollbar mb-12 flex items-center justify-center">
 							<p className="text-white/90 text-lg leading-relaxed font-light tracking-wide text-center">
 								{scenarioContext}
 							</p>
 						</div>
-
 						<div className="flex-shrink-0">
 							<button
 								onClick={handleScenarioContextConfirm}
@@ -742,15 +799,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 								style={{ pointerEvents: "auto", letterSpacing: "0.01em" }}>
 								{/* Simple shimmer effect on hover */}
 								<div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-x-full group-hover:translate-x-full rounded-full" />
-
 								{/* Subtle border glow on hover */}
 								<div className="absolute inset-0 border border-transparent group-hover:border-white/20 transition-all duration-300 rounded-full" />
-
 								{/* Button content with subtle hover effects */}
 								<span className="relative z-10 transition-all duration-300 group-hover:text-white group-hover:drop-shadow-sm">
 									Continue
 								</span>
-
 								{/* Simple click feedback */}
 								<div className="absolute inset-0 bg-white/10 opacity-0 group-active:opacity-100 transition-opacity duration-150 rounded-full" />
 							</button>
@@ -792,16 +846,6 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 							isHidden={false}
 							isCinematicFadingOut={isCinematicFadingOut}
 						/>
-						{/* Replay button (desktop, bottom left of AI image) */}
-						{showReplayButton && buttonsVisible && (
-							<button
-								onClick={replayCinematic}
-								className="absolute left-8 bottom-8 z-[9998] px-8 py-4 rounded-full bg-slate-900/80 border border-slate-700/70 shadow-2xl backdrop-blur-md text-sky-100 font-semibold text-lg hover:bg-slate-800/90 active:bg-slate-900/95 transition-all duration-200 animate-replay-button-fade-in animate-subtle-shimmer focus:outline-none"
-								tabIndex={0}
-								aria-label="Replay cinematic introduction">
-								Replay Intro
-							</button>
-						)}
 					</div>
 				</div>
 			)}
@@ -814,15 +858,23 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
           flex-grow min-h-0 md:flex-grow-0
         `}>
 				{/* Base black screen layer for clean transitions */}
-				<div className="md:hidden fixed inset-0 z-[9996] bg-black" />
+				<AnimatePresence>
+					{screenDimmed && (
+						<motion.div
+							className="md:hidden fixed inset-0 z-[9996] bg-black"
+							initial={{ opacity: 0.3 }}
+							animate={{ opacity: 0.3 }}
+							exit={{ opacity: 0 }}
+							transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+						/>
+					)}
+				</AnimatePresence>
 
 				{/* Mobile AIVisualCue - Fullscreen overlay */}
 				<div
 					className={`md:hidden fixed inset-0 z-[9997] transition-all duration-300 ${
 						showChatOverlay
 							? "opacity-0 pointer-events-none scale-95 translate-y-4"
-							: isReplaying
-							? "opacity-0"
 							: screenDimmed
 							? "opacity-30"
 							: "opacity-100 scale-100 translate-y-0"

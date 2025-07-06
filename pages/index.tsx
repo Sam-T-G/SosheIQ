@@ -48,6 +48,7 @@ import {
 	getErrorMessageByType,
 	getErrorMessage,
 } from "../constants/errorMessages";
+import { useSession } from "./_app";
 
 type DisplayedGoal = {
 	text: string;
@@ -147,6 +148,7 @@ const HomePage: React.FC = () => {
 	const [isModalActive, setIsModalActive] = useState(false);
 
 	const isMobileLandscape = useMobileLandscape();
+	const { sessionInPlay, setSessionInPlay } = useSession();
 
 	useEffect(() => {
 		const initializeApp = async () => {
@@ -224,6 +226,15 @@ const HomePage: React.FC = () => {
 		window.addEventListener("resize", handleResize);
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
+
+	// Set sessionInPlay based on phase
+	useEffect(() => {
+		if (currentPhase === GamePhase.INTERACTION) {
+			setSessionInPlay(true);
+		} else {
+			setSessionInPlay(false);
+		}
+	}, [currentPhase, setSessionInPlay]);
 
 	const resetStateForNewGame = () => {
 		setSetupMode("guided");
@@ -1333,7 +1344,13 @@ const HomePage: React.FC = () => {
 					)}
 
 					{/* Main application content */}
-					<div className="flex flex-col h-screen">
+					<div
+						className={`flex flex-col min-h-screen text-slate-100 ${
+							currentPhase === GamePhase.INTERACTION ||
+							currentPhase === GamePhase.ANALYSIS
+								? "bg-transparent"
+								: "bg-slate-900"
+						}`}>
 						{/* Hide Header in mobile landscape and when modal is active */}
 						{!isMobileLandscape && !isModalActive && (
 							<Header
