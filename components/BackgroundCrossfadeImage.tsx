@@ -73,8 +73,7 @@ export const BackgroundCrossfadeImage: React.FC<
 					style={{
 						objectPosition: objectPosition,
 						opacity: incoming && isAnimating ? 0 : 1,
-						filter: incoming && isAnimating ? "saturate(0.8)" : "saturate(1)",
-						transition: `opacity ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}, filter ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}`,
+						transition: `opacity ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}`,
 						zIndex: 1,
 					}}
 					onTransitionEnd={
@@ -92,8 +91,7 @@ export const BackgroundCrossfadeImage: React.FC<
 					style={{
 						objectPosition: objectPosition,
 						opacity: isAnimating ? 1 : 0,
-						filter: isAnimating ? "saturate(1)" : "saturate(0.8)",
-						transition: `opacity ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}, filter ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}`,
+						transition: `opacity ${CROSSFADE_DURATION}ms ${CROSSFADE_EASING}`,
 						zIndex: 2,
 					}}
 					onLoad={handleIncomingLoad}
