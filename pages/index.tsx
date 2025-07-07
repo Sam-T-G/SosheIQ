@@ -13,7 +13,7 @@ import { SetupScreen } from "../components/SetupScreen";
 import { GuidedSetup } from "../components/GuidedSetup";
 import { InteractionScreen } from "../components/InteractionScreen";
 import { AnalysisScreen } from "../components/AnalysisScreen";
-import { LoadingIndicator } from "../components/LoadingIndicator";
+import { LoadingScreen } from "../components/LoadingScreen";
 import { HelpAndTipsOverlay } from "../components/QuickTipsScreen";
 import { ConfirmEndInteractionDialog } from "../components/ConfirmEndInteractionDialog";
 import { ConfirmationDialog } from "../components/ConfirmationDialog";
@@ -1255,7 +1255,7 @@ const HomePage: React.FC = () => {
 				message = "Logging in...";
 			}
 			return (
-				<LoadingIndicator
+				<LoadingScreen
 					message={message}
 					scenarioDetails={scenarioDetails || undefined}
 				/>
@@ -1365,7 +1365,7 @@ const HomePage: React.FC = () => {
 							return <InstructionsScreen onNavigate={handleNavigate} />;
 						case GamePhase.INTERACTION:
 							if (!scenarioDetails)
-								return <LoadingIndicator message="Loading scenario..." />;
+								return <LoadingScreen message="Loading scenario..." />;
 
 							const isPinnable =
 								!!displayedGoal && !scenarioDetails.conversationGoal;
@@ -1411,7 +1411,7 @@ const HomePage: React.FC = () => {
 						case GamePhase.ANALYSIS:
 							if (!scenarioDetails)
 								return (
-									<LoadingIndicator message="Loading scenario for analysis..." />
+									<LoadingScreen message="Loading scenario for analysis..." />
 								);
 							return (
 								<AnalysisScreen

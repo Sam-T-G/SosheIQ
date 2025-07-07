@@ -18,6 +18,7 @@ import {
 	Variants,
 } from "motion/react";
 import { SosheIQLogo } from "./SosheIQLogo";
+import { Footer } from "./Footer";
 
 interface LoadingPhase {
 	phase:
@@ -647,208 +648,62 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 			{!showBlack && showContent && (
 				<AnimatePresence mode="wait">
 					{isVisible && (
-						<motion.div
-							className="fixed inset-0 z-[10000]"
-							style={{
-								opacity: containerOpacitySpring,
-								willChange: "opacity, background-color",
-								top: 0,
-								left: 0,
-								right: 0,
-								bottom: 0,
-								width: "100vw",
-								height: "100vh",
-								position: "fixed",
-								backgroundColor: "#000",
-							}}
-							variants={containerVariants}
-							initial="entrance"
-							animate="content"
-							exit="exit"
-							transition={
-								popPhase === "spring"
-									? {
-											type: "spring",
-											stiffness: 180,
-											damping: 22,
-											mass: 1.1,
-											duration: 0.7,
-									  }
-									: {
-											type: "tween",
-											duration: 0.18,
-											ease: [0.22, 1, 0.36, 1],
-									  }
-							}>
-							<div
-								className="absolute inset-0"
+						<>
+							<motion.div
+								className="fixed inset-0 z-[10000]"
 								style={{
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-									minHeight: "100vh",
-									minWidth: "100vw",
-									padding: "1rem",
-								}}>
-								<motion.div
-									className="flex flex-col items-center justify-center text-center"
+									opacity: containerOpacitySpring,
+									willChange: "opacity, background-color",
+									top: 0,
+									left: 0,
+									right: 0,
+									bottom: 0,
+									width: "100vw",
+									height: "100vh",
+									position: "fixed",
+									backgroundColor: "#000",
+								}}
+								variants={containerVariants}
+								initial="entrance"
+								animate="content"
+								exit="exit"
+								transition={
+									popPhase === "spring"
+										? {
+												type: "spring",
+												stiffness: 180,
+												damping: 22,
+												mass: 1.1,
+												duration: 0.7,
+										  }
+										: {
+												type: "tween",
+												duration: 0.18,
+												ease: [0.22, 1, 0.36, 1],
+										  }
+								}>
+								<div
+									className="absolute inset-0"
 									style={{
-										width: "100%",
-										maxWidth: "28rem",
-										margin: "0 auto",
-										gap: "1.2rem",
-										willChange: "transform, opacity",
-										position: "relative",
-										zIndex: 1,
-									}}
-									variants={containerVariants}
-									initial="entrance"
-									animate={currentPhase.phase}
-									exit="exit"
-									transition={
-										popPhase === "spring"
-											? {
-													type: "spring",
-													stiffness: 180,
-													damping: 22,
-													mass: 1.1,
-													duration: 0.7,
-											  }
-											: {
-													type: "tween",
-													duration: 0.18,
-													ease: [0.22, 1, 0.36, 1],
-											  }
-									}>
-									{/* Logo with enhanced glow system */}
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "center",
+										minHeight: "100vh",
+										minWidth: "100vw",
+										padding: "1rem",
+									}}>
 									<motion.div
-										className="relative flex items-center justify-center"
-										variants={logoVariants}
-										initial="entrance"
-										animate={currentPhase.phase}
-										exit="exit"
-										transition={
-											popPhase === "spring"
-												? {
-														type: "spring",
-														stiffness: 180,
-														damping: 22,
-														mass: 1.1,
-														duration: 0.7,
-												  }
-												: {
-														type: "tween",
-														duration: 0.18,
-														ease: [0.22, 1, 0.36, 1],
-												  }
-										}
-										style={{ width: "260px", height: "100px" }}>
-										{/* Primary glow */}
-										<motion.div
-											className="absolute rounded-full"
-											style={{
-												top: "-30px",
-												left: "-30px",
-												right: "-30px",
-												bottom: "-30px",
-												background:
-													"radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 30%, rgba(59, 130, 246, 0.04) 60%, transparent 85%)",
-												filter: "blur(26px)",
-												willChange: "opacity, transform",
-												zIndex: 1,
-												opacity: glowOpacity,
-											}}
-											whileInView={
-												showGlow && glowOpacity > 0.1
-													? {
-															scale: [1, 1.15, 1],
-															filter: [
-																"blur(26px)",
-																"blur(35px)",
-																"blur(26px)",
-															],
-													  }
-													: {}
-											}
-											transition={{
-												duration: 3.7,
-												ease: "easeInOut",
-												repeat: Infinity,
-												repeatType: "loop",
-											}}
-										/>
-										{/* Secondary glow */}
-										<motion.div
-											className="absolute rounded-full"
-											style={{
-												top: "-3px",
-												left: "-6px",
-												right: "-6px",
-												bottom: "-3px",
-												background:
-													"radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, rgba(6, 182, 212, 0.02) 70%, transparent 90%)",
-												filter: "blur(19.5px)",
-												willChange: "opacity, transform",
-												zIndex: 2,
-												opacity: glowOpacity * 0.8,
-											}}
-											whileInView={
-												showGlow && glowOpacity > 0.1
-													? {
-															scale: [1, 1.18, 1.25, 1.18, 1],
-															filter: [
-																"blur(19.5px)",
-																"blur(28px)",
-																"blur(32px)",
-																"blur(28px)",
-																"blur(19.5px)",
-															],
-													  }
-													: {}
-											}
-											transition={{
-												duration: 4.8,
-												ease: "easeInOut",
-												repeat: Infinity,
-												repeatType: "loop",
-												delay: 0.5,
-											}}
-										/>
-										{/* Tertiary inner glow */}
-										<motion.div
-											className="absolute rounded-full"
-											style={{
-												top: "8px",
-												left: "22px",
-												right: "22px",
-												bottom: "8px",
-												background:
-													"radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.05) 50%, transparent 80%)",
-												filter: "blur(13px)",
-												willChange: "opacity, transform",
-												zIndex: 3,
-												opacity: glowOpacity * 0.6,
-											}}
-										/>
-										{/* Logo */}
-										<SosheIQLogo
-											className="relative z-10"
-											style={{
-												height: "120px",
-												width: "auto",
-												filter: `drop-shadow(0 0 12px rgba(59, 130, 246, ${
-													glowOpacity * 0.3
-												}))`,
-												willChange: "transform, filter",
-											}}
-										/>
-									</motion.div>
-
-									{/* Loading message */}
-									<motion.div
-										className="text-center w-full"
-										style={{ padding: "0 1rem" }}
-										variants={textVariants}
+										className="flex flex-col items-center justify-center text-center"
+										style={{
+											width: "100%",
+											maxWidth: "28rem",
+											margin: "0 auto",
+											gap: "1.2rem",
+											willChange: "transform, opacity",
+											position: "relative",
+											zIndex: 1,
+										}}
+										variants={containerVariants}
 										initial="entrance"
 										animate={currentPhase.phase}
 										exit="exit"
@@ -867,18 +722,138 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 														ease: [0.22, 1, 0.36, 1],
 												  }
 										}>
-										<motion.p
-											className="font-semibold text-sky-300"
-											style={{
-												fontSize: "18px",
-												lineHeight: 1.6,
-												letterSpacing: "0.025em",
-												textShadow: "0 0 20px rgba(56, 189, 248, 0.5)",
-												willChange: "transform, opacity",
-											}}
-											key={currentPhase.message}
-											initial={{ opacity: 0, scale: 0.95, y: 20 }}
-											animate={{ opacity: 1, scale: 1, y: 0 }}
+										{/* Logo with enhanced glow system */}
+										<motion.div
+											className="relative flex items-center justify-center"
+											variants={logoVariants}
+											initial="entrance"
+											animate={currentPhase.phase}
+											exit="exit"
+											transition={
+												popPhase === "spring"
+													? {
+															type: "spring",
+															stiffness: 180,
+															damping: 22,
+															mass: 1.1,
+															duration: 0.7,
+													  }
+													: {
+															type: "tween",
+															duration: 0.18,
+															ease: [0.22, 1, 0.36, 1],
+													  }
+											}
+											style={{ width: "260px", height: "100px" }}>
+											{/* Primary glow */}
+											<motion.div
+												className="absolute rounded-full"
+												style={{
+													top: "-30px",
+													left: "-30px",
+													right: "-30px",
+													bottom: "-30px",
+													background:
+														"radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 30%, rgba(59, 130, 246, 0.04) 60%, transparent 85%)",
+													filter: "blur(26px)",
+													willChange: "opacity, transform",
+													zIndex: 1,
+													opacity: glowOpacity,
+												}}
+												whileInView={
+													showGlow && glowOpacity > 0.1
+														? {
+																scale: [1, 1.15, 1],
+																filter: [
+																	"blur(26px)",
+																	"blur(35px)",
+																	"blur(26px)",
+																],
+														  }
+														: {}
+												}
+												transition={{
+													duration: 3.7,
+													ease: "easeInOut",
+													repeat: Infinity,
+													repeatType: "loop",
+												}}
+											/>
+											{/* Secondary glow */}
+											<motion.div
+												className="absolute rounded-full"
+												style={{
+													top: "-3px",
+													left: "-6px",
+													right: "-6px",
+													bottom: "-3px",
+													background:
+														"radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(6, 182, 212, 0.06) 40%, rgba(6, 182, 212, 0.02) 70%, transparent 90%)",
+													filter: "blur(19.5px)",
+													willChange: "opacity, transform",
+													zIndex: 2,
+													opacity: glowOpacity * 0.8,
+												}}
+												whileInView={
+													showGlow && glowOpacity > 0.1
+														? {
+																scale: [1, 1.18, 1.25, 1.18, 1],
+																filter: [
+																	"blur(19.5px)",
+																	"blur(28px)",
+																	"blur(32px)",
+																	"blur(28px)",
+																	"blur(19.5px)",
+																],
+														  }
+														: {}
+												}
+												transition={{
+													duration: 4.8,
+													ease: "easeInOut",
+													repeat: Infinity,
+													repeatType: "loop",
+													delay: 0.5,
+												}}
+											/>
+											{/* Tertiary inner glow */}
+											<motion.div
+												className="absolute rounded-full"
+												style={{
+													top: "8px",
+													left: "22px",
+													right: "22px",
+													bottom: "8px",
+													background:
+														"radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.05) 50%, transparent 80%)",
+													filter: "blur(13px)",
+													willChange: "opacity, transform",
+													zIndex: 3,
+													opacity: glowOpacity * 0.6,
+												}}
+											/>
+											{/* Logo */}
+											<SosheIQLogo
+												className="relative z-10"
+												style={{
+													height: "120px",
+													width: "auto",
+													filter: `drop-shadow(0 0 12px rgba(59, 130, 246, ${
+														glowOpacity * 0.3
+													}))`,
+													willChange: "transform, filter",
+												}}
+											/>
+										</motion.div>
+
+										{/* Loading message */}
+										<motion.div
+											className="text-center w-full"
+											style={{ padding: "0 1rem" }}
+											variants={textVariants}
+											initial="entrance"
+											animate={currentPhase.phase}
+											exit="exit"
 											transition={
 												popPhase === "spring"
 													? {
@@ -894,90 +869,143 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 															ease: [0.22, 1, 0.36, 1],
 													  }
 											}>
-											{currentPhase.message}
-										</motion.p>
-									</motion.div>
+											<motion.p
+												className="font-semibold text-sky-300"
+												style={{
+													fontSize: "18px",
+													lineHeight: 1.6,
+													letterSpacing: "0.025em",
+													textShadow: "0 0 20px rgba(56, 189, 248, 0.5)",
+													willChange: "transform, opacity",
+												}}
+												key={currentPhase.message}
+												initial={{ opacity: 0, scale: 0.95, y: 20 }}
+												animate={{ opacity: 1, scale: 1, y: 0 }}
+												transition={
+													popPhase === "spring"
+														? {
+																type: "spring",
+																stiffness: 180,
+																damping: 22,
+																mass: 1.1,
+																duration: 0.7,
+														  }
+														: {
+																type: "tween",
+																duration: 0.18,
+																ease: [0.22, 1, 0.36, 1],
+														  }
+												}>
+												{currentPhase.message}
+											</motion.p>
+										</motion.div>
 
-									{/* Progress bar */}
-									<motion.div
-										className="w-full"
-										style={{ maxWidth: "20rem", padding: "0 1rem" }}
-										variants={textVariants}
-										initial="entrance"
-										animate={currentPhase.phase}
-										exit="exit"
-										transition={
-											popPhase === "spring"
-												? {
-														type: "spring",
-														stiffness: 180,
-														damping: 22,
-														mass: 1.1,
-														duration: 0.7,
-												  }
-												: {
-														type: "tween",
-														duration: 0.18,
-														ease: [0.22, 1, 0.36, 1],
-												  }
-										}>
+										{/* Progress bar */}
 										<motion.div
-											className="relative overflow-hidden backdrop-blur-sm"
-											style={{
-												height: "6px",
-												borderRadius: "3px",
-												background: "rgba(30, 41, 59, 0.8)",
-												boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-												scale: completionScaleSpring,
-												willChange: "transform",
-											}}>
-											{/* Enhanced progress fill */}
+											className="w-full"
+											style={{ maxWidth: "20rem", padding: "0 1rem" }}
+											variants={textVariants}
+											initial="entrance"
+											animate={currentPhase.phase}
+											exit="exit"
+											transition={
+												popPhase === "spring"
+													? {
+															type: "spring",
+															stiffness: 180,
+															damping: 22,
+															mass: 1.1,
+															duration: 0.7,
+													  }
+													: {
+															type: "tween",
+															duration: 0.18,
+															ease: [0.22, 1, 0.36, 1],
+													  }
+											}>
 											<motion.div
-												className="absolute left-0 top-0 h-full rounded-full"
+												className="relative overflow-hidden backdrop-blur-sm"
 												style={{
-													width: progressWidth,
-													background:
-														"linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #0ea5e9 100%)",
-													transformOrigin: "left",
-													willChange: "width, transform, filter",
-													filter: progressBrightness,
-													boxShadow: progressBoxShadow,
-												}}
-											/>
-											{/* Sophisticated shimmer effect */}
-											<motion.div
-												className="absolute inset-0 overflow-hidden rounded-full"
-												style={{
-													background:
-														"linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
-													width: "50%",
+													height: "6px",
+													borderRadius: "3px",
+													background: "rgba(30, 41, 59, 0.8)",
+													boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+													scale: completionScaleSpring,
 													willChange: "transform",
+												}}>
+												{/* Enhanced progress fill */}
+												<motion.div
+													className="absolute left-0 top-0 h-full rounded-full"
+													style={{
+														width: progressWidth,
+														background:
+															"linear-gradient(90deg, #3b82f6 0%, #06b6d4 50%, #0ea5e9 100%)",
+														transformOrigin: "left",
+														willChange: "width, transform, filter",
+														filter: progressBrightness,
+														boxShadow: progressBoxShadow,
+													}}
+												/>
+												{/* Sophisticated shimmer effect */}
+												<motion.div
+													className="absolute inset-0 overflow-hidden rounded-full"
+													style={{
+														background:
+															"linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+														width: "50%",
+														willChange: "transform",
+													}}
+													animate={shimmerControls}
+													initial={{ x: -120 }}
+												/>
+											</motion.div>
+											{/* Enhanced progress percentage */}
+											<motion.div
+												className="text-center mt-3"
+												style={{
+													fontFamily: '"Courier New", monospace',
+													fontSize: "14px",
+													color: progressTextColor,
+													letterSpacing: "0.05em",
+													textShadow: progressTextShadow,
+													willChange: "transform, opacity",
+													scale: completionScaleSpring,
 												}}
-												animate={shimmerControls}
-												initial={{ x: -120 }}
-											/>
-										</motion.div>
-										{/* Enhanced progress percentage */}
-										<motion.div
-											className="text-center mt-3"
-											style={{
-												fontFamily: '"Courier New", monospace',
-												fontSize: "14px",
-												color: progressTextColor,
-												letterSpacing: "0.05em",
-												textShadow: progressTextShadow,
-												willChange: "transform, opacity",
-												scale: completionScaleSpring,
-											}}
-											initial={{ opacity: 0 }}
-											animate={{ opacity: 1 }}
-											transition={{ delay: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-											<motion.span>{displayedPercentage}</motion.span>%
+												initial={{ opacity: 0 }}
+												animate={{ opacity: 1 }}
+												transition={{ delay: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+												<motion.span>{displayedPercentage}</motion.span>%
+											</motion.div>
 										</motion.div>
 									</motion.div>
+								</div>
+								{/* Animated Footer */}
+								<motion.div
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: 20 }}
+									transition={{
+										...MOTION_SPRING_CONFIGS.GENTLE,
+										ease: [0.22, 1, 0.36, 1],
+										delay: 0.21,
+									}}
+									style={{
+										position: "absolute",
+										left: 0,
+										right: 0,
+										bottom: 0,
+										zIndex: 30,
+									}}>
+									<Footer
+										onNavigateToPrivacy={() => {}}
+										onNavigateToTerms={() => {}}
+										onNavigateToSafety={() => {}}
+										onNavigateToAbout={() => {}}
+										onNavigateToInstructions={() => {}}
+									/>
 								</motion.div>
-							</div>
-						</motion.div>
+							</motion.div>
+						</>
 					)}
 				</AnimatePresence>
 			)}

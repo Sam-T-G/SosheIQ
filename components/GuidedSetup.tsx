@@ -27,6 +27,12 @@ import {
 } from "./Icons";
 import { InfoCard } from "./InfoCard";
 import { motion } from "motion/react";
+import {
+	personalityCategories,
+	orderedPersonalityCategories,
+	personalityTraitDescriptions,
+} from "../constants/personality";
+import { Tooltip } from "./Tooltip";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -50,63 +56,6 @@ const traitButtonSelectedClasses =
 	"bg-teal-500 text-white ring-2 ring-teal-300";
 const traitButtonUnselectedClasses =
 	"bg-slate-600 hover:bg-slate-500 text-gray-300";
-
-const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
-	"Social Behavior": [
-		AIPersonalityTrait.CONFIDENT,
-		AIPersonalityTrait.SHY,
-		AIPersonalityTrait.FLIRTATIOUS,
-		AIPersonalityTrait.GUARDED,
-		AIPersonalityTrait.EMPATHETIC,
-		AIPersonalityTrait.HUMBLE,
-		AIPersonalityTrait.AMBITIOUS,
-		AIPersonalityTrait.IMPULSIVE,
-		AIPersonalityTrait.SPONTANEOUS,
-		AIPersonalityTrait.INTROVERTED,
-		AIPersonalityTrait.EXTROVERTED,
-		AIPersonalityTrait.NURTURING,
-	],
-	"Communication Style": [
-		AIPersonalityTrait.TALKATIVE,
-		AIPersonalityTrait.QUIET,
-		AIPersonalityTrait.DIRECT,
-		AIPersonalityTrait.SARCASTIC,
-		AIPersonalityTrait.FORMAL,
-		AIPersonalityTrait.INFORMAL,
-		AIPersonalityTrait.WITTY,
-		AIPersonalityTrait.ASSERTIVE,
-	],
-	"General Mood": [
-		AIPersonalityTrait.CHEERFUL,
-		AIPersonalityTrait.GRUMPY,
-		AIPersonalityTrait.ANXIOUS,
-		AIPersonalityTrait.CALM,
-		AIPersonalityTrait.SERIOUS,
-		AIPersonalityTrait.PLAYFUL,
-		AIPersonalityTrait.SAD,
-		AIPersonalityTrait.ENTHUSIASTIC,
-	],
-	"Attitude / Outlook": [
-		AIPersonalityTrait.OPTIMISTIC,
-		AIPersonalityTrait.PESSIMISTIC,
-		AIPersonalityTrait.SUPPORTIVE,
-		AIPersonalityTrait.CHALLENGING,
-		AIPersonalityTrait.CURIOUS,
-		AIPersonalityTrait.SKEPTICAL,
-		AIPersonalityTrait.CREATIVE,
-		AIPersonalityTrait.LOGICAL,
-		AIPersonalityTrait.METHODICAL,
-		AIPersonalityTrait.PRAGMATIC,
-		AIPersonalityTrait.IDEALISTIC,
-	],
-};
-
-const orderedPersonalityCategories = [
-	"Social Behavior",
-	"Communication Style",
-	"General Mood",
-	"Attitude / Outlook",
-];
 
 const guidedSocialEnvironments = [
 	{ name: SocialEnvironment.CASUAL, icon: CoffeeIcon },
@@ -256,8 +205,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				return;
 			}
 			const ageNum = parseInt(customAiAgeString, 10);
-			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-				setError("Please enter a valid age (13-100).");
+			if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
+				setError("Please enter a valid age (18-100).");
 				return;
 			}
 		}
@@ -299,10 +248,10 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		let finalCustomAiAge: number | undefined = undefined;
 		if (scenario.aiAgeBracket === AIAgeBracket.CUSTOM) {
 			const ageNum = parseInt(customAiAgeString, 10);
-			if (!isNaN(ageNum) && ageNum >= 13 && ageNum <= 100) {
+			if (!isNaN(ageNum) && ageNum >= 18 && ageNum <= 100) {
 				finalCustomAiAge = ageNum;
 			} else {
-				setError("Please enter a valid age (13-100) before starting.");
+				setError("Please enter a valid age (18-100) before starting.");
 				return;
 			}
 		}
@@ -339,8 +288,8 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			return;
 		}
 		const ageNum = parseInt(value, 10);
-		if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-			setError("Age must be between 13 and 100.");
+		if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
+			setError("Age must be between 18 and 100.");
 		} else {
 			setError(null);
 		}
@@ -542,7 +491,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 											type="number"
 											value={customAiAgeString}
 											onChange={handleCustomAgeChange}
-											placeholder="Enter age (13-100)"
+											placeholder="Enter age (18-100)"
 											className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 ${
 												error ? "ring-red-500" : "focus:ring-teal-500"
 											}`}
@@ -550,8 +499,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 										<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
 											<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
 											<p>
-												Provide a specific age. This influences vocabulary and
-												perspectives.
+												Provide a specific age for the AI between 18 and 100.
 											</p>
 										</div>
 									</div>
@@ -565,37 +513,26 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 				return (
 					<div key={step} className={`${animationClass}`}>
 						<h2 className="text-3xl font-bold text-teal-400 mb-2 text-center">
-							What's their personality like?
+							Choose from the trait palette
 						</h2>
 						<p className="text-lg text-gray-400 mb-6 text-center">
-							Choose up to {MAX_PERSONALITY_TRAITS} traits, and/or add your own
-							below.
+							Select up to {MAX_PERSONALITY_TRAITS} traits across the scientific
+							anchors below, and/or add your own.
 						</p>
-
-						<div className="mb-6">
-							<label
-								htmlFor="guided-custom-personality"
-								className="block text-md font-medium text-gray-300 mb-2">
-								Custom Additions (Optional)
-							</label>
-							<textarea
-								id="guided-custom-personality"
-								value={scenario.customAiPersonality || ""}
-								onChange={(e) =>
-									updateScenario({ customAiPersonality: e.target.value })
-								}
-								placeholder="Add unlisted traits or specific behaviors..."
-								className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
-								rows={2}
-							/>
-							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
-								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-								<p>
-									Examples: 'has a dry sense of humor', 'is secretly a
-									romantic', 'tends to fidget when nervous'.
-								</p>
-							</div>
-						</div>
+						<p className="text-sm text-slate-400 mb-2">
+							You may also type in your own custom personality description below
+							if you prefer.
+						</p>
+						<textarea
+							id="guided-custom-personality"
+							value={scenario.customAiPersonality || ""}
+							onChange={(e) =>
+								updateScenario({ customAiPersonality: e.target.value })
+							}
+							placeholder="Type your own personality description here..."
+							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
+							rows={2}
+						/>
 
 						<div className="space-y-4">
 							{orderedPersonalityCategories.map((category) => (
@@ -608,35 +545,42 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 											const isSelected =
 												scenario.aiPersonalityTraits?.includes(p);
 											return (
-												<button
+												<Tooltip
 													key={p}
-													onClick={() => {
-														const currentTraits =
-															scenario.aiPersonalityTraits || [];
-														if (isSelected) {
-															updateScenario({
-																aiPersonalityTraits: currentTraits.filter(
-																	(trait) => trait !== p
-																),
-															});
-														} else if (selectedCount < MAX_PERSONALITY_TRAITS) {
-															updateScenario({
-																aiPersonalityTraits: [...currentTraits, p],
-															});
-														}
-													}}
-													className={`${traitButtonBaseClasses} ${
-														isSelected
-															? traitButtonSelectedClasses
-															: traitButtonUnselectedClasses
-													} ${
-														!isSelected &&
-														selectedCount >= MAX_PERSONALITY_TRAITS
-															? "opacity-50 cursor-not-allowed"
-															: ""
-													}`}>
-													{p}
-												</button>
+													content={personalityTraitDescriptions[p] || p}>
+													<button
+														data-testid={`trait-button-${p}`}
+														style={{ zIndex: 10 }}
+														onClick={() => {
+															const currentTraits =
+																scenario.aiPersonalityTraits || [];
+															if (isSelected) {
+																updateScenario({
+																	aiPersonalityTraits: currentTraits.filter(
+																		(trait) => trait !== p
+																	),
+																});
+															} else if (
+																selectedCount < MAX_PERSONALITY_TRAITS
+															) {
+																updateScenario({
+																	aiPersonalityTraits: [...currentTraits, p],
+																});
+															}
+														}}
+														className={`${traitButtonBaseClasses} ${
+															isSelected
+																? traitButtonSelectedClasses
+																: traitButtonUnselectedClasses
+														} ${
+															!isSelected &&
+															selectedCount >= MAX_PERSONALITY_TRAITS
+																? "opacity-50 cursor-not-allowed"
+																: ""
+														}`}>
+														{p}
+													</button>
+												</Tooltip>
 											);
 										})}
 									</div>

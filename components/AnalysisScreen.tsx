@@ -5,7 +5,7 @@ import type {
 	TurnByTurnAnalysisItem,
 } from "../types";
 import { ProgressBar } from "./ProgressBar";
-import { LoadingIndicator } from "./LoadingIndicator";
+import { LoadingScreen } from "./LoadingScreen";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -402,7 +402,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
 	if (isLoadingReport || !hasTriedToLoad) {
 		return (
-			<LoadingIndicator
+			<LoadingScreen
 				message="Generating your performance analysis..."
 				scenarioDetails={scenarioDetails}
 			/>
