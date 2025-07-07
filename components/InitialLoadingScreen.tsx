@@ -102,7 +102,7 @@ const MOTION_SPRING_CONFIGS = {
 } as const;
 
 // Firefly particle system - authentic firefly field effect
-const FIREFLY_COUNT = 40; // Increased from 25 to 40 for more fireflies
+const FIREFLY_COUNT = 15; // Reduced to 15 for fewer fireflies
 const FIREFLY_BLUE = "rgba(59, 130, 246, 0.9)"; // Increased opacity from 0.8 to 0.9
 const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.8)"; // Increased opacity from 0.6 to 0.8
 
@@ -190,6 +190,9 @@ const PROGRESS_MESSAGES = [
 	"Preparing your experience...",
 	"Loading neural networks...",
 ];
+
+// Modular: how many random progress messages to show
+const NUM_PROGRESS_MESSAGES_TO_SHOW = 3; // Adjust as needed
 
 interface InitialLoadingScreenProps {
 	showFireflies?: boolean;
@@ -326,6 +329,8 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 			await new Promise((resolve) =>
 				setTimeout(resolve, LOADING_SEQUENCE.CONTENT_DURATION)
 			);
+			// Add extra delay for 'Preparing your experience...'
+			await new Promise((resolve) => setTimeout(resolve, 600));
 
 			// Phase 4: Progress - Optimized progress with multiple text changes
 			setCurrentPhase({
@@ -335,8 +340,13 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 			});
 
 			// Randomly select one unique message
-			const shuffled = PROGRESS_MESSAGES.sort(() => 0.5 - Math.random());
-			const selectedMessage = shuffled[0];
+			const shuffled = PROGRESS_MESSAGES.slice().sort(
+				() => 0.5 - Math.random()
+			);
+			const selectedMessage = shuffled.slice(
+				0,
+				NUM_PROGRESS_MESSAGES_TO_SHOW
+			)[0];
 
 			// Show the single random message
 			setTimeout(() => {

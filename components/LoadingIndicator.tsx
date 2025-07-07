@@ -67,13 +67,20 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 	showFireflies = false,
 }) => {
 	const [isClient, setIsClient] = useState(false);
+	const [popInComplete, setPopInComplete] = useState(false);
+	const [firstMessageShown, setFirstMessageShown] = useState(false);
+
+	// Modular: how many loading messages to show
+	const NUM_LOADING_MESSAGES_TO_SHOW = 5; // Reduce by one from default (if default is 6)
 
 	// Use AI loading messages hook for dynamic text cycling
-	const { currentMessage } = useAILoadingMessages({
+	const { currentMessage, messageIndex, totalMessages } = useAILoadingMessages({
 		scenarioDetails,
 		isLoading: true,
 		baseMessage: message,
 		testMode,
+		startCycling: firstMessageShown,
+		numMessages: NUM_LOADING_MESSAGES_TO_SHOW,
 	});
 
 	// Motion values for breathing and pulsing effects
@@ -268,7 +275,8 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 				variants={containerVariants}
 				initial="hidden"
 				animate="visible"
-				exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.6 } }}>
+				exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.6 } }}
+				onAnimationComplete={() => setPopInComplete(true)}>
 				{/* Central Content Container */}
 				<motion.div
 					className="relative z-10 flex flex-col items-center justify-center text-center pointer-events-auto"
@@ -334,6 +342,15 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 										duration: 0.35,
 										ease: [0.4, 0.0, 0.2, 1], // Smooth momentum
 									},
+								}}
+								onAnimationComplete={() => {
+									if (
+										messageIndex === 0 &&
+										!firstMessageShown &&
+										popInComplete
+									) {
+										setFirstMessageShown(true);
+									}
 								}}>
 								{currentMessage}
 							</motion.p>

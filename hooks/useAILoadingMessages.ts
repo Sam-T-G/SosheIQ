@@ -17,6 +17,8 @@ interface UseAILoadingMessagesProps {
 	isLoading: boolean;
 	baseMessage?: string;
 	testMode?: boolean; // Enable random test data generation
+	startCycling?: boolean; // New: controls when cycling begins
+	numMessages?: number; // New: limit number of messages cycled
 }
 
 /**
@@ -28,6 +30,8 @@ export const useAILoadingMessages = ({
 	isLoading,
 	baseMessage = "Loading...",
 	testMode = false,
+	startCycling = true, // New: default to true for backward compatibility
+	numMessages,
 }: UseAILoadingMessagesProps) => {
 	const [currentMessage, setCurrentMessage] = useState<string>(baseMessage);
 	const [messageIndex, setMessageIndex] = useState(0);
@@ -242,8 +246,12 @@ export const useAILoadingMessages = ({
 			});
 		}
 
+		// Limit number of messages if numMessages is provided
+		if (typeof numMessages === "number" && numMessages > 0) {
+			return messages.slice(0, numMessages);
+		}
 		return messages;
-	}, [scenarioDetails, testMode, generateTestScenarioDetails]);
+	}, [scenarioDetails, testMode, generateTestScenarioDetails, numMessages]);
 
 	// Cycle through messages
 	useEffect(() => {
@@ -276,8 +284,8 @@ export const useAILoadingMessages = ({
 			}
 		};
 
-		// Start the cycle
-		if (messages.length > 1) {
+		// Start the cycle only if allowed
+		if (messages.length > 1 && startCycling) {
 			timeoutId = setTimeout(cycleToNextMessage, messages[0].duration);
 		}
 
@@ -286,7 +294,7 @@ export const useAILoadingMessages = ({
 				clearTimeout(timeoutId);
 			}
 		};
-	}, [isLoading, generateAIMessages, baseMessage]);
+	}, [isLoading, generateAIMessages, baseMessage, startCycling]);
 
 	return {
 		currentMessage,

@@ -1499,7 +1499,6 @@ const HomePage: React.FC = () => {
 									onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
 									onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
 									onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
-									isFadingOut={isFooterFadingOut}
 								/>
 							)}
 
