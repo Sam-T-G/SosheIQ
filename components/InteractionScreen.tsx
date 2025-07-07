@@ -15,12 +15,14 @@ import {
 	CogIcon,
 	XCircleIcon,
 	UserIcon,
+	ArrowRightIcon,
 } from "./Icons";
 import { RenderChatInterface } from "./RenderChatInterface";
 import { SosheIQLogo } from "./SosheIQLogo";
 import { TopBannerContainer } from "./TopBannerContainer";
 import { BackgroundCrossfadeImage } from "./BackgroundCrossfadeImage";
 import { motion, AnimatePresence } from "motion/react";
+import { useAuth } from "../contexts/AuthContext";
 
 interface InteractionScreenProps {
 	scenarioDetails: ScenarioDetails;
@@ -310,6 +312,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	onFeedbackAnimationComplete,
 	onModalStateChange,
 }) => {
+	const { status, user, logout } = useAuth();
 	const [showChatOverlay, setShowChatOverlay] = useState(false);
 	const [chatOverlayHasFadedIn, setChatOverlayHasFadedIn] = useState(false);
 	const [chatOverlayIsVisible, setChatOverlayIsVisible] = useState(false);
@@ -378,6 +381,16 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			window.removeEventListener("keydown", handleEsc);
 		};
 	}, [showChatOverlay]);
+
+	const handleLogout = async () => {
+		try {
+			setShowMenu(false);
+			await logout();
+			onEndConversation();
+		} catch (error) {
+			console.error("Logout failed:", error);
+		}
+	};
 
 	useEffect(() => {
 		const body = document.body;
@@ -933,15 +946,27 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 								{(showMenu || showMenuContent) && (
 									<div
 										ref={menuRef}
-										className={`w-40 bg-slate-800/80 border border-slate-600/70 backdrop-blur-sm rounded-xl shadow-2xl py-2 absolute right-0 top-full z-50 ${
+										className={`w-52 bg-slate-800/80 border border-slate-600/70 backdrop-blur-sm rounded-xl shadow-2xl py-2 absolute right-0 top-full z-50 ${
 											showMenu ? "animate-fadeInUp" : "animate-fadeOutDown"
 										}`}>
-										<button
-											disabled
-											className="w-full text-left px-5 py-3 text-base text-slate-400 flex items-center gap-2 rounded-xl transition-colors font-semibold opacity-60 cursor-not-allowed pointer-events-none mb-1">
-											<UserIcon className="h-5 w-5 text-slate-400" />
-											Profile
-										</button>
+										{/* User Profile Section */}
+										<div className="px-4 py-3 border-b border-slate-700/60 mb-1">
+											<div className="flex items-center gap-3">
+												<UserIcon className="h-6 w-6 text-slate-300" />
+												<div className="flex-1 min-w-0">
+													<p className="text-sm font-medium text-white truncate">
+														{user?.name || "User"}
+													</p>
+													<p className="text-xs text-slate-400 truncate">
+														{status === "guest"
+															? "Guest User"
+															: user?.email || "Authenticated"}
+													</p>
+												</div>
+											</div>
+										</div>
+
+										{/* Menu Actions */}
 										<button
 											onClick={() => {
 												setShowMenu(false);
@@ -949,6 +974,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 											}}
 											className="w-full text-left px-5 py-3 text-base text-slate-200 hover:bg-slate-700/60 hover:text-slate-100 active:bg-slate-800/80 rounded-xl transition-colors font-semibold">
 											End Session
+										</button>
+										<button
+											onClick={handleLogout}
+											className="w-full text-left px-5 py-3 text-base text-slate-200 hover:bg-slate-700/60 hover:text-slate-100 active:bg-slate-800/80 rounded-xl transition-colors font-semibold flex items-center gap-2">
+											<ArrowRightIcon className="h-4 w-4" />
+											Sign Out
 										</button>
 									</div>
 								)}
@@ -987,7 +1018,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				</div>
 				{/* Desktop: normal panel with top text and card styling */}
 				{hasCompletedFirstLoad && (
-					<div className="hidden md:flex flex-col flex-grow min-h-0 gap-4">
+					<div className="max-md:hidden max-md:opacity-0 max-md:pointer-events-none hidden md:flex flex-col flex-grow min-h-0 gap-4">
 						<div className="text-center md:text-left w-full px-2 mb-2 flex-shrink-0">
 							<h2 className="text-lg font-semibold text-sky-400 drop-shadow-sm">
 								{scenarioDetails.aiName}
@@ -1055,7 +1086,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			</div>
 
 			{/* Chat Interface (Right on Desktop) */}
-			<div className="hidden md:flex md:w-2/3 relative">
+			<div className="max-md:hidden max-md:opacity-0 max-md:pointer-events-none hidden md:flex md:w-2/3 relative">
 				{/* Background Container with AI Image */}
 				<div className="absolute inset-0 overflow-hidden rounded-r-xl">
 					<BackgroundCrossfadeImage
@@ -1069,8 +1100,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				</div>
 
 				{/* Actual Chat Content on top */}
-				<div className="relative z-10 w-full h-full flex flex-col">
+				<div
+					className="relative z-10 w-full h-full flex flex-col"
+					key="desktop-chat">
 					<RenderChatInterface
+						key="desktop-chat"
 						conversationHistory={conversationHistory}
 						currentEngagement={currentEngagement}
 						displayedGoal={displayedGoal}
@@ -1141,8 +1175,9 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					{/* Darkening overlay */}
 					<div className="absolute inset-0 w-full h-full bg-slate-900/75 backdrop-blur-sm" />
 					{/* Chat Interface Layer (on top) */}
-					<div className="relative z-10 h-full">
+					<div className="relative z-10 h-full" key="mobile-chat">
 						<RenderChatInterface
+							key="mobile-chat"
 							conversationHistory={conversationHistory}
 							currentEngagement={currentEngagement}
 							displayedGoal={displayedGoal}
@@ -1176,6 +1211,12 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 					</div>
 				</div>
 			)}
+
+			{/* Persistent Mobile Black Mask Layer */}
+			<div
+				className="fixed inset-0 bg-black z-[9995] md:hidden pointer-events-none"
+				aria-hidden="true"
+			/>
 		</div>
 	);
 };

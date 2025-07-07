@@ -8,16 +8,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-	motion,
-	AnimatePresence,
 	useMotionValue,
 	useSpring,
 	useTransform,
 	useAnimation,
 	animate,
-	Variants,
-} from "motion/react";
+} from "framer-motion";
+import type { Variants } from "framer-motion";
 import { SosheIQLogo } from "./SosheIQLogo";
 import { useAILoadingMessages } from "../hooks/useAILoadingMessages";
 import type { ScenarioDetails } from "../types";
@@ -27,6 +26,7 @@ interface LoadingIndicatorProps {
 	extraClasses?: string;
 	scenarioDetails?: ScenarioDetails;
 	testMode?: boolean; // Enable random test data generation
+	showFireflies?: boolean;
 }
 
 // Enhanced Motion spring configurations for persistent animations
@@ -59,37 +59,14 @@ const MOTION_SPRING_CONFIGS = {
 	},
 } as const;
 
-// Firefly particle system - authentic firefly field effect (copied from InitialLoadingScreen)
-const FIREFLY_COUNT = 40;
-const FIREFLY_BLUE = "rgba(59, 130, 246, 0.9)";
-const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.8)";
-
-const generateFireflies = () => {
-	return Array.from({ length: FIREFLY_COUNT }, (_, i) => ({
-		id: i,
-		color: Math.random() > 0.7 ? FIREFLY_LIGHT_BLUE : FIREFLY_BLUE,
-		size: Math.random() * 3 + 2, // 2-5px
-		initialX: Math.random() * 100,
-		initialY: Math.random() * 100,
-		driftRange: Math.random() * 40 + 15,
-		duration: Math.random() * 12 + 8,
-		delay: Math.random() * 5,
-		pulseSpeed: Math.random() * 2 + 1.5,
-		glowIntensity: Math.random() * 0.3 + 0.7,
-		flickerPattern: Math.random(),
-		floatDirection: Math.random() * Math.PI * 2,
-		verticalBias: Math.random() * 0.3 + 0.1,
-	}));
-};
-
 export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 	message = "Loading...",
 	extraClasses = "",
 	scenarioDetails,
 	testMode = false,
+	showFireflies = false,
 }) => {
 	const [isClient, setIsClient] = useState(false);
-	const [fireflies] = useState(() => generateFireflies());
 
 	// Use AI loading messages hook for dynamic text cycling
 	const { currentMessage } = useAILoadingMessages({
@@ -275,7 +252,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 	if (!isClient) {
 		// Return simple loading during hydration
 		return (
-			<div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
+			<div className="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 pointer-events-none">
 				<div className="text-white">Loading...</div>
 			</div>
 		);
@@ -284,7 +261,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 	return (
 		<AnimatePresence>
 			<motion.div
-				className={`fixed inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden ${extraClasses}`}
+				className={`fixed inset-0 bg-black flex flex-col items-center justify-center z-50 overflow-hidden pointer-events-none ${extraClasses}`}
 				role="status"
 				aria-live="assertive"
 				aria-label={message}
@@ -292,80 +269,14 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 				initial="hidden"
 				animate="visible"
 				exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.6 } }}>
-				{/* Firefly Field Background - Authentic firefly effect */}
-				{fireflies.map((firefly) => (
-					<motion.div
-						key={firefly.id}
-						className="absolute rounded-full"
-						style={{
-							width: firefly.size,
-							height: firefly.size,
-							backgroundColor: firefly.color,
-							left: `${firefly.initialX}%`,
-							top: `${firefly.initialY}%`,
-							filter: `blur(1px) brightness(1.5)`,
-							boxShadow: `
-								0 0 ${firefly.size * 4}px ${firefly.color},
-								0 0 ${firefly.size * 8}px ${firefly.color.replace(/\[\d\.]+\)$/g, "0.4)")},
-								0 0 ${firefly.size * 12}px ${firefly.color.replace(/\[\d\.]+\)$/g, "0.2)")}
-							`,
-							zIndex: 0,
-							willChange: "transform, opacity, filter",
-						}}
-						initial={{ opacity: 0, scale: 0 }}
-						animate={{ opacity: 1, scale: 1 }}
-						whileInView={{
-							y: [
-								0,
-								-firefly.driftRange * firefly.verticalBias,
-								firefly.driftRange * 0.3,
-								-firefly.driftRange * firefly.verticalBias * 0.5,
-								0,
-							],
-							x: [
-								0,
-								Math.cos(firefly.floatDirection) * firefly.driftRange * 0.4,
-								Math.cos(firefly.floatDirection + Math.PI) *
-									firefly.driftRange *
-									0.2,
-								Math.cos(firefly.floatDirection + Math.PI * 0.5) *
-									firefly.driftRange *
-									0.1,
-								0,
-							],
-							scale: [1, 1.2, 0.9, 1.1, 1],
-							opacity: [
-								0.4,
-								firefly.glowIntensity,
-								0.2 + firefly.flickerPattern * 0.3,
-								firefly.glowIntensity * 0.9,
-								0.5,
-							],
-							filter: [
-								`blur(1px) brightness(1.4)`,
-								`blur(2px) brightness(2.2)`,
-								`blur(0.5px) brightness(1.3)`,
-								`blur(1.5px) brightness(2.0)`,
-								`blur(1px) brightness(1.4)`,
-							],
-						}}
-						transition={{
-							duration: firefly.duration,
-							delay: firefly.delay,
-							ease: "easeInOut",
-							repeat: Infinity,
-							repeatType: "loop",
-							times: [0, 0.3, 0.5, 0.8, 1],
-						}}
-					/>
-				))}
-
 				{/* Central Content Container */}
 				<motion.div
-					className="relative z-10 flex flex-col items-center justify-center text-center"
+					className="relative z-10 flex flex-col items-center justify-center text-center pointer-events-auto"
 					style={{
 						maxWidth: "28rem",
-						gap: "2rem",
+						gap: "1.2rem",
+						margin: 0,
+						padding: 0,
 					}}>
 					{/* Logo - statically centered, no revolution */}
 					<div
@@ -375,7 +286,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 							alignItems: "center",
 							justifyContent: "center",
 							width: 260,
-							height: 156,
+							height: 100,
 							position: "relative",
 						}}>
 						<SosheIQLogo />
@@ -429,30 +340,6 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 						</AnimatePresence>
 					</motion.div>
 
-					{/* Synchronized Loading Indicator Dots */}
-					<motion.div className="flex space-x-2" variants={textVariants}>
-						{[0, 1, 2].map((i) => (
-							<motion.div
-								key={`${currentMessage}-${i}`} // Re-trigger animation on message change
-								className="w-3 h-3 bg-sky-400 rounded-full"
-								animate={{
-									scale: [1, 1.5, 1],
-									opacity: [0.5, 1, 0.5],
-								}}
-								transition={{
-									duration: 1.5,
-									delay: i * 0.2,
-									ease: "easeInOut",
-									repeat: Infinity,
-									repeatType: "loop",
-								}}
-								style={{
-									filter: "drop-shadow(0 0 8px rgba(56, 189, 248, 0.6))",
-								}}
-							/>
-						))}
-					</motion.div>
-
 					{/* Subtle Orbit Animation */}
 					<motion.div
 						className="absolute inset-0 pointer-events-none"
@@ -467,17 +354,17 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
 						{[0, 1, 2].map((i) => (
 							<motion.div
 								key={i}
-								className="absolute w-2 h-2 bg-cyan-400 rounded-full"
+								className="absolute w-6 h-6 bg-cyan-400 rounded-full pointer-events-none"
 								style={{
 									top: "50%",
 									left: "50%",
-									transformOrigin: `${60 + i * 20}px 0px`,
-									opacity: 0.4,
+									transformOrigin: `${160 + i * 60}px 0px`, // Much larger orbit
+									opacity: 0.25,
 									filter: "blur(0.5px)",
 								}}
 								animate={{
 									scale: [1, 1.3, 1],
-									opacity: [0.2, 0.6, 0.2],
+									opacity: [0.15, 0.4, 0.15],
 								}}
 								transition={{
 									duration: 2 + i * 0.5,

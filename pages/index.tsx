@@ -50,6 +50,8 @@ import {
 	getErrorMessage,
 } from "../constants/errorMessages";
 import { useSession } from "./_app";
+import { useAuth } from "../contexts/AuthContext";
+import { useInitConfig } from "../hooks/useInitConfig";
 
 type DisplayedGoal = {
 	text: string;
@@ -148,65 +150,83 @@ const HomePage: React.FC = () => {
 
 	const [isModalActive, setIsModalActive] = useState(false);
 
+	const [pendingPhase, setPendingPhase] = useState<GamePhase | null>(null);
+	const [showHero, setShowHero] = useState(true);
+
+	const [mainJustify, setMainJustify] = useState<"center" | "start">("center");
+
 	const isMobileLandscape = useMobileLandscape();
 	const { sessionInPlay, setSessionInPlay } = useSession();
+	const {
+		status,
+		user,
+		isLoading: authLoading,
+		loginAsGuest,
+		logout,
+	} = useAuth();
+	const {
+		config: initConfig,
+		loading: initLoading,
+		error: initError,
+	} = useInitConfig();
+
+	// Add a derived state for footer fade-out
+	const isFooterFadingOut =
+		isAppLoading ||
+		(isLoading &&
+			(currentPhase === GamePhase.LOGIN ||
+				currentPhase === GamePhase.HERO ||
+				currentPhase === GamePhase.SETUP ||
+				(currentPhase === GamePhase.INTERACTION && !scenarioDetails) ||
+				(currentPhase === GamePhase.ANALYSIS && !analysisReport && !error)));
 
 	useEffect(() => {
-		const initializeApp = async () => {
-			try {
-				const res = await fetch("/api/init");
-				const data = await res.json();
+		if (initLoading) return;
+		if (initError) {
+			setError(initError);
+			setIsAppLoading(false);
+			setMainAppVisible(true);
+			return;
+		}
+		if (!initConfig) return;
 
-				if (!data.apiKey) {
-					setError(getErrorMessage("API_KEY_MISSING").userMessage);
-					setIsAppLoading(false);
-					setMainAppVisible(true); // Show app even if there's an error
-					return;
-				}
+		try {
+			geminiService.current = new GeminiService(initConfig.apiKey);
+			imagenService.current = new ImagenService(initConfig.apiKey);
+		} catch (err) {
+			setError("Failed to initialize AI services.");
+			setIsAppLoading(false);
+			setMainAppVisible(true);
+			return;
+		}
 
-				geminiService.current = new GeminiService(data.apiKey);
-				imagenService.current = new ImagenService(data.apiKey);
+		// Wait for loading screen completion
+		const checkLoadingComplete = () => {
+			const isComplete = document.body.getAttribute("data-loading-complete");
+			const isReadyForCrossfade = document.body.getAttribute(
+				"data-loading-ready-for-crossfade"
+			);
 
-				// Wait for loading screen completion
-				const checkLoadingComplete = () => {
-					const isComplete = document.body.getAttribute(
-						"data-loading-complete"
-					);
-					const isReadyForCrossfade = document.body.getAttribute(
-						"data-loading-ready-for-crossfade"
-					);
-
-					if (isComplete && isReadyForCrossfade) {
-						setTimeout(() => {
-							setMainAppVisible(true);
-							setTimeout(() => setIsAppLoading(false), 800);
-						}, 200);
-					} else {
-						setTimeout(checkLoadingComplete, 100);
-					}
-				};
-
-				checkLoadingComplete();
-
-				// Fallback timeout
+			if (isComplete && isReadyForCrossfade) {
 				setTimeout(() => {
-					if (isAppLoading) {
-						setMainAppVisible(true);
-						setTimeout(() => setIsAppLoading(false), 500);
-					}
-				}, 10000);
-			} catch (err: unknown) {
-				const errorMessage =
-					err instanceof Error ? err.message : "Unknown error occurred";
-				console.error("Failed to fetch API key:", errorMessage);
-				setError(getErrorMessage("FETCH_FAILED").userMessage);
-				setIsAppLoading(false);
-				setMainAppVisible(true); // Show app even if there's an error
+					setMainAppVisible(true);
+					setTimeout(() => setIsAppLoading(false), 800);
+				}, 200);
+			} else {
+				setTimeout(checkLoadingComplete, 100);
 			}
 		};
 
-		initializeApp();
-	}, [isAppLoading]);
+		checkLoadingComplete();
+
+		// Fallback timeout
+		setTimeout(() => {
+			if (isAppLoading) {
+				setMainAppVisible(true);
+				setTimeout(() => setIsAppLoading(false), 500);
+			}
+		}, 10000);
+	}, [initLoading, initError, initConfig, isAppLoading]);
 
 	// Effect to handle the temporary glow state for the goal banner
 	useEffect(() => {
@@ -268,12 +288,48 @@ const HomePage: React.FC = () => {
 		setCurrentPhase(phase);
 	}, []);
 
+	const handleHeroExitComplete = useCallback(() => {
+		if (pendingPhase) {
+			setCurrentPhase(pendingPhase);
+			setPendingPhase(null);
+			setShowHero(true);
+			if (pendingPhase === GamePhase.SETUP) {
+				setTimeout(() => setMainJustify("start"), 10); // switch to top-aligned after transition
+			}
+		}
+	}, [pendingPhase]);
+
+	const handleNavigateWithFade = useCallback(
+		(phase: GamePhase) => {
+			if (currentPhase === GamePhase.HERO) {
+				setPendingPhase(phase);
+				setShowHero(false); // triggers AnimatePresence exit
+			} else {
+				handleNavigate(phase);
+			}
+		},
+		[currentPhase, handleNavigate]
+	);
+
 	const handleLoginFlow = (action: "start_guided" | "start_random") => {
-		setPostLoginAction(action);
-		setCurrentPhase(GamePhase.LOGIN);
+		// Check if user is already authenticated
+		if (status === "authenticated" || status === "guest") {
+			// User is already logged in, proceed directly to action
+			if (action === "start_guided") {
+				setSetupMode("guided");
+				handleNavigate(GamePhase.SETUP);
+			} else if (action === "start_random") {
+				handleStartRandom();
+			}
+		} else {
+			// User needs to authenticate first
+			setPostLoginAction(action);
+			setCurrentPhase(GamePhase.LOGIN);
+		}
 	};
 
 	const handleContinueFromLogin = () => {
+		// This function is called after successful authentication
 		setIsLoading(true); // Show loading screen after login/guest
 		if (postLoginAction === "start_guided") {
 			setSetupMode("guided");
@@ -283,6 +339,11 @@ const HomePage: React.FC = () => {
 			handleStartRandom();
 		}
 		setPostLoginAction(null); // Reset after action is taken
+	};
+
+	const handleAuthSuccess = () => {
+		// Called when authentication is successful
+		handleContinueFromLogin();
 	};
 
 	const handleConfirmRandom = () => {
@@ -1202,34 +1263,80 @@ const HomePage: React.FC = () => {
 		}
 
 		return (
-			<AnimatePresence mode="wait" initial={false}>
+			<AnimatePresence
+				mode="wait"
+				initial={false}
+				onExitComplete={handleHeroExitComplete}>
+				{currentPhase === GamePhase.HERO && showHero && (
+					<motion.div
+						key="hero"
+						initial={{ opacity: 0, y: 40 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -40 }}
+						transition={{
+							type: "spring",
+							stiffness: 80,
+							damping: 22,
+							mass: 1.1,
+						}}>
+						<HeroScreen
+							onStart={() => handleLoginFlow("start_guided")}
+							onShowInstructions={() =>
+								handleNavigateWithFade(GamePhase.INSTRUCTIONS)
+							}
+							onStartRandom={() => setShowRandomConfirmDialog(true)}
+							onNavigateToAbout={() => handleNavigateWithFade(GamePhase.ABOUT)}
+							onNavigateToLogin={handleNavigateToLogin}
+							onNavigateToSafety={() =>
+								handleNavigateWithFade(GamePhase.SAFETY)
+							}
+						/>
+					</motion.div>
+				)}
+				{currentPhase === GamePhase.SETUP &&
+					(setupMode === "guided" ? (
+						<motion.div
+							key="guided-setup"
+							initial={{ opacity: 0, y: 40 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -40 }}
+							transition={{
+								type: "spring",
+								stiffness: 80,
+								damping: 22,
+								mass: 1.1,
+							}}>
+							<GuidedSetup
+								onStart={handleStartInteraction}
+								onSwitchToAdvanced={() => setSetupMode("advanced")}
+							/>
+						</motion.div>
+					) : (
+						<motion.div
+							key="advanced-setup"
+							initial={{ opacity: 0, y: 40 }}
+							animate={{ opacity: 1, y: 0 }}
+							exit={{ opacity: 0, y: -40 }}
+							transition={{
+								type: "spring",
+								stiffness: 80,
+								damping: 22,
+								mass: 1.1,
+							}}>
+							<SetupScreen
+								onStart={handleStartInteraction}
+								onBack={() => setSetupMode("guided")}
+							/>
+						</motion.div>
+					))}
 				{(() => {
 					switch (currentPhase) {
-						case GamePhase.HERO:
-							return (
-								<motion.div
-									key="hero"
-									initial={{ opacity: 0 }}
-									animate={{ opacity: 1 }}
-									exit={{ opacity: 0 }}
-									transition={{ duration: 0.6, ease: "easeInOut" }}>
-									<HeroScreen
-										onStart={() => handleLoginFlow("start_guided")}
-										onShowInstructions={() =>
-											handleNavigate(GamePhase.INSTRUCTIONS)
-										}
-										onStartRandom={() => setShowRandomConfirmDialog(true)}
-										onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
-										onNavigateToLogin={handleNavigateToLogin}
-										onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
-									/>
-								</motion.div>
-							);
 						case GamePhase.LOGIN:
 							return (
 								<LoginScreen
 									onNavigateToHome={() => handleNavigate(GamePhase.HERO)}
-									onContinueAsGuest={handleContinueFromLogin}
+									onContinueAsGuest={handleAuthSuccess}
+									onAuthSuccess={handleAuthSuccess}
 									onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
 									onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
 								/>
@@ -1256,21 +1363,6 @@ const HomePage: React.FC = () => {
 							);
 						case GamePhase.INSTRUCTIONS:
 							return <InstructionsScreen onNavigate={handleNavigate} />;
-						case GamePhase.SETUP:
-							if (setupMode === "guided") {
-								return (
-									<GuidedSetup
-										onStart={handleStartInteraction}
-										onSwitchToAdvanced={() => setSetupMode("advanced")}
-									/>
-								);
-							}
-							return (
-								<SetupScreen
-									onStart={handleStartInteraction}
-									onBack={() => setSetupMode("guided")}
-								/>
-							);
 						case GamePhase.INTERACTION:
 							if (!scenarioDetails)
 								return <LoadingIndicator message="Loading scenario..." />;
@@ -1385,16 +1477,9 @@ const HomePage: React.FC = () => {
 						{/* Main content area gets a quick, direct fade-in */}
 						<main
 							className={`flex-grow flex flex-col items-center p-4 md:p-6 animate-[fadeIn_0.3s_ease-out_forwards] relative ${
-								currentPhase === GamePhase.HERO ||
-								currentPhase === GamePhase.ABOUT ||
-								currentPhase === GamePhase.PRIVACY ||
-								currentPhase === GamePhase.TERMS ||
-								currentPhase === GamePhase.SAFETY ||
-								currentPhase === GamePhase.LOGIN
+								mainJustify === "center"
 									? "justify-center overflow-hidden"
-									: currentPhase === GamePhase.SETUP
-									? "justify-start py-4 overflow-y-auto"
-									: "overflow-hidden"
+									: "justify-start py-4 overflow-y-auto"
 							} ${isModalActive ? "pointer-events-none" : ""}`}
 							style={
 								isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}
@@ -1414,6 +1499,7 @@ const HomePage: React.FC = () => {
 									onNavigateToPrivacy={() => handleNavigate(GamePhase.PRIVACY)}
 									onNavigateToTerms={() => handleNavigate(GamePhase.TERMS)}
 									onNavigateToSafety={() => handleNavigate(GamePhase.SAFETY)}
+									isFadingOut={isFooterFadingOut}
 								/>
 							)}
 

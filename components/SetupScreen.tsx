@@ -15,6 +15,7 @@ import {
 	PlayIcon,
 } from "./Icons";
 import { InfoCard } from "./InfoCard";
+import { motion } from "motion/react";
 
 interface SetupScreenProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -343,7 +344,10 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 	};
 
 	return (
-		<div className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards] my-4">
+		<motion.div
+			layout
+			transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.9 }}
+			className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards] my-4">
 			<div className="flex items-center gap-4 mb-4">
 				<button
 					type="button"
@@ -649,6 +653,6 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 					</button>
 				</div>
 			</form>
-		</div>
+		</motion.div>
 	);
 };

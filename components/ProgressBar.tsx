@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ENGAGEMENT_BAR_COLORS } from "../constants";
+import { motion } from "motion/react";
 
 interface ProgressBarProps {
 	percentage: number;
@@ -51,14 +52,13 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
 	return (
 		<div className="w-full bg-slate-700 rounded-full h-4 shadow-inner overflow-hidden relative">
-			<div
-				className={`h-full rounded-full ${barColorClass} transition-all duration-500 ease-out ${
+			<motion.div
+				className={`h-full rounded-full ${barColorClass} ${
 					showCompletionEffect ? "animate-progress-completion" : ""
 				}`}
-				style={{
-					width: `${cappedPercentage}%`,
-					transition: "width 0.5s ease-out",
-				}}
+				initial={false}
+				animate={{ width: `${cappedPercentage}%` }}
+				transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.7 }}
 				role="progressbar"
 				aria-valuenow={cappedPercentage}
 				aria-valuemin={0}

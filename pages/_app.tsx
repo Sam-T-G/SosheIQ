@@ -3,6 +3,7 @@ import "../styles/globals.css"; // Import global styles here
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { AccessibilityProvider } from "../components/AccessibilityProvider";
 import { FireflyField } from "../components/FireflyField";
+import { AuthProvider } from "../contexts/AuthContext";
 import React, { createContext, useContext, useState } from "react";
 
 // Session context for global session state
@@ -19,15 +20,17 @@ function MyApp({ Component, pageProps }: AppProps) {
 	// Provide session state globally
 	const [sessionInPlay, setSessionInPlay] = useState(false);
 	return (
-		<SessionContext.Provider value={{ sessionInPlay, setSessionInPlay }}>
-			<ErrorBoundary>
-				{/* Global firefly background effect - only show when session is NOT in play. Use a low positive z-index to place it above deep background layers (like hero gradients) but behind primary UI. */}
-				{!sessionInPlay && <FireflyField zIndex={2} />}
-				<AccessibilityProvider>
-					<Component {...pageProps} />
-				</AccessibilityProvider>
-			</ErrorBoundary>
-		</SessionContext.Provider>
+		<AuthProvider>
+			<SessionContext.Provider value={{ sessionInPlay, setSessionInPlay }}>
+				<ErrorBoundary>
+					{/* Global firefly background effect - only show when session is NOT in play. Use a low positive z-index to place it above deep background layers (like hero gradients) but behind primary UI. */}
+					{!sessionInPlay && <FireflyField zIndex={2} />}
+					<AccessibilityProvider>
+						<Component {...pageProps} />
+					</AccessibilityProvider>
+				</ErrorBoundary>
+			</SessionContext.Provider>
+		</AuthProvider>
 	);
 }
 

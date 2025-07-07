@@ -26,7 +26,12 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 	onNavigateToSafety,
 }) => {
 	return (
-		<div className="relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center p-4 md:p-8 isolate">
+		<motion.div
+			className="relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center p-4 md:p-8 isolate"
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			exit={{ opacity: 0 }}
+			transition={{ duration: 0.5, ease: "easeInOut" }}>
 			{/* Background Gradients */}
 			<motion.div
 				aria-hidden="true"
@@ -57,48 +62,55 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 				<div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#0f766e] to-[#0f172a]" />
 			</motion.div>
 
-			<SosheIQLogo
-				className="h-24 md:h-32 w-auto mb-6 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
-				style={{ animationDelay: "0.1s" }}
-			/>
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.7, ease: "easeOut", delay: 0.1 }}>
+				<SosheIQLogo className="h-24 md:h-32 w-auto mb-6" />
+			</motion.div>
 
-			<h1
-				className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
-				style={{ animationDelay: "0.3s" }}>
+			<motion.h1
+				className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.7, ease: "easeOut", delay: 0.3 }}>
 				Master the Art of Conversation
-			</h1>
-			<p
-				className="text-lg md:text-xl text-gray-300 max-w-2xl mb-12 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
-				style={{ animationDelay: "0.5s" }}>
+			</motion.h1>
+			<motion.p
+				className="text-lg md:text-xl text-gray-300 max-w-2xl mb-12"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.7, ease: "easeOut", delay: 0.5 }}>
 				Practice scenarios, get instant feedback, and become the most
 				charismatic person in the room with your AI-powered social coach.
-			</p>
+			</motion.p>
 
-			<div
-				className="flex flex-col sm:flex-row items-center gap-4 opacity-0 animate-[fadeInSlideUp_0.7s_ease-out_forwards]"
-				style={{ animationDelay: "0.7s" }}>
+			<motion.div
+				className="flex flex-col sm:flex-row items-center gap-4"
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.7, ease: "easeOut", delay: 0.7 }}>
 				<button
 					onClick={onStart}
-					className="group w-full sm:w-auto px-8 py-4 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-lg text-lg shadow-lg 
-                 transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
-                 focus:ring-4 focus:ring-teal-300 focus:ring-opacity-50 flex items-center justify-center space-x-2"
+					className="group w-full sm:w-auto px-8 py-4 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-lg text-lg shadow-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-teal-300 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Start Interaction">
 					<span>Get Started</span>
 					<ArrowRightIcon className="h-5 w-5 transition-transform group-hover:translate-x-1" />
 				</button>
 				<button
 					onClick={onStartRandom}
-					className="group w-full sm:w-auto px-8 py-4 bg-sky-600/50 hover:bg-sky-600/80 ring-1 ring-inset ring-sky-500 text-white font-semibold rounded-lg text-lg shadow-lg
-                 transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
-                 focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
+					className="group w-full sm:w-auto px-8 py-4 bg-sky-600/50 hover:bg-sky-600/80 ring-1 ring-inset ring-sky-500 text-white font-semibold rounded-lg text-lg shadow-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-sky-400 focus:ring-opacity-50 flex items-center justify-center space-x-2"
 					aria-label="Start a random scenario">
 					<SparklesIcon className="h-5 w-5 transition-transform group-hover:rotate-12" />
 					<span>I'm Feeling Lucky</span>
 				</button>
-			</div>
-			<div
-				className="flex items-center justify-center gap-x-6 mt-12 opacity-0 animate-[fadeIn_1s_ease-out_forwards]"
-				style={{ animationDelay: "0.9s" }}>
+			</motion.div>
+
+			<motion.div
+				className="flex items-center justify-center gap-x-6 mt-12"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 1, ease: "easeOut", delay: 0.9 }}>
 				<button
 					onClick={onNavigateToAbout}
 					className="text-sm font-semibold text-gray-400 hover:text-white transition-colors"
@@ -119,10 +131,12 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 					aria-label="AI Safety Information">
 					Safety
 				</button>
-			</div>
-			<div
-				className="mt-4 text-sm text-gray-400 opacity-0 animate-[fadeIn_1s_ease-out_forwards]"
-				style={{ animationDelay: "1.0s" }}>
+			</motion.div>
+			<motion.div
+				className="mt-4 text-sm text-gray-400"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 1, ease: "easeOut", delay: 1.0 }}>
 				Have an account?{" "}
 				<button
 					onClick={onNavigateToLogin}
@@ -130,7 +144,7 @@ export const HeroScreen: React.FC<HeroScreenProps> = ({
 					Sign In
 				</button>{" "}
 				to save your progress (coming soon).
-			</div>
-		</div>
+			</motion.div>
+		</motion.div>
 	);
 };

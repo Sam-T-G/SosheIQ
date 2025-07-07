@@ -25,6 +25,7 @@ import {
 } from "./Icons";
 import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
 import { TopBannerContainer } from "./TopBannerContainer";
+import { motion } from "motion/react";
 
 // --- Badge components, duplicated for use in the animation tray ---
 
@@ -98,20 +99,9 @@ const FeedbackAnimationTray: React.FC<FeedbackAnimationTrayProps> = ({
 	data,
 	onComplete,
 }) => {
-	const [isExiting, setIsExiting] = useState(false);
 	const { messageId, feedback } = data;
 
-	// On mount (which happens on new data due to the key), set a timer to trigger the exit animation.
-	useEffect(() => {
-		const holdTimer = setTimeout(() => {
-			setIsExiting(true);
-		}, 2000); // 2-second hold time
-
-		return () => {
-			clearTimeout(holdTimer);
-		};
-	}, []); // Empty dependency array makes this effect run only once on mount
-
+	// Check if we have any badges to show BEFORE calling any hooks
 	const badges: React.ReactNode[] = [];
 	if (feedback.positiveTraitContribution) {
 		badges.push(
@@ -143,7 +133,21 @@ const FeedbackAnimationTray: React.FC<FeedbackAnimationTrayProps> = ({
 		);
 	}
 
+	// Early return BEFORE hooks if no badges
 	if (badges.length === 0) return null;
+
+	const [isExiting, setIsExiting] = useState(false);
+
+	// On mount (which happens on new data due to the key), set a timer to trigger the exit animation.
+	useEffect(() => {
+		const holdTimer = setTimeout(() => {
+			setIsExiting(true);
+		}, 2000); // 2-second hold time
+
+		return () => {
+			clearTimeout(holdTimer);
+		};
+	}, []); // Empty dependency array makes this effect run only once on mount
 
 	const lastBadgeIndex = badges.length - 1;
 
@@ -461,6 +465,12 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		useState<ChatMessage[]>([]);
 	const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
 	const [showGlow, setShowGlow] = useState(false);
+	const [pressedMessageId, setPressedMessageId] = useState<string | null>(null);
+	const pointerStartRef = useRef<{ x: number; y: number; id: string | null }>({
+		x: 0,
+		y: 0,
+		id: null,
+	});
 
 	const isScrollingMutedRef = useRef(false);
 
@@ -659,39 +669,151 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					ref={chatContainerRef}
 					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
 					onClick={() => setActivePopoverId(null)}>
-					<div className="space-y-4">
-						{processedMessagesForDisplay.map((msg, index) => (
-							<ChatMessageView
-								key={msg.id}
-								message={msg}
-								isLastMessage={
-									index === processedMessagesForDisplay.length - 1 &&
-									msg.id ===
-										conversationHistory[conversationHistory.length - 1]?.id &&
-									!msg.isThoughtBubble
-								}
-								isLoadingAI={
-									isLoadingAI &&
-									index === processedMessagesForDisplay.length - 1 &&
-									msg.id ===
-										conversationHistory[conversationHistory.length - 1]?.id &&
-									!msg.isThoughtBubble
-								}
-								onAnimationComplete={
-									lastMessageIsAi &&
-									index === processedMessagesForDisplay.length - 1
-										? onAnimationComplete
-										: undefined
-								}
-								onThoughtToggle={handleThoughtToggle}
-								scenarioDetailsAiName={scenarioDetailsAiName}
-								onViewImage={onViewImage}
-								onRetryMessage={onRetryMessage}
-							/>
-						))}
-						{isLoadingAI && <ChatMessageViewAIThinking />}
-						<div ref={chatEndRef} />
-					</div>
+					{isOverlay ? (
+						<motion.div
+							drag="y"
+							dragConstraints={{ top: -60, bottom: 60 }}
+							dragElastic={0.12}
+							transition={{ type: "spring", stiffness: 520, damping: 44 }}
+							style={{ touchAction: "pan-y" }}>
+							<div className="space-y-4">
+								{processedMessagesForDisplay.map((msg, index) => (
+									<motion.div
+										key={msg.id}
+										animate={{ scale: pressedMessageId === msg.id ? 0.99 : 1 }}
+										transition={{ type: "spring", stiffness: 400, damping: 38 }}
+										onPointerDown={(e) => {
+											pointerStartRef.current = {
+												x: e.clientX,
+												y: e.clientY,
+												id: msg.id,
+											};
+											setPressedMessageId(msg.id);
+										}}
+										onPointerMove={(e) => {
+											const { x, y, id } = pointerStartRef.current;
+											if (id === msg.id) {
+												const dx = e.clientX - x;
+												const dy = e.clientY - y;
+												if (Math.sqrt(dx * dx + dy * dy) > 8) {
+													setPressedMessageId(null);
+													pointerStartRef.current = { x: 0, y: 0, id: null };
+												}
+											}
+										}}
+										onPointerUp={() => {
+											setPressedMessageId(null);
+											pointerStartRef.current = { x: 0, y: 0, id: null };
+										}}
+										onPointerLeave={() => {
+											setPressedMessageId(null);
+											pointerStartRef.current = { x: 0, y: 0, id: null };
+										}}
+										onPointerCancel={() => {
+											setPressedMessageId(null);
+											pointerStartRef.current = { x: 0, y: 0, id: null };
+										}}>
+										<ChatMessageView
+											message={msg}
+											isLastMessage={
+												index === processedMessagesForDisplay.length - 1 &&
+												msg.id ===
+													conversationHistory[conversationHistory.length - 1]
+														?.id &&
+												!msg.isThoughtBubble
+											}
+											isLoadingAI={
+												isLoadingAI &&
+												index === processedMessagesForDisplay.length - 1 &&
+												msg.id ===
+													conversationHistory[conversationHistory.length - 1]
+														?.id
+											}
+											onAnimationComplete={onAnimationComplete}
+											onThoughtToggle={handleThoughtToggle}
+											scenarioDetailsAiName={scenarioDetailsAiName}
+											onViewImage={onViewImage}
+											onRetryMessage={onRetryMessage}
+										/>
+									</motion.div>
+								))}
+								{isLoadingAI && <ChatMessageViewAIThinking />}
+								<div ref={chatEndRef} />
+							</div>
+						</motion.div>
+					) : (
+						<motion.div
+							drag="y"
+							dragConstraints={{ top: -60, bottom: 60 }}
+							dragElastic={0.12}
+							transition={{ type: "spring", stiffness: 520, damping: 44 }}
+							style={{ touchAction: "pan-y" }}>
+							<div className="space-y-4">
+								{processedMessagesForDisplay.map((msg, index) => (
+									<motion.div
+										key={msg.id}
+										animate={{ scale: pressedMessageId === msg.id ? 0.99 : 1 }}
+										transition={{ type: "spring", stiffness: 400, damping: 38 }}
+										onPointerDown={(e) => {
+											pointerStartRef.current = {
+												x: e.clientX,
+												y: e.clientY,
+												id: msg.id,
+											};
+											setPressedMessageId(msg.id);
+										}}
+										onPointerMove={(e) => {
+											const { x, y, id } = pointerStartRef.current;
+											if (id === msg.id) {
+												const dx = e.clientX - x;
+												const dy = e.clientY - y;
+												if (Math.sqrt(dx * dx + dy * dy) > 8) {
+													setPressedMessageId(null);
+													pointerStartRef.current = { x: 0, y: 0, id: null };
+												}
+											}
+										}}
+										onPointerUp={() => {
+											setPressedMessageId(null);
+											pointerStartRef.current = { x: 0, y: 0, id: null };
+										}}
+										onPointerLeave={() => {
+											setPressedMessageId(null);
+											pointerStartRef.current = { x: 0, y: 0, id: null };
+										}}
+										onPointerCancel={() => {
+											setPressedMessageId(null);
+											pointerStartRef.current = { x: 0, y: 0, id: null };
+										}}>
+										<ChatMessageView
+											message={msg}
+											isLastMessage={
+												index === processedMessagesForDisplay.length - 1 &&
+												msg.id ===
+													conversationHistory[conversationHistory.length - 1]
+														?.id &&
+												!msg.isThoughtBubble
+											}
+											isLoadingAI={
+												isLoadingAI &&
+												index === processedMessagesForDisplay.length - 1 &&
+												msg.id ===
+													conversationHistory[conversationHistory.length - 1]
+														?.id
+											}
+											onAnimationComplete={onAnimationComplete}
+											onThoughtToggle={handleThoughtToggle}
+											scenarioDetailsAiName={scenarioDetailsAiName}
+											onViewImage={onViewImage}
+											onRetryMessage={onRetryMessage}
+										/>
+									</motion.div>
+								))}
+								{isLoadingAI && <ChatMessageViewAIThinking />}
+								<div ref={chatEndRef} />
+							</div>
+						</motion.div>
+					)}
 				</div>
 
 				{pendingFeedback && (

@@ -60,6 +60,11 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	isFullScreen = false,
 	isCinematicFadingOut = false,
 }) => {
+	// Early return if component should be hidden - BEFORE any hooks
+	if (isHidden) {
+		return null;
+	}
+
 	// Add state for click detection
 	const [clickStartTime, setClickStartTime] = useState<number>(0);
 	const [clickStartPosition, setClickStartPosition] = useState<{
@@ -205,11 +210,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	const imageToDisplay =
 		displayedImage || (imageBase64 && !incomingImage ? imageBase64 : null);
 	const showPlaceholder = !imageToDisplay && !incomingImage;
-
-	// Early return if component should be hidden
-	if (isHidden) {
-		return null;
-	}
 
 	// Handler for replay button click
 	const handleReplayClick = () => {

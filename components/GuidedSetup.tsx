@@ -26,6 +26,7 @@ import {
 	FlagIcon,
 } from "./Icons";
 import { InfoCard } from "./InfoCard";
+import { motion } from "motion/react";
 
 interface GuidedSetupProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -883,7 +884,10 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	};
 
 	return (
-		<div className="w-full max-w-xl p-4 md:p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl flex flex-col justify-between min-h-[75vh]">
+		<motion.div
+			layout
+			transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.9 }}
+			className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 my-4">
 			<div className="flex-grow min-h-0 overflow-y-auto custom-scrollbar pr-2 -mr-2">
 				{step > 0 && (
 					<SegmentedProgressBar currentStep={step} totalSteps={MAX_STEPS} />
@@ -928,6 +932,6 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 					)}
 				</div>
 			</div>
-		</div>
+		</motion.div>
 	);
 };

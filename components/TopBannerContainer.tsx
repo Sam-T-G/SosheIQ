@@ -236,7 +236,9 @@ export const TopBannerContainer: React.FC<TopBannerContainerProps> = ({
 		if (isOverlay) {
 			return ""; // No special container class needed for mobile
 		}
-		return "hidden md:block"; // Desktop wrapper
+		// Enhanced desktop wrapper - ensure complete invisibility on mobile
+		// Use max-md:hidden for better mobile hiding + opacity for state transitions
+		return "max-md:hidden max-md:opacity-0 max-md:pointer-events-none md:block";
 	};
 
 	const renderBanner = () => {
