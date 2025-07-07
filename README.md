@@ -1,5 +1,28 @@
 # SosheIQ - Social Interaction Trainer AI
 
+---
+
+## What's New in 2.1
+
+- **Expanded Trait System:**
+  - Rich, scientifically anchored trait palette for AI personas, grouped by psychological dimension.
+  - Each trait features a clear, animated tooltip for user guidance.
+  - Duplicates removed; users can also type a fully custom personality description.
+- **Cinematic Animations:**
+  - Both initial and session loading screens now feature world-class, spring-based fade-in animations for header and footer.
+  - All major UI transitions use Framer Motion for smooth, modern effects.
+- **Prompt Logic Overhaul:**
+  - All AI prompt construction is now centralized in a canonical `promptService.ts` for maintainability and extensibility.
+- **UI/UX & Accessibility:**
+  - Custom, accessible tooltip component for trait explanations.
+  - Consistent theming, improved accessibility, and keyboard navigation.
+- **Age Bracket Update:**
+  - Minimum custom persona age is now 18; "Teenager (13-17)" bracket removed.
+- **Bug Fixes & Polish:**
+  - Animation synchronization, mobile/desktop layout fixes, and codebase cleanup.
+
+---
+
 SosheIQ is a Next.js-based AI-powered application designed to help users improve their social skills through realistic, interactive conversation scenarios. The platform leverages advanced AI for dynamic dialogue, visual feedback, and progress tracking, with a focus on accessibility, performance, and robust error handling.
 
 ## Features
@@ -10,6 +33,9 @@ SosheIQ is a Next.js-based AI-powered application designed to help users improve
 - Comprehensive accessibility support (keyboard navigation, screen readers)
 - Responsive design for desktop and mobile
 - Robust error boundaries and user-friendly error messages
+- **Animated tooltips for all personality traits**
+- **Cinematic loading and session screens**
+- **Canonical trait mapping for persona creation**
 
 ## Technology Stack
 
@@ -53,8 +79,8 @@ SosheIQ is a Next.js-based AI-powered application designed to help users improve
 ```
 SosheIQ/
 ├── components/           # React components
-├── constants/            # Application constants
-├── services/             # API and AI service integrations
+├── constants/            # Application constants (see personality.ts for trait mapping)
+├── services/             # API and AI service integrations (see promptService.ts)
 ├── types/                # TypeScript type definitions
 ├── utils/                # Utility functions
 ├── pages/                # Next.js pages
@@ -116,6 +142,7 @@ SosheIQ/
   - Standard timings: 150ms (fast), 300ms (normal), 500ms (slow)
   - Easing: ease-out
   - Consistent animation classes in globals.css
+  - **All major transitions use Framer Motion**
 
 ## Security
 
@@ -133,6 +160,7 @@ SosheIQ/
 - High contrast mode support
 - Focus management
 - ARIA labels and roles
+- **Custom tooltips and trait selection are fully accessible**
 
 ## Performance
 
@@ -198,22 +226,3 @@ For support and questions:
 
 - Create an issue in the repository
 - Check the documentation in the `docs/` folder
-- Review existing issues
-
-## Changelog
-
-### v0.1.0
-
-- Initial release
-- Core social interaction features
-- AI integration
-- Basic UI/UX
-
-## Roadmap
-
-- Advanced analytics dashboard
-- Multi-language support
-- Voice interaction
-- Social sharing features
-- Advanced customization options
-- Mobile app version
