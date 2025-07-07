@@ -16,6 +16,12 @@ import {
 } from "./Icons";
 import { InfoCard } from "./InfoCard";
 import { motion } from "motion/react";
+import {
+	personalityCategories,
+	orderedPersonalityCategories,
+	personalityTraitDescriptions,
+} from "../constants/personality";
+import { Tooltip } from "./Tooltip";
 
 interface SetupScreenProps {
 	onStart: (details: ScenarioDetails) => void;
@@ -27,56 +33,6 @@ const MAX_CUSTOM_PERSONALITY_LENGTH = 300;
 const MAX_CONVERSATION_GOAL_LENGTH = 200;
 const MAX_CUSTOM_ENV_LENGTH = 200;
 const MAX_AI_CULTURE_LENGTH = 100;
-
-const personalityCategories: { [key: string]: AIPersonalityTrait[] } = {
-	"Social Behavior": [
-		AIPersonalityTrait.CONFIDENT,
-		AIPersonalityTrait.SHY,
-		AIPersonalityTrait.FLIRTATIOUS,
-		AIPersonalityTrait.GUARDED,
-		AIPersonalityTrait.EMPATHETIC,
-		AIPersonalityTrait.HUMBLE,
-		AIPersonalityTrait.AMBITIOUS,
-		AIPersonalityTrait.IMPULSIVE,
-	],
-	"Communication Style": [
-		AIPersonalityTrait.TALKATIVE,
-		AIPersonalityTrait.QUIET,
-		AIPersonalityTrait.DIRECT,
-		AIPersonalityTrait.SARCASTIC,
-		AIPersonalityTrait.FORMAL,
-		AIPersonalityTrait.INFORMAL,
-		AIPersonalityTrait.WITTY,
-		AIPersonalityTrait.ASSERTIVE,
-	],
-	"General Mood": [
-		AIPersonalityTrait.CHEERFUL,
-		AIPersonalityTrait.GRUMPY,
-		AIPersonalityTrait.ANXIOUS,
-		AIPersonalityTrait.CALM,
-		AIPersonalityTrait.SERIOUS,
-		AIPersonalityTrait.PLAYFUL,
-		AIPersonalityTrait.SAD,
-		AIPersonalityTrait.ENTHUSIASTIC,
-	],
-	"Attitude / Outlook": [
-		AIPersonalityTrait.OPTIMISTIC,
-		AIPersonalityTrait.PESSIMISTIC,
-		AIPersonalityTrait.SUPPORTIVE,
-		AIPersonalityTrait.CHALLENGING,
-		AIPersonalityTrait.CURIOUS,
-		AIPersonalityTrait.SKEPTICAL,
-		AIPersonalityTrait.CREATIVE,
-		AIPersonalityTrait.LOGICAL,
-	],
-};
-
-const orderedPersonalityCategories = [
-	"Social Behavior",
-	"Communication Style",
-	"General Mood",
-	"Attitude / Outlook",
-];
 
 interface OptionButtonProps<T extends string> {
 	value: T;
@@ -292,8 +248,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 				return;
 			}
 			const ageNum = parseInt(customAiAgeString, 10);
-			if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-				setCustomAgeError("Please enter a valid age (13-100).");
+			if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
+				setCustomAgeError("Please enter a valid age (18-100).");
 				return;
 			}
 			finalCustomAiAge = ageNum;
@@ -326,8 +282,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 			return;
 		}
 		const ageNum = parseInt(value, 10);
-		if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
-			setCustomAgeError("Please enter a valid age (13-100).");
+		if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
+			setCustomAgeError("Please enter a valid age (18-100).");
 		} else {
 			setCustomAgeError(null);
 		}
@@ -404,7 +360,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 										type="number"
 										value={customAiAgeString}
 										onChange={handleCustomAgeChange}
-										placeholder="Enter age (13-100)"
+										placeholder="Enter age (18-100)"
 										className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 ${
 											customAgeError ? "ring-red-500" : "focus:ring-teal-500"
 										}`}
@@ -412,7 +368,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 									<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
 										<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
 										<p>
-											Provide a specific age for the AI between 13 and 100. This
+											Provide a specific age for the AI between 18 and 100. This
 											will influence its personality, vocabulary, and
 											perspectives.
 										</p>
@@ -471,7 +427,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 				</AccordionSection>
 
 				<AccordionSection
-					title={`Personality Traits (Selected ${selectedPersonalityTraits.length}/${MAX_PERSONALITY_TRAITS})`}
+					title={`Trait Palette (Selected ${selectedPersonalityTraits.length}/${MAX_PERSONALITY_TRAITS})`}
 					error={personalityError}
 					id="ai-personality-section">
 					<div className="space-y-4">
@@ -484,23 +440,28 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 									{personalityCategories[category].map((p) => {
 										const isSelected = selectedPersonalityTraits.includes(p);
 										return (
-											<button
+											<Tooltip
 												key={p}
-												type="button"
-												onClick={() => handlePersonalityTraitToggle(p)}
-												className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 ${
-													isSelected
-														? "bg-teal-500 text-white ring-2 ring-teal-300"
-														: "bg-slate-600 hover:bg-slate-500"
-												} ${
-													!isSelected &&
-													selectedPersonalityTraits.length >=
-														MAX_PERSONALITY_TRAITS
-														? "opacity-50 cursor-not-allowed"
-														: ""
-												}`}>
-												{p}
-											</button>
+												content={personalityTraitDescriptions[p] || p}>
+												<button
+													type="button"
+													data-testid={`trait-button-${p}`}
+													style={{ zIndex: 10 }}
+													onClick={() => handlePersonalityTraitToggle(p)}
+													className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 ${
+														isSelected
+															? "bg-teal-500 text-white ring-2 ring-teal-300"
+															: "bg-slate-600 hover:bg-slate-500"
+													} ${
+														!isSelected &&
+														selectedPersonalityTraits.length >=
+															MAX_PERSONALITY_TRAITS
+															? "opacity-50 cursor-not-allowed"
+															: ""
+													}`}>
+													{p}
+												</button>
+											</Tooltip>
 										);
 									})}
 								</div>
@@ -508,33 +469,24 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 						))}
 					</div>
 					<div className="mt-6">
-						<label className="block text-md font-medium text-teal-300 mb-2">
-							Custom Additions (Optional)
-						</label>
+						<p className="text-sm text-slate-400 mb-2">
+							You may also type in your own custom personality description below
+							if you prefer.
+						</p>
 						<textarea
 							value={customAiPersonality}
 							onChange={(e) => {
 								if (e.target.value.length <= MAX_CUSTOM_PERSONALITY_LENGTH)
 									setCustomAiPersonality(e.target.value);
 							}}
-							placeholder="Add unlisted traits or specific behaviors here..."
+							placeholder="Type your own personality description here..."
 							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px] text-sm"
 							rows={2}
 							maxLength={MAX_CUSTOM_PERSONALITY_LENGTH}
 						/>
-						<div className="flex justify-between items-start">
-							<div className="mt-2 flex items-start gap-2 text-xs text-slate-400 flex-grow">
-								<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-								<p>
-									Add nuances not covered by the traits. Be descriptive.
-									Examples: 'has a dry sense of humor', 'is secretly a
-									romantic', 'tends to fidget when nervous'.
-								</p>
-							</div>
-							<p className="text-xs text-right text-gray-400 mt-1 flex-shrink-0">
-								{customAiPersonality.length}/{MAX_CUSTOM_PERSONALITY_LENGTH}
-							</p>
-						</div>
+						<p className="text-xs text-right text-gray-400 mt-1 flex-shrink-0">
+							{customAiPersonality.length}/{MAX_CUSTOM_PERSONALITY_LENGTH}
+						</p>
 					</div>
 				</AccordionSection>
 

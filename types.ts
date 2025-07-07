@@ -10,52 +10,114 @@ export enum SocialEnvironment {
 }
 
 export enum AIPersonalityTrait {
-	// Communication Style
-	TALKATIVE = "Talkative",
-	QUIET = "Quiet",
-	DIRECT = "Direct",
-	SARCASTIC = "Sarcastic",
-	FORMAL = "Formal",
-	INFORMAL = "Informal",
-	WITTY = "Witty",
-	ASSERTIVE = "Assertive",
-
-	// General Mood
-	CHEERFUL = "Cheerful",
-	GRUMPY = "Grumpy",
-	ANXIOUS = "Anxious",
-	CALM = "Calm",
-	SERIOUS = "Serious",
+	// 1. Social Orientation (Agency × Affiliation, Interpersonal Circumplex)
+	OUTGOING = "Outgoing",
+	RESERVED = "Reserved",
+	WARM = "Warm",
+	GUARDED = "Guarded",
+	FLIRTATIOUS = "Flirtatious",
+	STOIC = "Stoic",
+	SPONTANEOUS = "Spontaneous",
+	METHODICAL = "Methodical",
+	CHARMING = "Charming",
+	ALOOF = "Aloof",
+	NURTURING = "Nurturing",
 	PLAYFUL = "Playful",
-	SAD = "Sad",
-	ENTHUSIASTIC = "Enthusiastic",
+	COMPETITIVE = "Competitive",
+	COOPERATIVE = "Co-operative",
 
-	// Attitude / Outlook
-	OPTIMISTIC = "Optimistic",
-	PESSIMISTIC = "Pessimistic",
+	// 2. Communication Tone (Delivery style / pragmatics)
+	TALKATIVE = "Talkative",
+	CONCISE = "Concise",
+	DIRECT = "Direct",
+	DIPLOMATIC = "Diplomatic",
+	WITTY = "Witty",
+	DRY_HUMORED = "Dry-humored",
+	FORMAL = "Formal",
+	CASUAL = "Casual",
+	STORYTELLING = "Story-telling",
+	SARCASTIC = "Sarcastic",
 	SUPPORTIVE = "Supportive",
-	CHALLENGING = "Challenging",
-	CURIOUS = "Curious",
-	SKEPTICAL = "Skeptical",
+	ENCOURAGING = "Encouraging",
+	ASSERTIVE = "Assertive",
+	REFLECTIVE = "Reflective",
+	ANIMATED = "Animated",
+	MATTER_OF_FACT = "Matter-of-fact",
+
+	// 3. Emotional Temperature (Baseline affect)
+	CHEERFUL = "Cheerful",
+	CALM = "Calm",
+	ENTHUSIASTIC = "Enthusiastic",
+	IRRITABLE = "Irritable",
+	ANXIOUS = "Anxious",
+	MELANCHOLIC = "Melancholic",
+	BALANCED = "Balanced", // formerly EVEN_KEELED
+	LIVELY = "Lively",
+	MOODY = "Moody",
+	SENTIMENTAL = "Sentimental",
+	STOIC_EMO = "Stoic", // To distinguish from Social Orientation's Stoic
+	LIGHT_HEARTED = "Light-hearted",
+	SENSITIVE = "Sensitive",
+	SERENE = "Serene",
+
+	// 4. Motivational Drive & Self-Regulation (Conscientiousness / effortful control)
+	AMBITIOUS = "Ambitious",
+	LAID_BACK = "Laid-back",
+	GOAL_ORIENTED = "Goal-oriented",
+	SUPPORTIVE_MOTIV = "Supportive", // To distinguish from Communication Tone's Supportive
+	PATIENT = "Patient",
+	RESTLESS = "Restless",
+	ADAPTIVE = "Adaptive",
+	IMPULSIVE = "Impulsive",
+	PERSISTENT = "Persistent",
+	DISCIPLINED = "Disciplined",
+	PROCRASTINATING = "Procrastinating",
+	OPPORTUNISTIC = "Opportunistic",
+	RESILIENT = "Resilient",
+	DETAIL_DRIVEN = "Detail-driven",
+
+	// 5. Cognitive Lens (Openness & thinking style)
+	ANALYTICAL = "Analytical",
 	CREATIVE = "Creative",
 	LOGICAL = "Logical",
-	METHODICAL = "Methodical",
+	IMAGINATIVE = "Imaginative",
+	PRACTICAL = "Practical",
+	VISIONARY = "Visionary",
+	CURIOUS = "Curious",
+	SKEPTICAL = "Skeptical",
+	DETAIL_ORIENTED = "Detail-oriented",
+	BIG_PICTURE = "Big-picture",
+	EXPERIMENTAL = "Experimental",
+	INTUITIVE = "Intuitive",
+	STRUCTURED = "Structured",
+	ABSTRACT_MINDED = "Abstract-minded",
+
+	// 6. Outlook / World-View (Valence & explanatory style)
+	OPTIMISTIC = "Optimistic",
+	REALISTIC = "Realistic",
+	PESSIMISTIC = "Pessimistic",
 	PRAGMATIC = "Pragmatic",
 	IDEALISTIC = "Idealistic",
+	GROWTH_MINDED = "Growth-minded",
+	TRADITION_MINDED = "Tradition-minded",
+	EXISTENTIAL = "Existential",
+	ROMANTIC = "Romantic",
+	CYNICAL = "Cynical",
+	ALTRUISTIC = "Altruistic",
+	STOIC_WORLDVIEW = "Stoic", // To distinguish from other Stoic usages
+	CHALLENGING = "Challenging",
+	COMMUNITY_FOCUSED = "Community-focused",
 
-	// Social Behavior
+	// Legacy/compatibility traits (if needed)
 	CONFIDENT = "Confident",
 	SHY = "Shy",
-	FLIRTATIOUS = "Flirtatious",
-	GUARDED = "Guarded",
 	EMPATHETIC = "Empathetic",
 	HUMBLE = "Humble",
-	AMBITIOUS = "Ambitious",
-	IMPULSIVE = "Impulsive",
-	SPONTANEOUS = "Spontaneous",
 	INTROVERTED = "Introverted",
 	EXTROVERTED = "Extroverted",
-	NURTURING = "Nurturing",
+	SAD = "Sad",
+	GRUMPY = "Grumpy",
+	SERIOUS = "Serious",
 }
 
 export enum AIGender {
@@ -67,7 +129,6 @@ export enum AIGender {
 
 export enum AIAgeBracket {
 	NOT_SPECIFIED = "Not Specified / Auto",
-	TEENAGER = "Teenager (13-17)",
 	YOUNG_ADULT_18_23 = "Young Adult (18-23)",
 	YOUNG_ADULT_24_29 = "Young Adult (24-29)",
 	ADULT_30_39 = "Adult (30-39)",

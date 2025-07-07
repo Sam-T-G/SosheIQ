@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
-import { LoadingIndicator } from "../components/LoadingIndicator";
+import { LoadingScreen } from "../components/LoadingScreen";
 
 const LoadingDemo: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -182,7 +182,7 @@ const LoadingDemo: React.FC = () => {
 			{/* Demo Area */}
 			<div className="relative w-full h-96 bg-slate-900/50 border border-slate-700 rounded-xl overflow-hidden">
 				{isLoading ? (
-					<LoadingIndicator
+					<LoadingScreen
 						message={currentMessage}
 						extraClasses="z-[10000]"
 						testMode={testMode}
