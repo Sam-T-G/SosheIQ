@@ -672,16 +672,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					ref={chatContainerRef}
 					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
 					onClick={() => setActivePopoverId(null)}>
-					{isOverlay ? (
-						<motion.div
-							drag="y"
-							dragConstraints={
-								isMobile ? { top: 0, bottom: 0 } : { top: -60, bottom: 60 }
-							}
-							dragElastic={isMobile ? 0 : 0.12}
-							transition={{ type: "spring", stiffness: 520, damping: 44 }}
-							style={{ touchAction: "pan-y" }}>
-							<div className="space-y-4">
+<div className="space-y-4">
 								{processedMessagesForDisplay.map((msg, index) => (
 									<motion.div
 										key={msg.id}
@@ -756,15 +747,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 								))}
 								{isLoadingAI && <ChatMessageViewAIThinking />}
 								<div ref={chatEndRef} />
-							</div>
-						</motion.div>
-					) : (
-						<motion.div
-							drag="y"
-							dragConstraints={{ top: -60, bottom: 60 }}
-							dragElastic={0.12}
-							transition={{ type: "spring", stiffness: 520, damping: 44 }}
-							style={{ touchAction: "pan-y" }}>
+                                                        </div>
+                                                </div>
+                                        ) : (
+                                                <div style={{ touchAction: "pan-y" }}>
 							<div className="space-y-4">
 								{processedMessagesForDisplay.map((msg, index) => (
 									<motion.div
@@ -828,9 +814,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 								))}
 								{isLoadingAI && <ChatMessageViewAIThinking />}
 								<div ref={chatEndRef} />
-							</div>
-						</motion.div>
-					)}
+                                                        </div>
+                                                </div>
+                                        )}
 				</div>
 
 				{pendingFeedback && (
