@@ -433,10 +433,27 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 	]);
 
 	// Effect hooks - ALWAYS called in the same order
-	// Hydration safety - ensure client-side rendering
-	useEffect(() => {
-		setIsClient(true);
-	}, []);
+        // Hydration safety - ensure client-side rendering
+        useEffect(() => {
+                setIsClient(true);
+        }, []);
+
+        // Set --vh CSS variable to handle mobile viewport height changes
+        useEffect(() => {
+                const setViewportHeight = () => {
+                        if (typeof window !== "undefined") {
+                                const vh = window.innerHeight * 0.01;
+                                document.documentElement.style.setProperty(
+                                        "--vh",
+                                        `${vh}px`
+                                );
+                        }
+                };
+
+                setViewportHeight();
+                window.addEventListener("resize", setViewportHeight);
+                return () => window.removeEventListener("resize", setViewportHeight);
+        }, []);
 
 	// Start loading sequence
 	useEffect(() => {
@@ -522,10 +539,15 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 
 	// 🔥 CRITICAL: Early return ONLY AFTER all hooks are declared
 	// This prevents "Rendered fewer hooks than expected" errors
-	if (!isClient) {
-		// Render a blank black screen during hydration to avoid showing 'Loading...'
-		return <div className="fixed inset-0 bg-black z-50 w-screen h-screen" />;
-	}
+        if (!isClient) {
+                // Render a blank black screen during hydration to avoid showing 'Loading...'
+                return (
+                        <div
+                                className="fixed inset-0 bg-black z-50 w-screen"
+                                style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+                        />
+                );
+        }
 
 	if (!isVisible && animationComplete) {
 		return null;
@@ -633,16 +655,17 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 		<>
 			<StyleInjector />
 			<AnimatePresence>
-				{showBlack && (
-					<motion.div
-						key="black-overlay"
-						className="fixed inset-0 z-[10000] bg-black w-screen h-screen"
-						initial={{ opacity: 1 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						transition={{ duration: 0.35, ease: "easeInOut" }}
-					/>
-				)}
+                                {showBlack && (
+                                        <motion.div
+                                                key="black-overlay"
+                                                className="fixed inset-0 z-[10000] bg-black w-screen"
+                                                style={{ height: "calc(var(--vh, 1vh) * 100)" }}
+                                                initial={{ opacity: 1 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ duration: 0.35, ease: "easeInOut" }}
+                                        />
+                                )}
 			</AnimatePresence>
 			{!showBlack && showContent && (
 				<AnimatePresence mode="wait">
@@ -658,7 +681,7 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 									right: 0,
 									bottom: 0,
 									width: "100vw",
-									height: "100vh",
+                                                                        height: "calc(var(--vh, 1vh) * 100)",
 									position: "fixed",
 									backgroundColor: "#000",
 								}}
@@ -687,7 +710,7 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 										display: "flex",
 										alignItems: "center",
 										justifyContent: "center",
-										minHeight: "100vh",
+                                                                               minHeight: "calc(var(--vh, 1vh) * 100)",
 										minWidth: "100vw",
 										padding: "1rem",
 									}}>

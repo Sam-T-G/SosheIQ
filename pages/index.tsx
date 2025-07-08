@@ -1481,9 +1481,14 @@ const HomePage: React.FC = () => {
 									? "justify-center overflow-hidden"
 									: "justify-start py-4 overflow-y-auto"
 							} ${isModalActive ? "pointer-events-none" : ""}`}
-							style={
-								isMobileLandscape ? { padding: 0, minHeight: "100vh" } : {}
-							}>
+                                                        style={
+                                                                isMobileLandscape
+                                                                        ? {
+                                                                                padding: 0,
+                                                                                minHeight: "calc(var(--vh, 1vh) * 100)",
+                                                                        }
+                                                                        : {}
+                                                        }>
 							{renderContent()}
 						</main>
 

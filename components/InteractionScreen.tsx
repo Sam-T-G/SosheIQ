@@ -922,7 +922,7 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 						visibility: showChatOverlay ? "hidden" : "visible",
 						transformOrigin: "center center",
 						overscrollBehavior: "contain",
-						maxHeight: "100vh",
+                                                maxHeight: "calc(var(--vh, 1vh) * 100)",
 					}}>
 					<AIVisualCue
 						imageBase64={aiImageBase64}
