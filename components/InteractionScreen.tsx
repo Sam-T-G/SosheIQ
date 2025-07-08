@@ -768,6 +768,14 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				)}
 			</AnimatePresence>
 
+			{/* Black overlay for desktop cinematic loading, below the cinematic image layer */}
+			{!hasCompletedFirstLoad && (
+				<div
+					className="hidden md:block fixed inset-0 z-[9996] bg-black"
+					aria-hidden="true"
+				/>
+			)}
+
 			{/* Goal Achieved Toast */}
 			{showGoalAchievedToast.show && (
 				<GoalAchievedToast

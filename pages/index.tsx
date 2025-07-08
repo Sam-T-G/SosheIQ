@@ -1487,10 +1487,11 @@ const HomePage: React.FC = () => {
 							{renderContent()}
 						</main>
 
-						{/* Hide Footer in mobile landscape and during INTERACTION phase */}
+						{/* Footer only when not in mobile landscape, not in INTERACTION phase, not when modal is active, and not when isLoading */}
 						{!isMobileLandscape &&
 							currentPhase !== GamePhase.INTERACTION &&
-							!isModalActive && (
+							!isModalActive &&
+							!isLoading && (
 								<Footer
 									onNavigateToAbout={() => handleNavigate(GamePhase.ABOUT)}
 									onNavigateToInstructions={() =>

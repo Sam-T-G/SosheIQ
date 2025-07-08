@@ -28,7 +28,7 @@ const generateFireflies = (count: number) =>
 	}));
 
 export const FireflyField: React.FC<FireflyFieldProps> = ({
-	count = 40,
+	count = 7,
 	zIndex = 0,
 	className = "",
 }) => {

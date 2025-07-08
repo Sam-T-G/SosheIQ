@@ -175,7 +175,7 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 	};
 
 	const handleTouchStart = (e: React.TouchEvent) => {
-		e.preventDefault();
+		// e.preventDefault(); // Remove this to allow scrolling
 		const touch = e.touches[0];
 		setClickStartTime(Date.now());
 		setClickStartPosition({ x: touch.clientX, y: touch.clientY });

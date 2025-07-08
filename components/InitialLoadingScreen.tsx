@@ -18,7 +18,6 @@ import {
 	Variants,
 } from "motion/react";
 import { SosheIQLogo } from "./SosheIQLogo";
-import { Footer } from "./Footer";
 
 interface LoadingPhase {
 	phase:
@@ -979,31 +978,6 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 										</motion.div>
 									</motion.div>
 								</div>
-								{/* Animated Footer */}
-								<motion.div
-									initial={{ opacity: 0, y: 20 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: 20 }}
-									transition={{
-										...MOTION_SPRING_CONFIGS.GENTLE,
-										ease: [0.22, 1, 0.36, 1],
-										delay: 0.21,
-									}}
-									style={{
-										position: "absolute",
-										left: 0,
-										right: 0,
-										bottom: 0,
-										zIndex: 30,
-									}}>
-									<Footer
-										onNavigateToPrivacy={() => {}}
-										onNavigateToTerms={() => {}}
-										onNavigateToSafety={() => {}}
-										onNavigateToAbout={() => {}}
-										onNavigateToInstructions={() => {}}
-									/>
-								</motion.div>
 							</motion.div>
 						</>
 					)}

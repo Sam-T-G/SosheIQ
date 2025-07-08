@@ -20,7 +20,6 @@ import type { Variants } from "framer-motion";
 import { SosheIQLogo } from "./SosheIQLogo";
 import { useAILoadingMessages } from "../hooks/useAILoadingMessages";
 import type { ScenarioDetails } from "../types";
-import { Footer } from "./Footer";
 
 interface LoadingScreenProps {
 	message?: string;
@@ -416,28 +415,6 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 						repeatType: "loop",
 					}}
 				/>
-				{/* Animated Footer */}
-				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					exit={{ opacity: 0, y: 20 }}
-					transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-					style={{
-						position: "absolute",
-						left: 0,
-						right: 0,
-						bottom: 0,
-						zIndex: 30,
-						pointerEvents: "auto",
-					}}>
-					<Footer
-						onNavigateToPrivacy={() => {}}
-						onNavigateToTerms={() => {}}
-						onNavigateToSafety={() => {}}
-						onNavigateToAbout={() => {}}
-						onNavigateToInstructions={() => {}}
-					/>
-				</motion.div>
 			</motion.div>
 		</AnimatePresence>
 	);
