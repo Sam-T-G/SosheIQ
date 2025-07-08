@@ -714,22 +714,39 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 				window.removeEventListener("resize", calculateExclusionZones);
 			};
 		}
-	}, []);
+        }, []);
 
-	// Add this useEffect near other effects in InteractionScreen
-	useEffect(() => {
-		const handleResize = () => {
-			if (
-				window.innerWidth < 768 &&
-				screenDimmed &&
-				!showScenarioContextModal
-			) {
-				setScreenDimmed(false);
-			}
-		};
-		window.addEventListener("resize", handleResize);
-		return () => window.removeEventListener("resize", handleResize);
-	}, [screenDimmed, showScenarioContextModal]);
+        // Add this useEffect near other effects in InteractionScreen
+        useEffect(() => {
+                const handleResize = () => {
+                        if (
+                                window.innerWidth < 768 &&
+                                screenDimmed &&
+                                !showScenarioContextModal
+                        ) {
+                                setScreenDimmed(false);
+                        }
+                };
+                window.addEventListener("resize", handleResize);
+                return () => window.removeEventListener("resize", handleResize);
+        }, [screenDimmed, showScenarioContextModal]);
+
+        // Set --vh CSS variable to handle mobile viewport height changes
+        useEffect(() => {
+                const setViewportHeight = () => {
+                        if (typeof window !== "undefined") {
+                                const vh = window.innerHeight * 0.01;
+                                document.documentElement.style.setProperty(
+                                        "--vh",
+                                        `${vh}px`
+                                );
+                        }
+                };
+
+                setViewportHeight();
+                window.addEventListener("resize", setViewportHeight);
+                return () => window.removeEventListener("resize", setViewportHeight);
+        }, []);
 
 	// Ensure dim overlay is cleared whenever the scenario context modal is fully closed
 	useEffect(() => {
@@ -742,10 +759,11 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 	}, [showScenarioContextModal, screenDimmed]);
 
 	return (
-		<div
-			className={`w-full max-w-7xl h-[85vh] flex flex-col md:flex-row shadow-2xl rounded-xl relative overflow-hidden ${
-				hasCompletedFirstLoad ? "bg-slate-800" : "bg-transparent"
-			}`}>
+               <div
+                       className={`w-full max-w-7xl flex flex-col md:flex-row shadow-2xl rounded-xl relative overflow-hidden ${
+                               hasCompletedFirstLoad ? "bg-slate-800" : "bg-transparent"
+                       }`}
+                       style={{ height: "calc(var(--vh, 1vh) * 85)" }}>
 			{/* Global fade overlay for smooth cross-fades (desktop & mobile) */}
 			<AnimatePresence>
 				{isGlobalFading && (
@@ -1162,15 +1180,15 @@ export const InteractionScreen: React.FC<InteractionScreenProps> = ({
 			)}
 
 			{/* Mobile: Full Screen Chat Overlay */}
-			{chatOverlayIsVisible && (
-				<div
-					className={`md:hidden fixed inset-0 z-[9998] bg-black transition-opacity duration-200 ${
-						showChatOverlay
-							? "animate-chat-overlay-in"
-							: "animate-chat-overlay-out pointer-events-none"
-					}`}
-					role="dialog"
-					aria-modal="true">
+               {chatOverlayIsVisible && (
+                               <div
+                                       className={`md:hidden fixed inset-0 z-[9998] bg-black transition-opacity duration-200 overscroll-contain ${
+                                               showChatOverlay
+                                                       ? "animate-chat-overlay-in"
+                                                       : "animate-chat-overlay-out pointer-events-none"
+                                       }`}
+                                       role="dialog"
+                                       aria-modal="true">
 					{/* Solid background to prevent image pop-in */}
 					<div className="absolute inset-0 bg-black" />
 					{chatOverlayImageVisible && (
