@@ -74,25 +74,25 @@
 
 /* Ensure proper full-screen coverage */
 .loading-screen-container {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	width: 100vw;
-	height: 100vh;
-	z-index: 10000;
-	background-color: #000000;
-	overflow: hidden;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: calc(var(--vh, 1vh) * 100);
+        z-index: 10000;
+        background-color: #000000;
+        overflow: hidden;
 }
 
 /* Perfect centering utility */
 .loading-screen-center {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 100vh;
-	min-width: 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(var(--vh, 1vh) * 100);
+        min-width: 100vw;
 }
 
 /* Content container */
