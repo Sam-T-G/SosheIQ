@@ -637,6 +637,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		? "bg-transparent"
 		: "bg-slate-800";
 
+	// Utility to detect mobile
+	const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
 	return (
 		<>
 			<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
@@ -669,45 +672,55 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					ref={chatContainerRef}
 					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
 					onClick={() => setActivePopoverId(null)}>
-                                        {isOverlay ? (
-                                                <div style={{ touchAction: "pan-y" }}>
-							<div className="space-y-4">
+<div className="space-y-4">
 								{processedMessagesForDisplay.map((msg, index) => (
 									<motion.div
 										key={msg.id}
-										animate={{ scale: pressedMessageId === msg.id ? 0.99 : 1 }}
-										transition={{ type: "spring", stiffness: 400, damping: 38 }}
-										onPointerDown={(e) => {
-											pointerStartRef.current = {
-												x: e.clientX,
-												y: e.clientY,
-												id: msg.id,
-											};
-											setPressedMessageId(msg.id);
-										}}
-										onPointerMove={(e) => {
-											const { x, y, id } = pointerStartRef.current;
-											if (id === msg.id) {
-												const dx = e.clientX - x;
-												const dy = e.clientY - y;
-												if (Math.sqrt(dx * dx + dy * dy) > 8) {
-													setPressedMessageId(null);
-													pointerStartRef.current = { x: 0, y: 0, id: null };
+										// Only animate scale on desktop
+										animate={
+											isMobile
+												? undefined
+												: { scale: pressedMessageId === msg.id ? 0.99 : 1 }
+										}
+										transition={
+											isMobile
+												? undefined
+												: { type: "spring", stiffness: 400, damping: 38 }
+										}
+										// Only set pointer/tap handlers on desktop
+										{...(!isMobile && {
+											onPointerDown: (e) => {
+												pointerStartRef.current = {
+													x: e.clientX,
+													y: e.clientY,
+													id: msg.id,
+												};
+												setPressedMessageId(msg.id);
+											},
+											onPointerMove: (e) => {
+												const { x, y, id } = pointerStartRef.current;
+												if (id === msg.id) {
+													const dx = e.clientX - x;
+													const dy = e.clientY - y;
+													if (Math.sqrt(dx * dx + dy * dy) > 8) {
+														setPressedMessageId(null);
+														pointerStartRef.current = { x: 0, y: 0, id: null };
+													}
 												}
-											}
-										}}
-										onPointerUp={() => {
-											setPressedMessageId(null);
-											pointerStartRef.current = { x: 0, y: 0, id: null };
-										}}
-										onPointerLeave={() => {
-											setPressedMessageId(null);
-											pointerStartRef.current = { x: 0, y: 0, id: null };
-										}}
-										onPointerCancel={() => {
-											setPressedMessageId(null);
-											pointerStartRef.current = { x: 0, y: 0, id: null };
-										}}>
+											},
+											onPointerUp: () => {
+												setPressedMessageId(null);
+												pointerStartRef.current = { x: 0, y: 0, id: null };
+											},
+											onPointerLeave: () => {
+												setPressedMessageId(null);
+												pointerStartRef.current = { x: 0, y: 0, id: null };
+											},
+											onPointerCancel: () => {
+												setPressedMessageId(null);
+												pointerStartRef.current = { x: 0, y: 0, id: null };
+											},
+										})}>
 										<ChatMessageView
 											message={msg}
 											isLastMessage={

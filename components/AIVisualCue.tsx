@@ -273,7 +273,10 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 							onTouchStart={handleTouchStart}
 							onTouchEnd={handleTouchEnd}
 							className="md:hidden absolute inset-0 z-10 bg-transparent focus:outline-none"
-							style={{ pointerEvents: "auto" }}
+							style={{
+								pointerEvents: "auto",
+								WebkitTapHighlightColor: "transparent",
+							}}
 							role="button"
 							tabIndex={0}
 							aria-label="View image in full screen"
@@ -449,7 +452,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 										}
 										initial={{ opacity: 0.5, scale: 1 }}
 										whileHover={{ opacity: 1, scale: 1.18 }}
-										whileTap={{ opacity: 0.9, scale: 1.05 }}
 										exit={{
 											opacity: 0,
 											scale: 1.3,
@@ -463,7 +465,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 										aria-label="Replay introduction animation"
 										style={{ opacity: 0.6 }}
 										whileHover={{ scale: 1.08, opacity: 0.85 }}
-										whileTap={{ scale: 0.93, opacity: 1 }}
 										transition={{
 											type: "spring",
 											bounce: 0.4,
@@ -540,7 +541,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 										}
 										initial={{ opacity: 0.5, scale: 1 }}
 										whileHover={{ opacity: 1, scale: 1.18 }}
-										whileTap={{ opacity: 0.9, scale: 1.05 }}
 										exit={{
 											opacity: 0,
 											scale: 1.3,
@@ -554,7 +554,6 @@ export const AIVisualCue: React.FC<AIVisualCueProps> = ({
 										aria-label="Replay introduction animation"
 										style={{ opacity: 0.6 }}
 										whileHover={{ scale: 1.08, opacity: 0.85 }}
-										whileTap={{ scale: 0.93, opacity: 1 }}
 										transition={{
 											type: "spring",
 											bounce: 0.4,
