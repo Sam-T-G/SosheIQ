@@ -471,6 +471,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		y: 0,
 		id: null,
 	});
+	const [isUserAtBottom, setIsUserAtBottom] = useState(true);
 
 	const isScrollingMutedRef = useRef(false);
 
@@ -484,6 +485,18 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		setTimeout(() => {
 			isScrollingMutedRef.current = false;
 		}, 500); // Mute for 500ms, longer than the animation duration
+	}, []);
+
+	// Handler to track if user is at the bottom of the chat
+	const handleScroll = useCallback(() => {
+		const container = chatContainerRef.current;
+		if (!container) return;
+		// Allow a small threshold for floating point errors
+		const threshold = 32;
+		const atBottom =
+			container.scrollHeight - container.scrollTop - container.clientHeight <
+			threshold;
+		setIsUserAtBottom(atBottom);
 	}, []);
 
 	useEffect(() => {
@@ -503,18 +516,29 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		});
 
 		setProcessedMessagesForDisplay(finalMessages);
-		// Force scroll when new message is added to history
-		if (conversationHistory.length > processedMessagesForDisplay.length) {
+		// Only auto-scroll if a new message is added and user is at bottom or the new message is from user/AI
+		if (
+			conversationHistory.length > processedMessagesForDisplay.length &&
+			(isUserAtBottom ||
+				["ai", "user"].includes(
+					conversationHistory[conversationHistory.length - 1]?.sender
+				))
+		) {
 			scrollToBottom(true);
 		}
-	}, [conversationHistory, processedMessagesForDisplay.length, scrollToBottom]);
+	}, [
+		conversationHistory,
+		processedMessagesForDisplay.length,
+		scrollToBottom,
+		isUserAtBottom,
+	]);
 
 	// Force scroll when AI thinking state changes.
 	useEffect(() => {
-		if (isLoadingAI) {
+		if (isLoadingAI && isUserAtBottom) {
 			scrollToBottom(true);
 		}
-	}, [isLoadingAI, scrollToBottom]);
+	}, [isLoadingAI, scrollToBottom, isUserAtBottom]);
 
 	// Observer for DOM mutations (like image loads, staged text)
 	useEffect(() => {
@@ -525,7 +549,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 			// Don't scroll for attribute changes (like adding an image src to an existing element)
 			// as this was causing jumps. Only scroll for new nodes being added.
 			const shouldScroll = mutations.some((m) => m.addedNodes.length > 0);
-			if (shouldScroll) {
+			if (shouldScroll && isUserAtBottom) {
 				scrollToBottom();
 			}
 		});
@@ -536,7 +560,16 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		});
 
 		return () => observer.disconnect();
-	}, [scrollToBottom]);
+	}, [scrollToBottom, isUserAtBottom]);
+
+	useEffect(() => {
+		const container = chatContainerRef.current;
+		if (!container) return;
+		container.addEventListener("scroll", handleScroll);
+		// Set initial state
+		handleScroll();
+		return () => container.removeEventListener("scroll", handleScroll);
+	}, [handleScroll]);
 
 	const handlePopoverSet = useCallback(
 		(messageId: string | null) => {
@@ -640,6 +673,9 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	// Utility to detect mobile
 	const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
+	// Add a ref to track if a drag is in progress
+	const isDraggingRef = useRef(false);
+
 	return (
 		<>
 			<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
@@ -671,42 +707,78 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 				<div
 					ref={chatContainerRef}
 					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
-					onClick={() => setActivePopoverId(null)}>
+					onClick={() => {
+						if (!isDraggingRef.current) setActivePopoverId(null);
+					}}
+					onScroll={handleScroll}>
 					{isOverlay ? (
-						<motion.div
-							drag="y"
-							dragConstraints={
-								isMobile ? { top: 0, bottom: 0 } : { top: -60, bottom: 60 }
-							}
-							dragElastic={isMobile ? 0 : 0.12}
-							transition={{ type: "spring", stiffness: 520, damping: 44 }}
-							style={{ touchAction: "pan-y" }}>
+						isMobile ? (
+							// On mobile, do NOT use Framer Motion drag, just render the messages natively
 							<div className="space-y-4">
 								{processedMessagesForDisplay.map((msg, index) => (
-									<motion.div
+									<ChatMessageView
 										key={msg.id}
-										// Only animate scale on desktop
-										animate={
-											isMobile
-												? undefined
-												: { scale: pressedMessageId === msg.id ? 0.99 : 1 }
+										message={msg}
+										isLastMessage={
+											index === processedMessagesForDisplay.length - 1 &&
+											msg.id ===
+												conversationHistory[conversationHistory.length - 1]
+													?.id &&
+											!msg.isThoughtBubble
 										}
-										transition={
-											isMobile
-												? undefined
-												: { type: "spring", stiffness: 400, damping: 38 }
+										isLoadingAI={
+											isLoadingAI &&
+											index === processedMessagesForDisplay.length - 1 &&
+											msg.id ===
+												conversationHistory[conversationHistory.length - 1]?.id
 										}
-										// Only set pointer/tap handlers on desktop
-										{...(!isMobile && {
-											onPointerDown: (e) => {
+										onAnimationComplete={onAnimationComplete}
+										onThoughtToggle={handleThoughtToggle}
+										scenarioDetailsAiName={scenarioDetailsAiName}
+										onViewImage={onViewImage}
+										onRetryMessage={onRetryMessage}
+									/>
+								))}
+								{isLoadingAI && <ChatMessageViewAIThinking />}
+								<div ref={chatEndRef} />
+							</div>
+						) : (
+							// On desktop, keep Framer Motion drag
+							<motion.div
+								drag="y"
+								dragConstraints={{ top: -60, bottom: 60 }}
+								dragElastic={0.12}
+								transition={{ type: "spring", stiffness: 520, damping: 44 }}
+								style={{ touchAction: "pan-y" }}
+								onDragStart={() => {
+									isDraggingRef.current = true;
+								}}
+								onDrag={handleScroll}
+								onDragEnd={() => {
+									isDraggingRef.current = false;
+									handleScroll();
+								}}>
+								<div className="space-y-4">
+									{processedMessagesForDisplay.map((msg, index) => (
+										<motion.div
+											key={msg.id}
+											animate={{
+												scale: pressedMessageId === msg.id ? 0.99 : 1,
+											}}
+											transition={{
+												type: "spring",
+												stiffness: 400,
+												damping: 38,
+											}}
+											onPointerDown={(e) => {
 												pointerStartRef.current = {
 													x: e.clientX,
 													y: e.clientY,
 													id: msg.id,
 												};
 												setPressedMessageId(msg.id);
-											},
-											onPointerMove: (e) => {
+											}}
+											onPointerMove={(e) => {
 												const { x, y, id } = pointerStartRef.current;
 												if (id === msg.id) {
 													const dx = e.clientX - x;
@@ -716,55 +788,64 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 														pointerStartRef.current = { x: 0, y: 0, id: null };
 													}
 												}
-											},
-											onPointerUp: () => {
+											}}
+											onPointerUp={() => {
 												setPressedMessageId(null);
 												pointerStartRef.current = { x: 0, y: 0, id: null };
-											},
-											onPointerLeave: () => {
+											}}
+											onPointerLeave={() => {
 												setPressedMessageId(null);
 												pointerStartRef.current = { x: 0, y: 0, id: null };
-											},
-											onPointerCancel: () => {
+											}}
+											onPointerCancel={() => {
 												setPressedMessageId(null);
 												pointerStartRef.current = { x: 0, y: 0, id: null };
-											},
-										})}>
-										<ChatMessageView
-											message={msg}
-											isLastMessage={
-												index === processedMessagesForDisplay.length - 1 &&
-												msg.id ===
-													conversationHistory[conversationHistory.length - 1]
-														?.id &&
-												!msg.isThoughtBubble
-											}
-											isLoadingAI={
-												isLoadingAI &&
-												index === processedMessagesForDisplay.length - 1 &&
-												msg.id ===
-													conversationHistory[conversationHistory.length - 1]
-														?.id
-											}
-											onAnimationComplete={onAnimationComplete}
-											onThoughtToggle={handleThoughtToggle}
-											scenarioDetailsAiName={scenarioDetailsAiName}
-											onViewImage={onViewImage}
-											onRetryMessage={onRetryMessage}
-										/>
-									</motion.div>
-								))}
-								{isLoadingAI && <ChatMessageViewAIThinking />}
-								<div ref={chatEndRef} />
-							</div>
-						</motion.div>
+											}}>
+											<ChatMessageView
+												message={msg}
+												isLastMessage={
+													index === processedMessagesForDisplay.length - 1 &&
+													msg.id ===
+														conversationHistory[conversationHistory.length - 1]
+															?.id &&
+													!msg.isThoughtBubble
+												}
+												isLoadingAI={
+													isLoadingAI &&
+													index === processedMessagesForDisplay.length - 1 &&
+													msg.id ===
+														conversationHistory[conversationHistory.length - 1]
+															?.id
+												}
+												onAnimationComplete={onAnimationComplete}
+												onThoughtToggle={handleThoughtToggle}
+												scenarioDetailsAiName={scenarioDetailsAiName}
+												onViewImage={onViewImage}
+												onRetryMessage={onRetryMessage}
+											/>
+										</motion.div>
+									))}
+									{isLoadingAI && <ChatMessageViewAIThinking />}
+									<div ref={chatEndRef} />
+								</div>
+							</motion.div>
+						)
 					) : (
+						// Not overlay: always desktop drag
 						<motion.div
 							drag="y"
 							dragConstraints={{ top: -60, bottom: 60 }}
 							dragElastic={0.12}
 							transition={{ type: "spring", stiffness: 520, damping: 44 }}
-							style={{ touchAction: "pan-y" }}>
+							style={{ touchAction: "pan-y" }}
+							onDragStart={() => {
+								isDraggingRef.current = true;
+							}}
+							onDrag={handleScroll}
+							onDragEnd={() => {
+								isDraggingRef.current = false;
+								handleScroll();
+							}}>
 							<div className="space-y-4">
 								{processedMessagesForDisplay.map((msg, index) => (
 									<motion.div
