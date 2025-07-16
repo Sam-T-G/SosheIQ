@@ -24,6 +24,16 @@ interface ChatMessageViewProps {
 	onViewImage: (url: string | null) => void;
 	onRetryMessage: (messageText: string) => void;
 	scenarioDetailsAiName: string;
+	// Add optional onImageLoad
+	onImageLoad?: () => void;
+	// Add optional chatContainerRef for scroll centering
+	chatContainerRef?: React.RefObject<HTMLDivElement>;
+	// Add optional inputAreaRef for aligning above input
+	inputAreaRef?: React.RefObject<HTMLDivElement>;
+	// Add optional topUiRef for scroll calculations
+	topUiRef?: React.RefObject<HTMLDivElement>;
+	// Add optional bottom padding for special cases
+	addBottomPadding?: boolean;
 }
 
 const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
@@ -95,22 +105,42 @@ interface BadgeInfoPopoverProps {
 	onClose: () => void;
 }
 
-const BadgeInfoPopover: React.FC<BadgeInfoPopoverProps> = ({
-	content,
-	badgeType,
-	onClose,
-}) => {
+const BadgeInfoPopover: React.FC<
+	BadgeInfoPopoverProps & {
+		popoverRef?: React.RefObject<HTMLDivElement>;
+		onEnsureVisible?: () => void;
+	}
+> = ({ content, badgeType, onClose, popoverRef, onEnsureVisible }) => {
 	useEffect(() => {
-		const handleEsc = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				onClose();
-			}
+		if (!popoverRef?.current || !onEnsureVisible) return;
+		let observer: ResizeObserver | null = null;
+		let pollingId: number | null = null;
+
+		const runEnsureVisible = () => {
+			onEnsureVisible();
 		};
-		window.addEventListener("keydown", handleEsc);
+
+		if ("ResizeObserver" in window) {
+			observer = new ResizeObserver(runEnsureVisible);
+			observer.observe(popoverRef.current);
+			// Also run once on mount
+			runEnsureVisible();
+		} else {
+			// Fallback: poll a few times
+			let count = 0;
+			const poll = () => {
+				runEnsureVisible();
+				if (++count < 10) {
+					pollingId = window.setTimeout(poll, 60);
+				}
+			};
+			poll();
+		}
 		return () => {
-			window.removeEventListener("keydown", handleEsc);
+			if (observer) observer.disconnect();
+			if (pollingId) window.clearTimeout(pollingId);
 		};
-	}, [onClose]);
+	}, [popoverRef, onEnsureVisible]);
 
 	const borderColor =
 		badgeType === "positive" ? "border-purple-500" : "border-red-500";
@@ -118,7 +148,8 @@ const BadgeInfoPopover: React.FC<BadgeInfoPopoverProps> = ({
 	return (
 		<div
 			className="absolute bottom-full right-0 mb-3 w-72 z-20 animate-fadeIn"
-			onClick={(e) => e.stopPropagation()}>
+			onClick={(e) => e.stopPropagation()}
+			ref={popoverRef}>
 			<div
 				className={`bg-slate-800 rounded-lg shadow-xl border ${borderColor} p-4`}>
 				<button
@@ -173,6 +204,11 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 	onViewImage,
 	onRetryMessage,
 	scenarioDetailsAiName,
+	onImageLoad,
+	chatContainerRef,
+	inputAreaRef,
+	topUiRef,
+	addBottomPadding = false,
 }) => {
 	const isUser = message.sender === "user";
 	const isSystem = message.sender === "system";
@@ -188,6 +224,90 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		badgeType: "positive" | "negative";
 	} | null>(null);
 	const messageContainerRef = useRef<HTMLDivElement>(null);
+
+	// --- Badge refs for precise centering ---
+	const badgeRefs = {
+		positive: useRef<HTMLButtonElement>(null),
+		negative: useRef<HTMLButtonElement>(null),
+	};
+
+	// Ref for the popover to measure its position
+	const popoverRef = useRef<HTMLDivElement>(null);
+
+	const centerElementInContainer = (
+		el: HTMLElement,
+		container: HTMLElement
+	) => {
+		const elRect = el.getBoundingClientRect();
+		const containerRect = container.getBoundingClientRect();
+		const elCenterY = elRect.top + elRect.height / 2;
+		const containerCenterY = containerRect.top + containerRect.height / 2;
+		const scrollOffset = elCenterY - containerCenterY;
+		container.scrollBy({
+			top: scrollOffset,
+			behavior: "smooth",
+		});
+	};
+
+	const alignElementAboveInput = (
+		el: HTMLElement,
+		container: HTMLElement,
+		input: HTMLElement,
+		topUi?: HTMLElement
+	) => {
+		const elRect = el.getBoundingClientRect();
+		const containerRect = container.getBoundingClientRect();
+		const inputRect = input.getBoundingClientRect();
+		const margin = 16; // px above input
+		const elBottom = elRect.bottom;
+		const elTop = elRect.top;
+		const inputTop = inputRect.top;
+		const containerTop = containerRect.top;
+		const topUiBottom = topUi ? topUi.getBoundingClientRect().bottom : 0;
+
+		// If badge is below input area, scroll down
+		if (elBottom > inputTop - margin) {
+			const offset = elBottom - inputTop + margin;
+			container.scrollBy({ top: offset, behavior: "smooth" });
+			return;
+		}
+		// If badge is above visible chat container or hidden behind top UI, scroll up
+		const minVisibleTop = Math.max(containerTop + margin, topUiBottom + margin);
+		if (elTop < minVisibleTop) {
+			const offset = elTop - minVisibleTop;
+			container.scrollBy({ top: offset, behavior: "smooth" });
+			return;
+		}
+		// Otherwise, do nothing (badge is already visible just above input and not hidden by top UI)
+	};
+
+	const ensurePopoverFullyVisible = () => {
+		const container = chatContainerRef?.current;
+		const topUi = topUiRef?.current;
+		const popover = popoverRef.current;
+		if (!container || !popover) return;
+		const popoverRect = popover.getBoundingClientRect();
+		const containerRect = container.getBoundingClientRect();
+		const topUiBottom = topUi
+			? topUi.getBoundingClientRect().bottom
+			: containerRect.top;
+		const margin = 12;
+		// If any part of the popover is above the top UI, scroll down
+		if (popoverRect.top < topUiBottom + margin) {
+			const offset = popoverRect.top - (topUiBottom + margin);
+			container.scrollBy({ top: offset, behavior: "smooth" });
+		}
+		// If any part of the popover is above the visible container (but below top UI), scroll down
+		else if (popoverRect.top < containerRect.top + margin) {
+			const offset = popoverRect.top - (containerRect.top + margin);
+			container.scrollBy({ top: offset, behavior: "smooth" });
+		}
+		// If any part of the popover is below the visible container, scroll up
+		else if (popoverRect.bottom > containerRect.bottom - margin) {
+			const offset = popoverRect.bottom - (containerRect.bottom - margin);
+			container.scrollBy({ top: offset, behavior: "smooth" });
+		}
+	};
 
 	const handleBadgeClick = (
 		message: ChatMessage,
@@ -215,18 +335,14 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 				badgeType: type,
 			};
 		}
-		// If we ARE clicking the currently open one, nextState remains null, effectively closing it.
-
 		setPopoverState(nextState);
 
-		// If we are opening a popover, scroll it into view
+		// Only scroll to ensure popover is visible after it is rendered
 		if (nextState) {
-			setTimeout(() => {
-				messageContainerRef.current?.scrollIntoView({
-					behavior: "smooth",
-					block: "center",
-				});
-			}, 0);
+			// Wait for DOM update and layout to settle before measuring and scrolling
+			requestAnimationFrame(() => {
+				requestAnimationFrame(ensurePopoverFullyVisible);
+			});
 		}
 	};
 
@@ -295,7 +411,8 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 						e.stopPropagation();
 						handleBadgeClick(message, "positive");
 					}}
-					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full"
+					ref={badgeRefs.positive}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full z-[60]"
 					aria-label={`View details for positive trait: ${message.positiveTraitContribution}`}>
 					<TraitContributionBadge trait={message.positiveTraitContribution} />
 				</button>
@@ -309,7 +426,8 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 						e.stopPropagation();
 						handleBadgeClick(message, "negative");
 					}}
-					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full"
+					ref={badgeRefs.negative}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full z-[60]"
 					aria-label={`View details for negative trait: ${message.negativeTraitContribution}`}>
 					<NegativeTraitContributionBadge
 						trait={message.negativeTraitContribution}
@@ -339,13 +457,15 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		const actionBgClass = "bg-slate-700/30"; // Match AI action dialogue subtle transparency
 
 		return (
-			<div className="flex flex-col items-end pr-10 sm:pr-20">
+			<div className="flex flex-col items-end pr-10 sm:pr-20 mx-2 sm:mx-6">
 				<div className="relative w-full flex justify-end">
 					{popoverState && (
 						<BadgeInfoPopover
 							content={popoverState.content}
 							badgeType={popoverState.badgeType}
 							onClose={() => setPopoverState(null)}
+							popoverRef={popoverRef}
+							onEnsureVisible={ensurePopoverFullyVisible}
 						/>
 					)}
 					{badges.length > 0 && (
@@ -386,7 +506,8 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 						e.stopPropagation();
 						handleBadgeClick(message, "positive");
 					}}
-					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full"
+					ref={badgeRefs.positive}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full z-[60]"
 					aria-label={`View details for positive trait: ${message.positiveTraitContribution}`}>
 					<TraitContributionBadge trait={message.positiveTraitContribution} />
 				</button>
@@ -400,7 +521,8 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 						e.stopPropagation();
 						handleBadgeClick(message, "negative");
 					}}
-					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full"
+					ref={badgeRefs.negative}
+					className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full z-[60]"
 					aria-label={`View details for negative trait: ${message.negativeTraitContribution}`}>
 					<NegativeTraitContributionBadge
 						trait={message.negativeTraitContribution}
@@ -428,13 +550,17 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		return (
 			<div
 				ref={messageContainerRef}
-				className="flex justify-end pl-10 sm:pl-20">
+				className={`flex justify-end pl-10 sm:pl-20 mx-2 sm:mx-6 mt-2 ${
+					addBottomPadding ? "pb-6 md:pb-8" : ""
+				}`}>
 				<div className="relative">
 					{popoverState && (
 						<BadgeInfoPopover
 							content={popoverState.content}
 							badgeType={popoverState.badgeType}
 							onClose={() => setPopoverState(null)}
+							popoverRef={popoverRef}
+							onEnsureVisible={ensurePopoverFullyVisible}
 						/>
 					)}
 					<div className="max-w-xl px-4 py-3 rounded-xl shadow-md bg-sky-600 text-white rounded-br-none">
@@ -463,8 +589,71 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 		);
 	}
 
+	const badges: React.ReactNode[] = [];
+	if (message.positiveTraitContribution) {
+		badges.push(
+			<button
+				key="pos-trait"
+				onClick={(e) => {
+					e.stopPropagation();
+					handleBadgeClick(message, "positive");
+				}}
+				ref={badgeRefs.positive}
+				className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-purple-400 rounded-full z-[60]"
+				aria-label={`View details for positive trait: ${message.positiveTraitContribution}`}>
+				<TraitContributionBadge trait={message.positiveTraitContribution} />
+			</button>
+		);
+	}
+	if (message.negativeTraitContribution) {
+		badges.push(
+			<button
+				key="neg-trait"
+				onClick={(e) => {
+					e.stopPropagation();
+					handleBadgeClick(message, "negative");
+				}}
+				ref={badgeRefs.negative}
+				className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900/50 focus:ring-red-400 rounded-full z-[60]"
+				aria-label={`View details for negative trait: ${message.negativeTraitContribution}`}>
+				<NegativeTraitContributionBadge
+					trait={message.negativeTraitContribution}
+				/>
+			</button>
+		);
+	}
+	if (typeof message.userTurnEffectivenessScore === "number") {
+		badges.push(
+			<EffectivenessBadge
+				key="effectiveness"
+				score={message.userTurnEffectivenessScore}
+			/>
+		);
+	}
+	if (typeof message.engagementDelta === "number") {
+		badges.push(
+			<EngagementDeltaBadge key="engagement" delta={message.engagementDelta} />
+		);
+	}
+
 	return (
-		<div className="flex justify-start pr-10 sm:pr-20">
+		<div
+			className={`flex flex-col items-start pr-10 sm:pr-20 mx-2 sm:mx-6 ${
+				addBottomPadding ? "pb-6 md:pb-8" : ""
+			}`}>
+			{/* Badges row above the bubble */}
+			{badges.length > 0 && (
+				<div className="flex flex-row flex-wrap gap-x-2 gap-y-1 mb-1 w-full justify-end">
+					{badges.map((badge, index) => (
+						<div
+							key={index}
+							className="animate-badge-plop"
+							style={{ animationDelay: `${index * 0.15}s` }}>
+							{badge}
+						</div>
+					))}
+				</div>
+			)}
 			<ChatMessageViewAI
 				scenarioDetailsAiName={scenarioDetailsAiName}
 				message={message}
@@ -473,6 +662,8 @@ const ChatMessageViewComponent: React.FC<ChatMessageViewProps> = ({
 				onAnimationComplete={onAnimationComplete}
 				onThoughtToggle={onThoughtToggle}
 				onViewImage={onViewImage}
+				onImageLoad={onImageLoad}
+				hasBadges={badges.length > 0}
 			/>
 		</div>
 	);

@@ -20,11 +20,16 @@ import {
 	personalityCategories,
 	orderedPersonalityCategories,
 	personalityTraitDescriptions,
+	cultureNameData,
 } from "../constants/personality";
 import { Tooltip } from "./Tooltip";
+import { UserScenarioDetails } from "../types";
 
 interface SetupScreenProps {
-	onStart: (details: ScenarioDetails) => void;
+	onStart: (
+		details: ScenarioDetails,
+		userScenarioDetails?: UserScenarioDetails
+	) => void;
 	onBack: () => void;
 }
 
@@ -167,27 +172,50 @@ const PREDEFINED_AI_LAST_NAMES = [
 	"Garcia",
 ];
 
-const generateRandomAiName = (gender: AIGender): string => {
+const generateRandomAiName = (gender: AIGender, culture?: string): string => {
 	let firstNamePool: string[];
-	switch (gender) {
-		case AIGender.MALE:
-			firstNamePool = PREDEFINED_AI_MALE_FIRST_NAMES;
-			break;
-		case AIGender.FEMALE:
-			firstNamePool = PREDEFINED_AI_FEMALE_FIRST_NAMES;
-			break;
-		case AIGender.NON_BINARY:
-		case AIGender.RANDOM:
-		default:
-			firstNamePool = PREDEFINED_AI_NEUTRAL_FIRST_NAMES;
-			break;
+	let lastNamePool: string[];
+	const normalizedCulture = culture?.trim();
+	if (normalizedCulture && cultureNameData[normalizedCulture]) {
+		const cultureData = cultureNameData[normalizedCulture];
+		switch (gender) {
+			case AIGender.MALE:
+				firstNamePool = cultureData.male.length
+					? cultureData.male
+					: cultureData.neutral;
+				break;
+			case AIGender.FEMALE:
+				firstNamePool = cultureData.female.length
+					? cultureData.female
+					: cultureData.neutral;
+				break;
+			case AIGender.NON_BINARY:
+			case AIGender.RANDOM:
+			default:
+				firstNamePool = cultureData.neutral;
+				break;
+		}
+		lastNamePool = cultureData.last;
+	} else {
+		switch (gender) {
+			case AIGender.MALE:
+				firstNamePool = PREDEFINED_AI_MALE_FIRST_NAMES;
+				break;
+			case AIGender.FEMALE:
+				firstNamePool = PREDEFINED_AI_FEMALE_FIRST_NAMES;
+				break;
+			case AIGender.NON_BINARY:
+			case AIGender.RANDOM:
+			default:
+				firstNamePool = PREDEFINED_AI_NEUTRAL_FIRST_NAMES;
+				break;
+		}
+		lastNamePool = PREDEFINED_AI_LAST_NAMES;
 	}
 	const firstName =
 		firstNamePool[Math.floor(Math.random() * firstNamePool.length)];
 	const lastName =
-		PREDEFINED_AI_LAST_NAMES[
-			Math.floor(Math.random() * PREDEFINED_AI_LAST_NAMES.length)
-		];
+		lastNamePool[Math.floor(Math.random() * lastNamePool.length)];
 	return `${firstName} ${lastName}`;
 };
 
@@ -215,11 +243,13 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 	);
 	const [customAiAgeString, setCustomAiAgeString] = useState<string>("");
 	const [customAgeError, setCustomAgeError] = useState<string | null>(null);
+	const [provideUserName, setProvideUserName] = useState(false);
+	const [userName, setUserName] = useState("");
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		let finalAiName = aiName.trim();
-		if (!finalAiName) finalAiName = generateRandomAiName(aiGender);
+		if (!finalAiName) finalAiName = generateRandomAiName(aiGender, aiCulture);
 
 		if (finalAiName.length > 50) {
 			setNameError("AI name cannot exceed 50 characters.");
@@ -256,22 +286,28 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 		}
 		if (customAgeError) return;
 
-		onStart({
-			environment,
-			customEnvironment:
-				environment === SocialEnvironment.CUSTOM
-					? customEnvironment.trim() || undefined
-					: undefined,
-			aiCulture: aiCulture.trim() || undefined,
-			aiPersonalityTraits: selectedPersonalityTraits,
-			customAiPersonality: customAiPersonality.trim() || undefined,
-			aiGender,
-			aiName: finalAiName,
-			aiAgeBracket: aiAgeBracket,
-			customAiAge: finalCustomAiAge,
-			customContext: customContext.trim() || undefined,
-			conversationGoal: conversationGoal.trim() || undefined,
-		});
+		const userScenarioDetails: UserScenarioDetails =
+			provideUserName && userName.trim() ? { userName: userName.trim() } : {};
+
+		onStart(
+			{
+				environment,
+				customEnvironment:
+					environment === SocialEnvironment.CUSTOM
+						? customEnvironment.trim() || undefined
+						: undefined,
+				aiCulture: aiCulture.trim() || undefined,
+				aiPersonalityTraits: selectedPersonalityTraits,
+				customAiPersonality: customAiPersonality.trim() || undefined,
+				aiGender,
+				aiName: finalAiName,
+				aiAgeBracket: aiAgeBracket,
+				customAiAge: finalCustomAiAge,
+				customContext: customContext.trim() || undefined,
+				conversationGoal: conversationGoal.trim() || undefined,
+			},
+			userScenarioDetails
+		);
 	};
 
 	const handleCustomAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -395,7 +431,9 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 								</div>
 								<button
 									type="button"
-									onClick={() => setAiName(generateRandomAiName(aiGender))}
+									onClick={() =>
+										setAiName(generateRandomAiName(aiGender, aiCulture))
+									}
 									className="p-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-sm transition-colors duration-150 h-[48px] flex-shrink-0"
 									title="Suggest a random name">
 									Suggest
@@ -585,6 +623,43 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 								/>
 							</div>
 						</div>
+					</div>
+				</AccordionSection>
+
+				<AccordionSection title="User Identity (Optional)">
+					<div className="space-y-4">
+						<div>
+							<label className="flex items-center gap-2">
+								<input
+									type="checkbox"
+									checked={provideUserName}
+									onChange={() => setProvideUserName((v) => !v)}
+									className="form-checkbox h-5 w-5 text-teal-500"
+								/>
+								<span className="text-md font-medium text-gray-300">
+									Provide your name?
+								</span>
+							</label>
+							<p className="text-xs text-slate-400 mt-2">
+								Only provide your name if you want the relationship to be
+								prior-established. For natural, casual encounters, it's normal
+								for neither party to know each other's name.
+							</p>
+						</div>
+						{provideUserName && (
+							<div>
+								<label className="block text-md font-medium text-gray-300 mb-2">
+									Your Name
+								</label>
+								<input
+									type="text"
+									value={userName}
+									onChange={(e) => setUserName(e.target.value)}
+									placeholder="Enter your name (optional)"
+									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+								/>
+							</div>
+						)}
 					</div>
 				</AccordionSection>
 

@@ -460,6 +460,12 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	onFeedbackAnimationComplete,
 }) => {
 	const chatContainerRef = useRef<HTMLDivElement>(null);
+	// Add ref for top UI (header + engagement + banners)
+	const topUiRef = useRef<HTMLDivElement>(null);
+	// Add ref and state for input area height
+	const inputAreaRef = useRef<HTMLDivElement>(null);
+	const [inputAreaHeight, setInputAreaHeight] = useState(0);
+	// Restore chatEndRef
 	const chatEndRef = useRef<HTMLDivElement>(null);
 	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
 		useState<ChatMessage[]>([]);
@@ -476,8 +482,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	const isScrollingMutedRef = useRef(false);
 
 	const scrollToBottom = useCallback((force = false) => {
+		const container = chatContainerRef.current;
+		if (!container) return;
 		if (isScrollingMutedRef.current && !force) return;
-		chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+		container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
 	}, []);
 
 	const handleThoughtToggle = useCallback(() => {
@@ -499,6 +507,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		setIsUserAtBottom(atBottom);
 	}, []);
 
+	// useEffect to auto-scroll on every new message render or input area height change
 	useEffect(() => {
 		const finalMessages: ChatMessage[] = [];
 		let lastAiImageUrl: string | undefined;
@@ -516,13 +525,10 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		});
 
 		setProcessedMessagesForDisplay(finalMessages);
-		// Only auto-scroll if a new message is added and user is at bottom or the new message is from user/AI
+		// Always auto-scroll for every new message if user is at bottom
 		if (
 			conversationHistory.length > processedMessagesForDisplay.length &&
-			(isUserAtBottom ||
-				["ai", "user"].includes(
-					conversationHistory[conversationHistory.length - 1]?.sender
-				))
+			isUserAtBottom
 		) {
 			scrollToBottom(true);
 		}
@@ -670,21 +676,58 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		? "bg-transparent"
 		: "bg-slate-800";
 
-	// Utility to detect mobile
-	const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+	// Utility to detect mobile (treat tablets as mobile)
+	const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+
+	// Utility to detect touch device
+	const isTouchDevice =
+		typeof window !== "undefined" &&
+		("ontouchstart" in window ||
+			(navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
 
 	// Add a ref to track if a drag is in progress
 	const isDraggingRef = useRef(false);
+	// Add a ref to track if the current pointer is a touch event
+	const isTouchRef = useRef(false);
+
+	// Helper to scroll to bottom using chatEndRef
+	const scrollToEnd = useCallback(() => {
+		setTimeout(() => {
+			if (chatEndRef.current) {
+				chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+			}
+		}, 0);
+	}, []);
+
+	// useEffect to auto-scroll on every new message render or input area height change
+	useEffect(() => {
+		scrollToEnd();
+	}, [conversationHistory, inputAreaHeight]);
+
+	// Track input area height with ResizeObserver
+	useEffect(() => {
+		const inputArea = inputAreaRef.current;
+		if (!inputArea) return;
+		const updateHeight = () => setInputAreaHeight(inputArea.offsetHeight);
+		updateHeight();
+		const resizeObserver = new (window as any).ResizeObserver(updateHeight);
+		resizeObserver.observe(inputArea);
+		return () => resizeObserver.disconnect();
+	}, []);
+
+	// Image load scroll handler for messages
+	const handleImageLoad = useCallback(() => {
+		scrollToEnd();
+	}, [scrollToEnd]);
 
 	return (
 		<>
 			<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
 				{/* Header and Engagement Container - Fixed at top */}
-				<div className="flex-shrink-0 z-20 relative">
+				<div className="flex-shrink-0 z-20 relative" ref={topUiRef}>
 					<ChatAreaHeader />
 					{isOverlay && <EngagementBar />}
 				</div>
-
 				{/* Mobile Banner Container - Positioned right under engagement element */}
 				{isOverlay && (
 					<div className="flex-shrink-0 relative">
@@ -703,24 +746,30 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 						/>
 					</div>
 				)}
-
 				<div
 					ref={chatContainerRef}
-					className="flex-grow min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 pb-2"
+					className="flex-grow min-h-0 overflow-y-auto px-0 pt-0"
 					onClick={() => {
 						if (!isDraggingRef.current) setActivePopoverId(null);
 					}}
 					onScroll={handleScroll}>
 					{isOverlay ? (
-						isMobile ? (
-							// On mobile, do NOT use Framer Motion drag, just render the messages natively
-							<div className="space-y-4">
-								{processedMessagesForDisplay.map((msg, index) => (
+						<div
+							className="space-y-3 md:space-y-4"
+							style={{ touchAction: "pan-y", willChange: "transform" }}>
+							{processedMessagesForDisplay.map((msg, index) => {
+								const isLast = index === processedMessagesForDisplay.length - 1;
+								const isAI = msg.sender === "ai";
+								const isUser = msg.sender === "user";
+								const addBottomPadding =
+									(isLast && isAI && !isLoadingAI) ||
+									(isLast && isUser && isLoadingAI);
+								return (
 									<ChatMessageView
 										key={msg.id}
 										message={msg}
 										isLastMessage={
-											index === processedMessagesForDisplay.length - 1 &&
+											isLast &&
 											msg.id ===
 												conversationHistory[conversationHistory.length - 1]
 													?.id &&
@@ -728,189 +777,72 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 										}
 										isLoadingAI={
 											isLoadingAI &&
-											index === processedMessagesForDisplay.length - 1 &&
+											isLast &&
 											msg.id ===
 												conversationHistory[conversationHistory.length - 1]?.id
 										}
+										addBottomPadding={addBottomPadding}
 										onAnimationComplete={onAnimationComplete}
 										onThoughtToggle={handleThoughtToggle}
 										scenarioDetailsAiName={scenarioDetailsAiName}
 										onViewImage={onViewImage}
 										onRetryMessage={onRetryMessage}
+										onImageLoad={handleImageLoad}
+										chatContainerRef={chatContainerRef}
+										inputAreaRef={inputAreaRef}
+										topUiRef={topUiRef}
 									/>
-								))}
-								{isLoadingAI && <ChatMessageViewAIThinking />}
-								<div ref={chatEndRef} />
-							</div>
-						) : (
-							// On desktop, keep Framer Motion drag
-							<motion.div
-								drag="y"
-								dragConstraints={{ top: -60, bottom: 60 }}
-								dragElastic={0.12}
-								transition={{ type: "spring", stiffness: 520, damping: 44 }}
-								style={{ touchAction: "pan-y" }}
-								onDragStart={() => {
-									isDraggingRef.current = true;
-								}}
-								onDrag={handleScroll}
-								onDragEnd={() => {
-									isDraggingRef.current = false;
-									handleScroll();
-								}}>
-								<div className="space-y-4">
-									{processedMessagesForDisplay.map((msg, index) => (
-										<motion.div
-											key={msg.id}
-											animate={{
-												scale: pressedMessageId === msg.id ? 0.99 : 1,
-											}}
-											transition={{
-												type: "spring",
-												stiffness: 400,
-												damping: 38,
-											}}
-											onPointerDown={(e) => {
-												pointerStartRef.current = {
-													x: e.clientX,
-													y: e.clientY,
-													id: msg.id,
-												};
-												setPressedMessageId(msg.id);
-											}}
-											onPointerMove={(e) => {
-												const { x, y, id } = pointerStartRef.current;
-												if (id === msg.id) {
-													const dx = e.clientX - x;
-													const dy = e.clientY - y;
-													if (Math.sqrt(dx * dx + dy * dy) > 8) {
-														setPressedMessageId(null);
-														pointerStartRef.current = { x: 0, y: 0, id: null };
-													}
-												}
-											}}
-											onPointerUp={() => {
-												setPressedMessageId(null);
-												pointerStartRef.current = { x: 0, y: 0, id: null };
-											}}
-											onPointerLeave={() => {
-												setPressedMessageId(null);
-												pointerStartRef.current = { x: 0, y: 0, id: null };
-											}}
-											onPointerCancel={() => {
-												setPressedMessageId(null);
-												pointerStartRef.current = { x: 0, y: 0, id: null };
-											}}>
-											<ChatMessageView
-												message={msg}
-												isLastMessage={
-													index === processedMessagesForDisplay.length - 1 &&
-													msg.id ===
-														conversationHistory[conversationHistory.length - 1]
-															?.id &&
-													!msg.isThoughtBubble
-												}
-												isLoadingAI={
-													isLoadingAI &&
-													index === processedMessagesForDisplay.length - 1 &&
-													msg.id ===
-														conversationHistory[conversationHistory.length - 1]
-															?.id
-												}
-												onAnimationComplete={onAnimationComplete}
-												onThoughtToggle={handleThoughtToggle}
-												scenarioDetailsAiName={scenarioDetailsAiName}
-												onViewImage={onViewImage}
-												onRetryMessage={onRetryMessage}
-											/>
-										</motion.div>
-									))}
-									{isLoadingAI && <ChatMessageViewAIThinking />}
-									<div ref={chatEndRef} />
-								</div>
-							</motion.div>
-						)
+								);
+							})}
+							{isLoadingAI && <ChatMessageViewAIThinking />}
+							{/* Dynamic bottom spacer */}
+							<div ref={chatEndRef} />
+						</div>
 					) : (
-						// Not overlay: always desktop drag
-						<motion.div
-							drag="y"
-							dragConstraints={{ top: -60, bottom: 60 }}
-							dragElastic={0.12}
-							transition={{ type: "spring", stiffness: 520, damping: 44 }}
-							style={{ touchAction: "pan-y" }}
-							onDragStart={() => {
-								isDraggingRef.current = true;
-							}}
-							onDrag={handleScroll}
-							onDragEnd={() => {
-								isDraggingRef.current = false;
-								handleScroll();
-							}}>
-							<div className="space-y-4">
-								{processedMessagesForDisplay.map((msg, index) => (
-									<motion.div
+						<div
+							className="space-y-3 md:space-y-4"
+							style={{ touchAction: "pan-y", willChange: "transform" }}>
+							{processedMessagesForDisplay.map((msg, index) => {
+								const isLast = index === processedMessagesForDisplay.length - 1;
+								const isAI = msg.sender === "ai";
+								const isUser = msg.sender === "user";
+								const addBottomPadding =
+									(isLast && isAI && !isLoadingAI) ||
+									(isLast && isUser && isLoadingAI);
+								return (
+									<ChatMessageView
 										key={msg.id}
-										animate={{ scale: pressedMessageId === msg.id ? 0.99 : 1 }}
-										transition={{ type: "spring", stiffness: 400, damping: 38 }}
-										onPointerDown={(e) => {
-											pointerStartRef.current = {
-												x: e.clientX,
-												y: e.clientY,
-												id: msg.id,
-											};
-											setPressedMessageId(msg.id);
-										}}
-										onPointerMove={(e) => {
-											const { x, y, id } = pointerStartRef.current;
-											if (id === msg.id) {
-												const dx = e.clientX - x;
-												const dy = e.clientY - y;
-												if (Math.sqrt(dx * dx + dy * dy) > 8) {
-													setPressedMessageId(null);
-													pointerStartRef.current = { x: 0, y: 0, id: null };
-												}
-											}
-										}}
-										onPointerUp={() => {
-											setPressedMessageId(null);
-											pointerStartRef.current = { x: 0, y: 0, id: null };
-										}}
-										onPointerLeave={() => {
-											setPressedMessageId(null);
-											pointerStartRef.current = { x: 0, y: 0, id: null };
-										}}
-										onPointerCancel={() => {
-											setPressedMessageId(null);
-											pointerStartRef.current = { x: 0, y: 0, id: null };
-										}}>
-										<ChatMessageView
-											message={msg}
-											isLastMessage={
-												index === processedMessagesForDisplay.length - 1 &&
-												msg.id ===
-													conversationHistory[conversationHistory.length - 1]
-														?.id &&
-												!msg.isThoughtBubble
-											}
-											isLoadingAI={
-												isLoadingAI &&
-												index === processedMessagesForDisplay.length - 1 &&
-												msg.id ===
-													conversationHistory[conversationHistory.length - 1]
-														?.id
-											}
-											onAnimationComplete={onAnimationComplete}
-											onThoughtToggle={handleThoughtToggle}
-											scenarioDetailsAiName={scenarioDetailsAiName}
-											onViewImage={onViewImage}
-											onRetryMessage={onRetryMessage}
-										/>
-									</motion.div>
-								))}
-								{isLoadingAI && <ChatMessageViewAIThinking />}
-								<div ref={chatEndRef} />
-							</div>
-						</motion.div>
+										message={msg}
+										isLastMessage={
+											isLast &&
+											msg.id ===
+												conversationHistory[conversationHistory.length - 1]
+													?.id &&
+											!msg.isThoughtBubble
+										}
+										isLoadingAI={
+											isLoadingAI &&
+											isLast &&
+											msg.id ===
+												conversationHistory[conversationHistory.length - 1]?.id
+										}
+										addBottomPadding={addBottomPadding}
+										onAnimationComplete={onAnimationComplete}
+										onThoughtToggle={handleThoughtToggle}
+										scenarioDetailsAiName={scenarioDetailsAiName}
+										onViewImage={onViewImage}
+										onRetryMessage={onRetryMessage}
+										onImageLoad={handleImageLoad}
+										chatContainerRef={chatContainerRef}
+										inputAreaRef={inputAreaRef}
+										topUiRef={topUiRef}
+									/>
+								);
+							})}
+							{isLoadingAI && <ChatMessageViewAIThinking />}
+							{/* Dynamic bottom spacer */}
+							<div ref={chatEndRef} />
+						</div>
 					)}
 				</div>
 
@@ -922,7 +854,7 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 					/>
 				)}
 
-				<div className="flex-shrink-0 z-20">
+				<div className="flex-shrink-0 z-20" ref={inputAreaRef}>
 					<InputArea {...inputAreaProps} />
 				</div>
 			</div>

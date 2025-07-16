@@ -15,6 +15,7 @@ import {
 	EstablishedVisuals,
 	UserTurnFeedback,
 	StartConversationResponse,
+	UserScenarioDetails,
 } from "../types";
 import {
 	GEMINI_TEXT_MODEL,
@@ -26,6 +27,7 @@ import {
 import {
 	buildStartConversationPrompt,
 	buildNextAITurnPrompt,
+	inferMissingPersonaDetails,
 } from "./promptService";
 
 // Helper to construct a more informative error message from Google API errors
@@ -120,9 +122,11 @@ export class GeminiService {
 	}
 
 	async startConversation(
-		scenario: ScenarioDetails
+		scenario: ScenarioDetails,
+		userScenarioDetails?: UserScenarioDetails
 	): Promise<StartConversationResponse> {
-		const prompt = buildStartConversationPrompt(scenario);
+		scenario = inferMissingPersonaDetails(scenario);
+		const prompt = buildStartConversationPrompt(scenario, userScenarioDetails);
 		try {
 			const response: GenerateContentResponse =
 				await this.ai.models.generateContent({

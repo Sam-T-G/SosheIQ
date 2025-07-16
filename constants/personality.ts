@@ -209,3 +209,171 @@ export const personalityTraitDescriptions: {
 	[AIPersonalityTrait.GRUMPY]: "Frequently irritable or cranky.",
 	[AIPersonalityTrait.SERIOUS]: "Grave, not playful or joking.",
 };
+
+// --- Culture/Gender-Aware Name Data ---
+// This structure can be expanded as needed for more cultures and names.
+export const cultureNameData: {
+	[culture: string]: {
+		male: string[];
+		female: string[];
+		neutral: string[];
+		last: string[];
+	};
+} = {
+	Japanese: {
+		male: ["Haruto", "Yuto", "Sota", "Ren", "Kaito"],
+		female: ["Yui", "Aoi", "Sakura", "Hina", "Rin"],
+		neutral: ["Haru", "Akira", "Kaoru", "Makoto", "Nao"],
+		last: ["Sato", "Suzuki", "Takahashi", "Tanaka", "Watanabe"],
+	},
+	"Italian-American": {
+		male: ["Giovanni", "Antonio", "Luca", "Marco", "Vincenzo"],
+		female: ["Giulia", "Francesca", "Alessia", "Martina", "Chiara"],
+		neutral: ["Andrea", "Gabriele", "Sam", "Alex", "Morgan"],
+		last: ["Russo", "Romano", "Esposito", "Bianchi", "Ferraro"],
+	},
+	Nigerian: {
+		male: ["Chinedu", "Emeka", "Ifeanyi", "Tunde", "Babatunde"],
+		female: ["Ngozi", "Chiamaka", "Amara", "Adaeze", "Yetunde"],
+		neutral: ["Chika", "Uche", "Ife", "Tola", "Femi"],
+		last: ["Okafor", "Adebayo", "Eze", "Ogunleye", "Nwosu"],
+	},
+	French: {
+		male: ["Louis", "Hugo", "Gabriel", "Arthur", "Jules"],
+		female: ["Emma", "Louise", "Chloé", "Camille", "Léa"],
+		neutral: ["Alex", "Charlie", "Sacha", "Noa", "Morgan"],
+		last: ["Martin", "Bernard", "Dubois", "Thomas", "Robert"],
+	},
+	German: {
+		male: ["Lukas", "Leon", "Finn", "Paul", "Jonas"],
+		female: ["Mia", "Emma", "Hannah", "Sophia", "Anna"],
+		neutral: ["Alex", "Robin", "Sascha", "Kim", "Jules"],
+		last: ["Müller", "Schmidt", "Schneider", "Fischer", "Weber"],
+	},
+	British: {
+		male: ["Oliver", "George", "Harry", "Jack", "Charlie"],
+		female: ["Olivia", "Amelia", "Isla", "Emily", "Ava"],
+		neutral: ["Alex", "Morgan", "Taylor", "Casey", "Sam"],
+		last: ["Smith", "Jones", "Taylor", "Brown", "Williams"],
+	},
+	Irish: {
+		male: ["Conor", "Sean", "Cian", "Oisin", "Patrick"],
+		female: ["Aoife", "Saoirse", "Ciara", "Niamh", "Emma"],
+		neutral: ["Rory", "Casey", "Morgan", "Alex", "Shay"],
+		last: ["Murphy", "Kelly", "O’Sullivan", "Walsh", "Byrne"],
+	},
+	Scottish: {
+		male: ["Lewis", "Jack", "Finlay", "Callum", "Euan"],
+		female: ["Emily", "Sophie", "Isla", "Ava", "Ellie"],
+		neutral: ["Cameron", "Alex", "Morgan", "Taylor", "Jamie"],
+		last: ["Smith", "Brown", "Wilson", "Stewart", "Campbell"],
+	},
+	Dutch: {
+		male: ["Daan", "Sem", "Luuk", "Bram", "Milan"],
+		female: ["Emma", "Tess", "Julia", "Sophie", "Anna"],
+		neutral: ["Robin", "Sam", "Alex", "Noa", "Jesse"],
+		last: ["de Jong", "Jansen", "de Vries", "van den Berg", "Bakker"],
+	},
+	Scandinavian: {
+		male: ["Lars", "Erik", "Anders", "Johan", "Mats"],
+		female: ["Anna", "Emma", "Sara", "Maja", "Ingrid"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Andersen", "Johansen", "Larsen", "Nielsen", "Olsen"],
+	},
+	Norwegian: {
+		male: ["Ola", "Magnus", "Kristian", "Anders", "Marius"],
+		female: ["Nora", "Emma", "Sara", "Ingrid", "Julie"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Hansen", "Johansen", "Olsen", "Larsen", "Andersen"],
+	},
+	Swedish: {
+		male: ["Erik", "Johan", "Karl", "Lars", "Anders"],
+		female: ["Anna", "Emma", "Elsa", "Sara", "Maja"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Johansson", "Andersson", "Karlsson", "Nilsson", "Eriksson"],
+	},
+	Danish: {
+		male: ["Mads", "Frederik", "Emil", "Magnus", "Oliver"],
+		female: ["Ida", "Emma", "Sofie", "Freja", "Anna"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Jensen", "Nielsen", "Hansen", "Pedersen", "Andersen"],
+	},
+	Polish: {
+		male: ["Jakub", "Kacper", "Szymon", "Jan", "Filip"],
+		female: ["Zuzanna", "Julia", "Maja", "Hanna", "Aleksandra"],
+		neutral: ["Alex", "Patryk", "Dominik", "Kuba", "Ola"],
+		last: ["Nowak", "Kowalski", "Wiśniewski", "Wójcik", "Kowalczyk"],
+	},
+	Russian: {
+		male: ["Ivan", "Dmitry", "Alexei", "Sergey", "Nikolai"],
+		female: ["Anna", "Maria", "Olga", "Elena", "Tatiana"],
+		neutral: ["Sasha", "Valery", "Alex", "Nikita", "Vanya"],
+		last: ["Ivanov", "Petrov", "Sidorov", "Smirnov", "Volkov"],
+	},
+	Greek: {
+		male: ["Giorgos", "Dimitris", "Nikos", "Kostas", "Vasilis"],
+		female: ["Maria", "Eleni", "Katerina", "Vasiliki", "Sofia"],
+		neutral: ["Alex", "Niki", "Chris", "Danae", "Nikos"],
+		last: ["Papadopoulos", "Vasileiou", "Nikolaidis", "Georgiou", "Pappas"],
+	},
+	Swiss: {
+		male: ["Luca", "Noah", "Leon", "Elias", "Julian"],
+		female: ["Mia", "Lea", "Lina", "Sofia", "Anna"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Müller", "Meier", "Schmid", "Keller", "Weber"],
+	},
+	Austrian: {
+		male: ["Lukas", "David", "Tobias", "Florian", "Paul"],
+		female: ["Anna", "Laura", "Sarah", "Julia", "Lena"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Gruber", "Huber", "Bauer", "Wagner", "Müller"],
+	},
+	Belgian: {
+		male: ["Lucas", "Louis", "Arthur", "Noah", "Jules"],
+		female: ["Emma", "Louise", "Mila", "Elise", "Alice"],
+		neutral: ["Alex", "Robin", "Kim", "Sascha", "Noa"],
+		last: ["Peeters", "Janssens", "Maes", "Jacobs", "Mertens"],
+	},
+	Portuguese: {
+		male: ["João", "Francisco", "Afonso", "Tomás", "Martim"],
+		female: ["Maria", "Matilde", "Leonor", "Carolina", "Beatriz"],
+		neutral: ["Alex", "Rafa", "Dani", "Noa", "Sam"],
+		last: ["Silva", "Santos", "Ferreira", "Pereira", "Oliveira"],
+	},
+	Canadian: {
+		male: ["Liam", "Noah", "Jackson", "Lucas", "Benjamin"],
+		female: ["Emma", "Olivia", "Charlotte", "Sophia", "Amelia"],
+		neutral: ["Alex", "Taylor", "Morgan", "Casey", "Jordan"],
+		last: ["Smith", "Brown", "Tremblay", "Martin", "Roy"],
+	},
+	Australian: {
+		male: ["Jack", "William", "Noah", "Thomas", "James"],
+		female: ["Charlotte", "Olivia", "Amelia", "Isla", "Mia"],
+		neutral: ["Alex", "Taylor", "Morgan", "Casey", "Jordan"],
+		last: ["Smith", "Jones", "Williams", "Brown", "Wilson"],
+	},
+	NewZealander: {
+		male: ["Oliver", "Jack", "Noah", "William", "James"],
+		female: ["Charlotte", "Isla", "Olivia", "Amelia", "Emily"],
+		neutral: ["Alex", "Taylor", "Morgan", "Casey", "Jordan"],
+		last: ["Smith", "Williams", "Brown", "Taylor", "Wilson"],
+	},
+	American: {
+		male: ["James", "John", "Robert", "Michael", "William"],
+		female: ["Mary", "Patricia", "Jennifer", "Linda", "Elizabeth"],
+		neutral: ["Alex", "Taylor", "Jordan", "Morgan", "Casey"],
+		last: ["Smith", "Johnson", "Williams", "Brown", "Jones"],
+	},
+	Spanish: {
+		male: ["Mateo", "Santiago", "Alejandro", "Diego", "Adrián"],
+		female: ["Lucía", "Sofía", "Martina", "Paula", "Valeria"],
+		neutral: ["Alex", "Cruz", "Noa", "Ariel", "Sam"],
+		last: ["García", "Martínez", "López", "Sánchez", "Pérez"],
+	},
+	Chinese: {
+		male: ["Wei", "Jie", "Lei", "Ming", "Jun"],
+		female: ["Li", "Mei", "Xiu", "Fang", "Yan"],
+		neutral: ["Yu", "Qing", "An", "Lin", "Rong"],
+		last: ["Wang", "Li", "Zhang", "Liu", "Chen"],
+	},
+};

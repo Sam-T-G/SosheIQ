@@ -404,3 +404,11 @@ export interface AuthContextValue extends AuthState {
 export interface AuthProviderProps {
 	children: React.ReactNode;
 }
+
+// User persona/configuration structure for future expansion
+export interface UserScenarioDetails {
+	userName?: string;
+	occupation?: string;
+	hobbies?: string[];
+	heldObjects?: string;
+}

@@ -5,11 +5,13 @@ import {
 	AIGender,
 	SocialEnvironment,
 	AIPersonalityTrait,
+	UserScenarioDetails,
 } from "../types";
 import {
 	INITIAL_ENGAGEMENT,
 	MAX_CONVERSATION_HISTORY_FOR_PROMPT,
 } from "../constants";
+import { cultureNameData } from "../constants/personality";
 
 // AI Prompt Service: Single source of truth for all AI prompt construction logic.
 // Used by geminiService and any future LLM integrations.
@@ -44,9 +46,122 @@ function getPersonalityPromptSegment(
 	return segment;
 }
 
-export function buildStartConversationPrompt(
+// Utility to infer missing persona details
+export function inferMissingPersonaDetails(
 	scenario: ScenarioDetails
+): ScenarioDetails {
+	// Gender: default to MALE or FEMALE randomly if missing, RANDOM, or NON_BINARY
+	let aiGender: AIGender = scenario.aiGender;
+	if (
+		!aiGender ||
+		aiGender === AIGender.RANDOM ||
+		aiGender === AIGender.NON_BINARY
+	) {
+		aiGender = Math.random() < 0.5 ? AIGender.MALE : AIGender.FEMALE;
+	}
+	// Culture: trim and use undefined if blank
+	const aiCulture = scenario.aiCulture?.trim() || undefined;
+	// Name: generate if missing
+	let aiName = scenario.aiName?.trim() || "";
+	if (!aiName) {
+		let firstNamePool: string[];
+		let lastNamePool: string[];
+		if (aiCulture && cultureNameData[aiCulture]) {
+			const cultureData = cultureNameData[aiCulture];
+			switch (aiGender) {
+				case AIGender.MALE:
+					firstNamePool = cultureData.male.length
+						? cultureData.male
+						: cultureData.neutral;
+					break;
+				case AIGender.FEMALE:
+					firstNamePool = cultureData.female.length
+						? cultureData.female
+						: cultureData.neutral;
+					break;
+				default:
+					firstNamePool = cultureData.neutral;
+					break;
+			}
+			lastNamePool = cultureData.last;
+		} else {
+			switch (aiGender) {
+				case AIGender.MALE:
+					firstNamePool = [
+						"Arthur",
+						"David",
+						"Ethan",
+						"James",
+						"Liam",
+						"Michael",
+						"Noah",
+						"Ryan",
+						"Chris",
+						"Ben",
+					];
+					break;
+				case AIGender.FEMALE:
+					firstNamePool = [
+						"Anna",
+						"Chloe",
+						"Emily",
+						"Emma",
+						"Isabella",
+						"Olivia",
+						"Sophia",
+						"Ava",
+						"Grace",
+						"Sarah",
+					];
+					break;
+				default:
+					firstNamePool = [
+						"Alex",
+						"Jordan",
+						"Casey",
+						"Morgan",
+						"Riley",
+						"Skyler",
+						"Cameron",
+						"Drew",
+						"Kai",
+						"Taylor",
+					];
+					break;
+			}
+			lastNamePool = [
+				"Smith",
+				"Jones",
+				"Williams",
+				"Brown",
+				"Davis",
+				"Miller",
+				"Wilson",
+				"Chen",
+				"Lee",
+				"Garcia",
+			];
+		}
+		const firstName =
+			firstNamePool[Math.floor(Math.random() * firstNamePool.length)];
+		const lastName =
+			lastNamePool[Math.floor(Math.random() * lastNamePool.length)];
+		aiName = `${firstName} ${lastName}`;
+	}
+	// Return a new ScenarioDetails with all fields filled
+	return {
+		...scenario,
+		aiGender,
+		aiCulture,
+		aiName,
+	};
+}
+
+export function buildStartConversationPrompt(
+	scenario: ScenarioDetails,
+	userScenarioDetails?: UserScenarioDetails
 ): string {
+	scenario = inferMissingPersonaDetails(scenario);
 	const customContextPrompt = scenario.customContext
 		? `\n    - Custom Scenario Details: ${scenario.customContext}`
 		: "";
@@ -80,6 +195,10 @@ export function buildStartConversationPrompt(
 	const nameInstruction = scenario.aiName
 		? `Your AI Name: You are assigned the name \"${scenario.aiName}\".`
 		: `**AI Name Generation (CRITICAL)**: You MUST invent a culturally-aware full name for yourself that fits your persona (gender, age, and especially the 'aiCulture' if provided). This generated name is a mandatory part of your response and MUST be returned in the 'aiName' field.`;
+	const idiomGuidance = `\n- **Idiom/Quirk Usage Guidance:** Use idioms, quirks, or unusual sayings sparingly, especially in the early stages of the conversation. Do not include odd or highly distinctive sayings in first contact or initial messages unless the configured personality traits (e.g., 'Witty', 'Storytelling', 'Playful', 'Sarcastic', etc.) or the conversation context strongly warrant it. Default to more neutral, socially expected language for first impressions.`;
+	const userNameGuidance = userScenarioDetails?.userName
+		? `\n- **User Name Awareness:** The user's name is "${userScenarioDetails.userName}". Use it naturally and contextually in conversation, as a human would. Recognize that knowing the user's name can affect trust and rapport. Do not overuse it, but use it to build connection or for emphasis when appropriate.`
+		: `\n- **User Name Awareness:** You do not know the user's name. Do not assume it. If the social context, interest, or trust level warrants it, you may casually and naturally ask for the user's name, just as a human would. If the user provides their name, remember it and use it contextually in future turns. The act of asking for or learning the user's name can affect trust and rapport.`;
 
 	return `Your task is to flawlessly role-play a character for a social interaction simulation. You will be given a persona and you must embody that character completely. **You are not an AI; you are the character.** If asked about your origin, invent a plausible backstory.
 
@@ -90,7 +209,7 @@ export function buildStartConversationPrompt(
 	- Vary sentence length—mix quick one-liners with longer thoughts.
 	- Pepper in discourse markers ("by the way,", "so,", "anyway") and small-talk as appropriate.
 	- Reflect back on what the user said and ask genuine follow-up questions.
-	- Incorporate 1–2 signature quirks or idioms that feel unique to your persona.
+	- Incorporate 1–2 signature quirks or idioms that feel unique to your persona, **but only if your personality traits or the conversation context strongly call for it. Otherwise, use them sparingly, and avoid them entirely in first contact or initial messages.**
 	- Adjust your emotional tone (low energy vs. high energy) to match the moment.
 	- In casual contexts, you may even drop a mild emoji or playful punctuation—sparingly.
 	- Use silence and nonverbal cues whenever they suit your persona or the situation: a thoughtful pause, a shy glance, a shrug, etc. When you do this, output only an action chunk, for example:
@@ -168,6 +287,7 @@ export function buildNextAITurnPrompt(args: {
 	activeAction: ActiveAction | null;
 	fastForwardAction?: boolean;
 	isActionPaused?: boolean;
+	userScenarioDetails?: UserScenarioDetails;
 }): string {
 	const {
 		conversationHistory,
@@ -212,6 +332,7 @@ export function buildNextAITurnPrompt(args: {
 		? `\n- AI Culture/Race Nuances: \"${scenario.aiCulture}\". You must maintain this aspect in your persona and visual descriptions.`
 		: "";
 
+	// --- Revamped Dynamic Goal Instructions (User-Centric, Actionable, Self-Checked) ---
 	let goalDynamicsPrompt: string;
 	if (scenario.conversationGoal) {
 		goalDynamicsPrompt = `
@@ -220,15 +341,33 @@ export function buildNextAITurnPrompt(args: {
 - **CRITICAL**: If the \`goalProgress\` you are calculating reaches 100, you MUST set \`achieved: true\`. On all subsequent turns *after* achieving the goal, you MUST treat the situation as if no goal was set (look for new emergent goals) and return \`emergingGoal: null\` unless a new, different one appears.`;
 	} else {
 		goalDynamicsPrompt = `
-- **Dynamic Goals**: You have NOT set a goal. Your task is to PROACTIVELY identify and suggest short-term, actionable goals as the conversation evolves.
-- **Rules for Dynamic Goals**:
-	- A single conversation can and should have multiple, sequential goals. After one goal is completed (\`achieved: true\`), you should immediately look for the next logical goal in the conversation.
-	- Suggest a new goal if the conversation takes a new direction or a clear objective becomes apparent (e.g., trying to get my phone number, trying to cheer you up, trying to find a specific item in a shop).
-	- It is expected that longer conversations will feature several dynamic goals. Do not wait for a long time before suggesting a new one if an opportunity arises.
-- **CRITICAL: Phrasing Goals**: The \`emergingGoal\` text MUST be a clear, concise instruction FOR THE USER to follow.
-	-   **CORRECT Example:** "Ask her for her phone number."
-	-   **INCORRECT Example:** "User is trying to get my phone number."`;
+- **Dynamic Goals (User-Centric, Actionable, Self-Checked):**
+  - The \`emergingGoal\` field MUST always be a clear, concise, actionable instruction for the user to follow. It must be written as if you are directly advising the user what to do next. Never phrase the goal from your (the AI's) perspective, nor as a description of your own intentions or desires.
+  - **CORRECT EXAMPLES:**
+    - "Ask her for her (generated AI persona's) phone number."
+    - "Try to get a discount from (generated AI persona's) character."
+    - "Convince your boss (generated AI persona's) to give you a raise."
+    - "Invite (generated AI persona's) character to the party."
+    - "Apologize to (generated AI persona's) character for being late."
+    - "Share a personal story about your childhood with (generated AI persona's) character."
+    - "Express your opinion on the topic to (generated AI persona's) character."
+  - **INCORRECT EXAMPLES:**
+    - "I want you to ask for my number."
+    - "My goal is to get to know you better."
+    - "The user is trying to get my phone number."
+    - "Get to know (user) more."
+    - "I want to learn more about you."
+    - "My objective is..."
+    - "As the AI, I want..."
+  - **MANDATORY SELF-CHECK:**
+    - Before outputting, review your \`emergingGoal\` value. If it contains "I", "my", "the AI", or describes your own intentions, rephrase it as a direct instruction to the user. If you are unsure, default to phrasing it as a clear, actionable user command, referencing (generated AI persona's) or (user) where appropriate.
+  - **REMINDER:**
+    - All goals must be actionable instructions for the user, never from the AI's perspective. Any goal that refers to the AI's desires, intentions, or perspective will be ignored and not shown to the user.`;
 	}
+	const idiomGuidance = `\n- **Idiom/Quirk Usage Guidance:** Use idioms, quirks, or unusual sayings sparingly, especially in the early stages of the conversation. Do not include odd or highly distinctive sayings in first contact or initial messages unless the configured personality traits (e.g., 'Witty', 'Storytelling', 'Playful', 'Sarcastic', etc.) or the conversation context strongly warrant it. Default to more neutral, socially expected language for first impressions.`;
+	const userNameGuidance = args.userScenarioDetails?.userName
+		? `\n- **User Name Awareness:** The user's name is "${args.userScenarioDetails.userName}". Use it naturally and contextually in conversation, as a human would. Recognize that knowing the user's name can affect trust and rapport. Do not overuse it, but use it to build connection or for emphasis when appropriate.`
+		: `\n- **User Name Awareness:** You do not know the user's name. Do not assume it. If the social context, interest, or trust level warrants it, you may casually and naturally ask for the user's name, just as a human would. If the user provides their name, remember it and use it contextually in future turns. The act of asking for or learning the user's name can affect trust and rapport.`;
 
 	return `You are role-playing as an AI named ${
 		scenario.aiName
@@ -242,7 +381,7 @@ export function buildNextAITurnPrompt(args: {
 		  - Vary sentence length—mix quick one-liners with longer thoughts.
 			- Pepper in discourse markers ("by the way,", "so,", "anyway") and small-talk as appropriate.
 		  - Reflect back on what the user said and ask genuine follow-up questions.
-		  - Incorporate 1–2 signature quirks or idioms that feel unique to your persona.
+		  - Incorporate 1–2 signature quirks or idioms that feel unique to your persona, **but only if your personality traits or the conversation context strongly call for it. Otherwise, use them sparingly, and avoid them entirely in first contact or initial messages.**
 		  - Adjust your emotional tone (low energy vs. high energy) to match the moment.
 		  - In casual contexts, you may even drop a mild emoji or playful punctuation—sparingly.
 			- Use silence and nonverbal cues whenever they suit your persona or the situation: a thoughtful pause, a shy glance, a shrug, etc. When you do this, output only an action chunk, for example:

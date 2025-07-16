@@ -61,6 +61,7 @@ const GoalBanner: React.FC<{
 						Conversation Goal
 					</p>
 					<p className="text-sm text-teal-100 break-words" title={goal.text}>
+						{/* Goal text is now filtered in parent logic to ensure only user-centric, actionable instructions are ever displayed. */}
 						{goal.text}
 					</p>
 				</div>

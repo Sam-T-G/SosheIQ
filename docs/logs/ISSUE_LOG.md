@@ -1,5 +1,12 @@
 # SosheIQ - Comprehensive Issue Log & Resolution Plan
 
+## [2024-06-09] GuidedSetup Adjustments
+
+- Restored the confirmation/summary screen as the final step in Guided Setup, allowing users to review all scenario and user details before starting.
+- Moved the user name toggle and input to the same step as the environment/scene selection for a more natural setup flow.
+- Updated the header and supporting text for the environment step to reflect its focus on environmental setup and user identity.
+- Adjusted the step order and navigation logic to accommodate these changes, ensuring a clear and modern user experience.
+
 ## 🔍 **ISSUE CATALOG & IMPLICATIONS**
 
 ### **1. TYPE SAFETY ISSUES** 🔴 CRITICAL

@@ -27,6 +27,7 @@ import type {
 	AiTurnResponse,
 	EstablishedVisuals,
 	UserTurnFeedback,
+	UserScenarioDetails,
 } from "../types";
 import {
 	GamePhase,
@@ -120,6 +121,8 @@ const HomePage: React.FC = () => {
 	const [initialAiBodyLanguage, setInitialAiBodyLanguage] = useState<
 		string | null
 	>(null);
+	const [userScenarioDetails, setUserScenarioDetails] =
+		useState<UserScenarioDetails>({});
 
 	const geminiService = useRef<GeminiService | null>(null);
 	const imagenService = useRef<ImagenService | null>(null);
@@ -413,7 +416,10 @@ const HomePage: React.FC = () => {
 	}, []);
 
 	const handleStartInteraction = useCallback(
-		async (details: ScenarioDetails) => {
+		async (
+			details: ScenarioDetails,
+			userScenarioDetails?: UserScenarioDetails
+		) => {
 			if (!geminiService.current || !imagenService.current) {
 				setError("Services not initialized.");
 				return;
@@ -431,6 +437,7 @@ const HomePage: React.FC = () => {
 				conversationGoal: details.conversationGoal || undefined,
 			};
 
+			// Pass userScenarioDetails to GeminiService (future-proof)
 			try {
 				// Step 1: Get initial text-based data from AI, including the established visuals and a generated name if needed.
 				const {
@@ -444,7 +451,10 @@ const HomePage: React.FC = () => {
 					conversationStarter,
 					establishedVisuals,
 					contextualSummary,
-				} = await geminiService.current.startConversation(fullDetails);
+				} = await geminiService.current.startConversation(
+					fullDetails,
+					userScenarioDetails
+				);
 
 				// Step 2: Store the details with the definitive AI-provided name and visuals
 				const updatedDetailsWithVisuals = {
@@ -539,7 +549,7 @@ const HomePage: React.FC = () => {
 				setIsLoading(false); // Turn off loading indicator after everything is done
 			}
 		},
-		[]
+		[geminiService, imagenService]
 	);
 
 	const handleLastMessageAnimationComplete = useCallback(() => {
@@ -876,7 +886,48 @@ const HomePage: React.FC = () => {
 			if (!nextActiveAction) {
 				const emergingGoalText = aiResponse.emergingGoal?.trim();
 				const pinnedGoalText = scenarioForThisTurn.conversationGoal;
-				const currentGoalText = pinnedGoalText || emergingGoalText;
+				let currentGoalText = pinnedGoalText || emergingGoalText;
+
+				// --- FILTER: Block AI-centric goals ---
+				// If the goal is from the AI's perspective, do not display it
+				const isAICentricGoal = (goal: string | undefined | null) => {
+					if (!goal) return false;
+					const lower = goal.toLowerCase();
+					// Block common AI-centric patterns
+					return (
+						lower.startsWith("my goal is") ||
+						lower.startsWith("i want you to") ||
+						lower.startsWith("i want to") ||
+						lower.startsWith("i will") ||
+						lower.startsWith("i am going to") ||
+						lower.startsWith("i need to") ||
+						lower.startsWith("i should") ||
+						lower.startsWith("i must") ||
+						lower.startsWith("i plan to") ||
+						lower.startsWith("i hope to") ||
+						lower.startsWith("i wish to") ||
+						lower.startsWith("i would like to") ||
+						lower.startsWith("my objective is") ||
+						lower.startsWith("my aim is") ||
+						lower.startsWith("my intention is") ||
+						lower.startsWith("my purpose is") ||
+						lower.startsWith("my mission is") ||
+						lower.startsWith("my task is") ||
+						lower.startsWith("my job is") ||
+						lower.startsWith("my role is") ||
+						lower.startsWith("get to know") || // e.g., 'get to know Sam more'
+						lower.includes("as the ai") ||
+						lower.includes("as your ai") ||
+						lower.includes("as an ai") ||
+						lower.includes("i, as the ai") ||
+						lower.includes("i, as your ai") ||
+						lower.includes("i, as an ai")
+					);
+				};
+				if (isAICentricGoal(currentGoalText)) {
+					currentGoalText = undefined;
+				}
+				// --- END FILTER ---
 
 				if (currentGoalText) {
 					const goalProgress = aiResponse.goalProgress;
@@ -1307,7 +1358,9 @@ const HomePage: React.FC = () => {
 								mass: 1.1,
 							}}>
 							<GuidedSetup
-								onStart={handleStartInteraction}
+								onStart={(details, userDetails) =>
+									void handleStartInteraction(details, userDetails)
+								}
 								onSwitchToAdvanced={() => setSetupMode("advanced")}
 							/>
 						</motion.div>
@@ -1324,7 +1377,9 @@ const HomePage: React.FC = () => {
 								mass: 1.1,
 							}}>
 							<SetupScreen
-								onStart={handleStartInteraction}
+								onStart={(details, userDetails) =>
+									void handleStartInteraction(details, userDetails)
+								}
 								onBack={() => setSetupMode("guided")}
 							/>
 						</motion.div>
@@ -1481,14 +1536,14 @@ const HomePage: React.FC = () => {
 									? "justify-center overflow-hidden"
 									: "justify-start py-4 overflow-y-auto"
 							} ${isModalActive ? "pointer-events-none" : ""}`}
-                                                        style={
-                                                                isMobileLandscape
-                                                                        ? {
-                                                                                padding: 0,
-                                                                                minHeight: "calc(var(--vh, 1vh) * 100)",
-                                                                        }
-                                                                        : {}
-                                                        }>
+							style={
+								isMobileLandscape
+									? {
+											padding: 0,
+											minHeight: "calc(var(--vh, 1vh) * 100)",
+									  }
+									: {}
+							}>
 							{renderContent()}
 						</main>
 

@@ -16,6 +16,10 @@ interface ChatMessageViewAIProps {
 	onThoughtToggle: () => void;
 	onViewImage: (url: string | null) => void;
 	scenarioDetailsAiName: string;
+	// Add optional onImageLoad
+	onImageLoad?: () => void;
+	// Add optional hasBadges for extra right padding
+	hasBadges?: boolean;
 }
 
 interface VisibleChunk {
@@ -31,6 +35,8 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 	onThoughtToggle,
 	onViewImage,
 	scenarioDetailsAiName,
+	onImageLoad,
+	hasBadges = false,
 }) => {
 	const [visibleChunks, setVisibleChunks] = useState<VisibleChunk[]>([]);
 	const [isComplete, setIsComplete] = useState(false);
@@ -213,6 +219,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 								alt="AI's current visual cue"
 								className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
 								style={{ opacity: isFading ? 0 : 1 }}
+								onLoad={onImageLoad}
 							/>
 						</>
 					)}
@@ -223,6 +230,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 							alt="AI's new visual cue"
 							className="absolute inset-0 w-full h-full object-cover animate-image-cross-fade-in"
 							onAnimationEnd={onImageAnimationEnd}
+							onLoad={onImageLoad}
 						/>
 					)}
 					{!displayedImage && !incomingImage && (
@@ -268,7 +276,7 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 						return (
 							<div
 								key={chunk.key}
-								className="max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+								className={`max-w-xl rounded-xl shadow-md bg-slate-600 text-gray-200 p-3 rounded-bl-none opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]`}>
 								<p className="whitespace-pre-wrap break-words">{chunk.text}</p>
 							</div>
 						);
@@ -278,7 +286,10 @@ export const ChatMessageViewAI: React.FC<ChatMessageViewAIProps> = ({
 
 			{/* Timestamp */}
 			{isComplete && hasContent && (
-				<div className="text-xs text-gray-400 mt-1 text-right opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+				<div
+					className={`text-xs text-gray-400 mt-1 text-right opacity-0 animate-[fadeIn_0.5s_ease-out_forwards] ${
+						hasBadges ? "mb-8" : ""
+					}`}>
 					{new Date(message.timestamp).toLocaleTimeString([], {
 						hour: "2-digit",
 						minute: "2-digit",
