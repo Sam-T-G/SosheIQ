@@ -350,7 +350,7 @@ export class GeminiService {
 			})
 			.join("\n");
 
-		const prompt = `You are an expert social skills coach. Your task is to analyze the following conversation and provide a detailed performance report. Be insightful, constructive, and actionable.
+		const prompt = `You are an expert social skills coach. Your task is to analyze the following conversation and provide a detailed performance report focused on the user's social skills development. Be insightful, constructive, and actionable.
 
     **Conversation Context:**
     - AI Persona: ${scenario.aiName}, a character who is ${
@@ -368,7 +368,7 @@ export class GeminiService {
     ${historyForAnalysis}
 
     **Analysis Task:**
-    Based on the transcript and context, provide a comprehensive analysis of my (the user's) performance. Evaluate my social skills, such as charisma, clarity, engagement, and adaptability.
+    Based on the transcript and context, provide a comprehensive analysis of the user's performance. Evaluate their social skills, such as charisma, clarity, engagement, and adaptability. Focus on what the user did well and areas where they can improve.
 
     **CRITICAL: Your entire response MUST be a single, valid JSON object that adheres strictly to the following structure. Do not add any text, comments, or markdown fences outside of this JSON object.**
 
@@ -394,10 +394,10 @@ export class GeminiService {
     }
 
     **Instructions for Turn-by-Turn Analysis:**
-    - For every time I (the user) spoke, provide one object in the \`turnByTurnAnalysis\` array.
+    - For every time the user spoke, provide one object in the \`turnByTurnAnalysis\` array.
     - Each object should contain only one key: "analysis".
-    - The "analysis" value should be your detailed feedback on MY response for that specific turn. What did I do well? What could be improved?
-    - The number of objects in this array must match the number of times I (the user) sent a message.
+    - The "analysis" value should be your detailed feedback on the user's response for that specific turn. What did they do well? What could be improved? Focus on their social skills, communication choices, and behavior.
+    - The number of objects in this array must match the number of times the user sent a message.
     `;
 
 		try {

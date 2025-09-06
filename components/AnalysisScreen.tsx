@@ -259,7 +259,7 @@ const TurnAnalysisItemDisplay: React.FC<TurnAnalysisItemDisplayProps> = ({
 				{item.analysis && item.analysis.trim() !== "" && (
 					<div className="mt-2 pt-2 border-t border-slate-600/70">
 						<p className="text-sm font-semibold text-sky-300 mb-1">
-							Feedback on Your Response:
+							Your Social Performance:
 						</p>
 						<p className="text-gray-200 whitespace-pre-wrap">{item.analysis}</p>
 					</div>

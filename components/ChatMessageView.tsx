@@ -162,7 +162,7 @@ const BadgeInfoPopover: React.FC<
 					{content.reasoning && (
 						<div>
 							<h4 className="flex items-center text-sm font-semibold text-sky-300 mb-1">
-								<CheckCircleIcon className="h-4 w-4 mr-2" /> Reasoning
+								<CheckCircleIcon className="h-4 w-4 mr-2" /> What You Did
 							</h4>
 							<p className="text-xs text-slate-300 italic">
 								{content.reasoning}
@@ -172,7 +172,7 @@ const BadgeInfoPopover: React.FC<
 					{content.nextStep && (
 						<div>
 							<h4 className="flex items-center text-sm font-semibold text-sky-300 mb-1">
-								<ArrowRightIcon className="h-4 w-4 mr-2" /> Next Step Suggestion
+								<ArrowRightIcon className="h-4 w-4 mr-2" /> Try This Next
 							</h4>
 							<p className="text-xs text-slate-300 italic">
 								{content.nextStep}
