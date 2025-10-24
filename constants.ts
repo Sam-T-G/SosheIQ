@@ -1,4 +1,4 @@
-export const GEMINI_TEXT_MODEL = "gemini-1.5-flash-latest";
+export const GEMINI_TEXT_MODEL = "gemini-2.0-flash-exp";
 export const IMAGEN_MODEL = "imagen-3.0-generate-002";
 
 export const MAX_CONVERSATION_HISTORY_FOR_PROMPT = 10; // Max recent messages to send to AI

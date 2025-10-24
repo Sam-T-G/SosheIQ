@@ -311,7 +311,11 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 
 	useEffect(() => {
 		if (!isLoadingReport) {
-			setHasTriedToLoad(true);
+			// Add a small delay to ensure the report has time to be set
+			const timer = setTimeout(() => {
+				setHasTriedToLoad(true);
+			}, 100);
+			return () => clearTimeout(timer);
 		}
 	}, [isLoadingReport]);
 
@@ -423,7 +427,7 @@ export const AnalysisScreen: React.FC<AnalysisScreenProps> = ({
 		);
 	}
 
-	if (!report && hasTriedToLoad) {
+	if (!report && hasTriedToLoad && !isLoadingReport) {
 		return (
 			<div className="w-full max-w-3xl p-6 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl text-center">
 				<h2 className="text-3xl font-bold text-yellow-500 mb-4">
