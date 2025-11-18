@@ -8,7 +8,7 @@ export default function handler(_req: NextApiRequest, res: NextApiResponse) {
 	const geminiModel =
 		process.env.NEXT_PUBLIC_GEMINI_MODEL ||
 		process.env.GEMINI_MODEL ||
-		"gemini-2.0-flash-exp";
+		"gemini-2.5-flash";
 	const imagenModel =
 		process.env.NEXT_PUBLIC_IMAGEN_MODEL ||
 		process.env.IMAGEN_MODEL ||
