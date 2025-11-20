@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import type {
 	ScenarioDetails,
-	IconComponentProps,
 	UserScenarioDetails,
 } from "../types";
 import {
@@ -14,30 +13,17 @@ import {
 	PlayIcon,
 	CogIcon,
 	ArrowLeftIcon,
-	TargetIcon,
 	BriefcaseIcon,
 	CoffeeIcon,
 	UsersIcon,
-	InfoIcon,
-	FastForwardIcon,
 	HeartIcon,
-	UserCircleIcon,
-	GlobeAltIcon,
-	PencilSquareIcon,
-	TagIcon,
-	MapPinIcon,
-	ChatBubbleBottomCenterTextIcon,
-	FlagIcon,
+	ArrowRightIcon,
 } from "./Icons";
-import { InfoCard } from "./InfoCard";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import {
 	personalityCategories,
 	orderedPersonalityCategories,
-	personalityTraitDescriptions,
-	cultureNameData,
 } from "../constants/personality";
-import { Tooltip } from "./Tooltip";
 
 interface GuidedSetupProps {
 	onStart: (
@@ -47,23 +33,13 @@ interface GuidedSetupProps {
 	onSwitchToAdvanced: () => void;
 }
 
-const MAX_STEPS = 7; // Increased to add confirmation screen
+const MAX_STEPS = 7;
 const MAX_PERSONALITY_TRAITS = 5;
 
-// --- Style constants for UI consistency ---
-const optionButtonBaseClasses =
-	"p-3 rounded-lg text-sm font-semibold transition-all duration-200 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400";
-const optionButtonSelectedClasses =
-	"bg-teal-500 text-white shadow-lg scale-105";
-const optionButtonUnselectedClasses =
-	"bg-slate-700 hover:bg-slate-600 text-gray-300";
-
-const traitButtonBaseClasses =
-	"px-3 py-1.5 rounded-full text-xs font-medium transition-all transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800";
-const traitButtonSelectedClasses =
-	"bg-teal-500 text-white ring-2 ring-teal-300";
-const traitButtonUnselectedClasses =
-	"bg-slate-600 hover:bg-slate-500 text-gray-300";
+// --- Minimalist Style Constants ---
+const schematicInputBase = "w-full bg-transparent border-b border-white/20 py-2 text-white font-mono focus:outline-none focus:border-white/60 transition-colors placeholder-white/20";
+const schematicButtonBase = "px-4 py-2 border border-white/20 text-white/60 font-mono text-sm hover:bg-white/5 hover:text-white hover:border-white/40 transition-all uppercase tracking-wider";
+const schematicButtonSelected = "bg-white/10 text-white border-white/60 shadow-[0_0_10px_rgba(255,255,255,0.1)]";
 
 const guidedSocialEnvironments = [
 	{ name: SocialEnvironment.CASUAL, icon: CoffeeIcon },
@@ -85,144 +61,23 @@ const initialScenario: Partial<ScenarioDetails> = {
 	customEnvironment: "",
 };
 
-const PREDEFINED_AI_MALE_FIRST_NAMES = [
-	"Arthur",
-	"David",
-	"Ethan",
-	"James",
-	"Liam",
-	"Michael",
-	"Noah",
-	"Ryan",
-	"Chris",
-	"Ben",
-];
-const PREDEFINED_AI_FEMALE_FIRST_NAMES = [
-	"Anna",
-	"Chloe",
-	"Emily",
-	"Emma",
-	"Isabella",
-	"Olivia",
-	"Sophia",
-	"Ava",
-	"Grace",
-	"Sarah",
-];
-const PREDEFINED_AI_NEUTRAL_FIRST_NAMES = [
-	"Alex",
-	"Jordan",
-	"Casey",
-	"Morgan",
-	"Riley",
-	"Skyler",
-	"Cameron",
-	"Drew",
-	"Kai",
-	"Taylor",
-];
-const PREDEFINED_AI_LAST_NAMES = [
-	"Smith",
-	"Jones",
-	"Williams",
-	"Brown",
-	"Davis",
-	"Miller",
-	"Wilson",
-	"Chen",
-	"Lee",
-	"Garcia",
-];
+const PREDEFINED_AI_MALE_FIRST_NAMES = ["Arthur", "David", "Ethan", "James", "Liam"];
+const PREDEFINED_AI_FEMALE_FIRST_NAMES = ["Anna", "Chloe", "Emily", "Emma", "Isabella"];
+const PREDEFINED_AI_NEUTRAL_FIRST_NAMES = ["Alex", "Jordan", "Casey", "Morgan", "Riley"];
+const PREDEFINED_AI_LAST_NAMES = ["Smith", "Jones", "Williams", "Brown", "Davis"];
 
 const generateRandomAiName = (gender: AIGender, culture?: string): string => {
-	let firstNamePool: string[];
-	let lastNamePool: string[];
-	const normalizedCulture = culture?.trim();
-	if (normalizedCulture && cultureNameData[normalizedCulture]) {
-		const cultureData = cultureNameData[normalizedCulture];
-		switch (gender) {
-			case AIGender.MALE:
-				firstNamePool = cultureData.male.length
-					? cultureData.male
-					: cultureData.neutral;
-				break;
-			case AIGender.FEMALE:
-				firstNamePool = cultureData.female.length
-					? cultureData.female
-					: cultureData.neutral;
-				break;
-			case AIGender.NON_BINARY:
-			case AIGender.RANDOM:
-			default:
-				firstNamePool = cultureData.neutral;
-				break;
-		}
-		lastNamePool = cultureData.last;
-	} else {
-		switch (gender) {
-			case AIGender.MALE:
-				firstNamePool = PREDEFINED_AI_MALE_FIRST_NAMES;
-				break;
-			case AIGender.FEMALE:
-				firstNamePool = PREDEFINED_AI_FEMALE_FIRST_NAMES;
-				break;
-			case AIGender.NON_BINARY:
-			case AIGender.RANDOM:
-			default:
-				firstNamePool = PREDEFINED_AI_NEUTRAL_FIRST_NAMES;
-				break;
-		}
-		lastNamePool = PREDEFINED_AI_LAST_NAMES;
-	}
-	const firstName =
-		firstNamePool[Math.floor(Math.random() * firstNamePool.length)];
-	const lastName =
-		lastNamePool[Math.floor(Math.random() * lastNamePool.length)];
-	return `${firstName} ${lastName}`;
+    const first = PREDEFINED_AI_NEUTRAL_FIRST_NAMES[Math.floor(Math.random() * PREDEFINED_AI_NEUTRAL_FIRST_NAMES.length)];
+    const last = PREDEFINED_AI_LAST_NAMES[Math.floor(Math.random() * PREDEFINED_AI_LAST_NAMES.length)];
+    return `${first} ${last}`;
 };
-
-const SegmentedProgressBar: React.FC<{
-	currentStep: number;
-	totalSteps: number;
-}> = ({ currentStep, totalSteps }) => (
-	<div className="flex w-full max-w-sm mx-auto gap-1.5 mb-8">
-		{Array.from({ length: totalSteps }, (_, i) => (
-			<div
-				key={i}
-				className="flex-1 h-1.5 rounded-full bg-slate-600 overflow-hidden">
-				<div
-					className={`h-full rounded-full bg-teal-400 transition-transform duration-500 ease-out origin-left ${
-						currentStep > i ? "scale-x-100" : "scale-x-0"
-					}`}
-				/>
-			</div>
-		))}
-	</div>
-);
-
-const SummaryItem: React.FC<{
-	Icon: React.FC<IconComponentProps>;
-	label: string;
-	children: React.ReactNode;
-}> = ({ Icon, label, children }) => (
-	<div className="flex items-start gap-4">
-		<div className="flex-shrink-0 mt-1 p-2 bg-slate-800/60 rounded-lg">
-			<Icon className="h-5 w-5 text-sky-400" />
-		</div>
-		<div>
-			<h4 className="text-sm font-semibold text-gray-400">{label}</h4>
-			<div className="text-white font-medium">{children}</div>
-		</div>
-	</div>
-);
 
 export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 	onStart,
 	onSwitchToAdvanced,
 }) => {
 	const [step, setStep] = useState(0);
-	const [scenario, setScenario] =
-		useState<Partial<ScenarioDetails>>(initialScenario);
+	const [scenario, setScenario] = useState<Partial<ScenarioDetails>>(initialScenario);
 	const [customAiAgeString, setCustomAiAgeString] = useState<string>("");
 	const [exiting, setExiting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -231,29 +86,13 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 
 	const handleNext = () => {
 		setError(null);
-
 		if (step === 2 && scenario.aiAgeBracket === AIAgeBracket.CUSTOM) {
-			if (customAiAgeString.trim() === "") {
-				setError("Custom age cannot be empty.");
-				return;
-			}
+			if (customAiAgeString.trim() === "") { setError("Age required."); return; }
 			const ageNum = parseInt(customAiAgeString, 10);
-			if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
-				setError("Please enter a valid age (18-100).");
-				return;
-			}
+			if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) { setError("Invalid age (18-100)."); return; }
 		}
-
-		if (
-			step === 3 &&
-			(!scenario.aiPersonalityTraits ||
-				scenario.aiPersonalityTraits.length === 0) &&
-			(!scenario.customAiPersonality ||
-				scenario.customAiPersonality.trim() === "")
-		) {
-			setError(
-				"Please select at least one trait or provide a custom personality description."
-			);
+		if (step === 3 && (!scenario.aiPersonalityTraits?.length) && (!scenario.customAiPersonality?.trim())) {
+			setError("Select a trait or describe personality.");
 			return;
 		}
 
@@ -281,27 +120,16 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		let finalCustomAiAge: number | undefined = undefined;
 		if (scenario.aiAgeBracket === AIAgeBracket.CUSTOM) {
 			const ageNum = parseInt(customAiAgeString, 10);
-			if (!isNaN(ageNum) && ageNum >= 18 && ageNum <= 100) {
-				finalCustomAiAge = ageNum;
-			} else {
-				setError("Please enter a valid age (18-100) before starting.");
-				return;
-			}
+			if (!isNaN(ageNum) && ageNum >= 18 && ageNum <= 100) finalCustomAiAge = ageNum;
+            else { setError("Invalid age."); return; }
 		}
 
 		let finalAiName = scenario.aiName || "";
-		if (!finalAiName)
-			finalAiName = generateRandomAiName(
-				scenario.aiGender!,
-				scenario.aiCulture
-			);
+		if (!finalAiName) finalAiName = generateRandomAiName(scenario.aiGender!, scenario.aiCulture);
 
 		const finalScenario: ScenarioDetails = {
 			environment: scenario.environment || SocialEnvironment.CASUAL,
-			customEnvironment:
-				scenario.environment === SocialEnvironment.CUSTOM
-					? scenario.customEnvironment?.trim() || undefined
-					: undefined,
+			customEnvironment: scenario.environment === SocialEnvironment.CUSTOM ? scenario.customEnvironment?.trim() || undefined : undefined,
 			aiGender: scenario.aiGender || AIGender.RANDOM,
 			aiName: finalAiName,
 			aiPersonalityTraits: scenario.aiPersonalityTraits || [],
@@ -312,8 +140,7 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 			aiCulture: scenario.aiCulture?.trim() || undefined,
 			customAiPersonality: scenario.customAiPersonality?.trim() || undefined,
 		};
-		const userScenarioDetails: UserScenarioDetails =
-			provideUserName && userName.trim() ? { userName: userName.trim() } : {};
+		const userScenarioDetails: UserScenarioDetails = provideUserName && userName.trim() ? { userName: userName.trim() } : {};
 		onStart(finalScenario, userScenarioDetails);
 	};
 
@@ -322,729 +149,296 @@ export const GuidedSetup: React.FC<GuidedSetupProps> = ({
 		setError(null);
 	};
 
-	const handleCustomAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value;
-		setCustomAiAgeString(value);
-		if (value.trim() === "") {
-			setError(null);
-			return;
-		}
-		const ageNum = parseInt(value, 10);
-		if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
-			setError("Age must be between 18 and 100.");
-		} else {
-			setError(null);
-		}
-	};
-
 	const renderStepContent = () => {
-		const animationClass = exiting
-			? "animate-slideOutToLeft"
-			: "animate-slideInFromRight";
+        const contentVariants: any = {
+            hidden: { opacity: 0, scale: 0.98, filter: "blur(4px)" },
+            visible: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 0.5, ease: "circOut" } },
+            exit: { opacity: 0, scale: 0.98, filter: "blur(4px)", transition: { duration: 0.3, ease: "circIn" } }
+        };
 
 		switch (step) {
-			case 0:
+			case 0: // Mode Selection
 				return (
-					<div key={step} className={`${animationClass}`}>
-						<div className="text-center mb-10">
-							<h2 className="text-4xl font-bold tracking-tight text-white">
-								Let's craft your scenario
-							</h2>
-							<p className="mt-4 text-lg text-gray-400">
-								How would you like to begin? Choose a path to set up your
-								practice session.
-							</p>
+					<motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="flex flex-col items-center space-y-12">
+						<div className="text-center space-y-4">
+							<h2 className="text-4xl font-thin text-white tracking-widest uppercase">Configuration Mode</h2>
+							<div className="h-[1px] w-16 bg-white/30 mx-auto"/>
+							<p className="text-white/40 font-mono text-sm">Select initialization protocol.</p>
 						</div>
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							{/* Guided Setup Card */}
-							<button
-								onClick={handleNext}
-								className="group relative text-left p-6 bg-slate-700/50 rounded-xl border border-slate-700 hover:border-teal-500/80 transition-all duration-300">
-								<div className="absolute -inset-px rounded-xl border-2 border-transparent transition-all duration-300 group-hover:border-teal-500/50"></div>
-								<div className="relative">
-									<div className="p-3 bg-slate-800 rounded-lg inline-block mb-4">
-										<PlayIcon className="h-6 w-6 text-teal-400" />
-									</div>
-									<h3 className="text-xl font-semibold text-white">
-										Guided Setup
-									</h3>
-									<p className="mt-2 text-gray-400 text-sm">
-										A step-by-step process to quickly define your interaction.
-										Perfect for getting started.
-									</p>
-								</div>
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-2xl">
+							<button onClick={handleNext} className="group border border-white/10 hover:border-white/30 bg-transparent p-8 transition-all duration-500 flex flex-col items-center text-center space-y-4 hover:bg-white/5">
+								<PlayIcon className="w-8 h-8 text-white/40 group-hover:text-white transition-colors" />
+								<h3 className="text-xl font-mono text-white/80 group-hover:text-white uppercase tracking-wider">Guided Sequence</h3>
+								<p className="text-xs text-white/30 font-mono leading-relaxed">Step-by-step parameter definition. Recommended for new fabrications.</p>
 							</button>
 
-							{/* Advanced Setup Card */}
-							<button
-								onClick={onSwitchToAdvanced}
-								className="group relative text-left p-6 bg-slate-700/50 rounded-xl border border-slate-700 hover:border-sky-500/80 transition-all duration-300">
-								<div className="absolute -inset-px rounded-xl border-2 border-transparent transition-all duration-300 group-hover:border-sky-500/50"></div>
-								<div className="relative">
-									<div className="p-3 bg-slate-800 rounded-lg inline-block mb-4">
-										<CogIcon className="h-6 w-6 text-sky-400" />
-									</div>
-									<h3 className="text-xl font-semibold text-white">
-										Advanced Setup
-									</h3>
-									<p className="mt-2 text-gray-400 text-sm">
-										Fine-tune every detail of the AI's persona and scenario for
-										a fully customized experience.
-									</p>
-								</div>
+							<button onClick={onSwitchToAdvanced} className="group border border-white/10 hover:border-white/30 bg-transparent p-8 transition-all duration-500 flex flex-col items-center text-center space-y-4 hover:bg-white/5">
+								<CogIcon className="w-8 h-8 text-white/40 group-hover:text-white transition-colors" />
+								<h3 className="text-xl font-mono text-white/80 group-hover:text-white uppercase tracking-wider">Manual Override</h3>
+								<p className="text-xs text-white/30 font-mono leading-relaxed">Direct access to all variable matrices. For advanced users.</p>
 							</button>
 						</div>
-					</div>
+					</motion.div>
 				);
-			case 1:
+			case 1: // Environment
 				return (
-					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-3xl font-bold text-teal-400 mb-2 text-center">
-							Set Up the Environment & Your Identity
-						</h2>
-						<p className="text-lg text-gray-400 mb-8 text-center">
-							Where is this conversation taking place? (And optionally, who are
-							you?)
-						</p>
+					<motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+						<div className="border-l-2 border-white/20 pl-6">
+							<h2 className="text-2xl font-thin text-white uppercase tracking-widest">Environment</h2>
+							<p className="text-white/40 font-mono text-xs mt-2">Select simulation backdrop.</p>
+						</div>
+						
 						<div className="grid grid-cols-2 gap-4">
 							{guidedSocialEnvironments.map(({ name, icon: Icon }) => (
 								<button
 									key={name}
 									onClick={() => updateScenario({ environment: name })}
-									className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center gap-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400
-										${
-											scenario.environment === name
-												? "bg-teal-500/20 border-teal-400 shadow-lg"
-												: "bg-slate-700/60 border-slate-600 hover:border-teal-500 hover:bg-slate-700"
-										}`}>
-									<Icon
-										className={`h-8 w-8 transition-colors ${
-											scenario.environment === name
-												? "text-teal-300"
-												: "text-slate-400"
-										}`}
-									/>
-									<span className="font-bold text-sm text-center text-gray-200">
-										{name}
-									</span>
+									className={`p-6 border transition-all flex flex-col items-center gap-4 ${scenario.environment === name ? "border-white bg-white/10" : "border-white/10 hover:border-white/30 bg-transparent"}`}
+								>
+									<Icon className={`w-6 h-6 ${scenario.environment === name ? "text-white" : "text-white/40"}`} />
+									<span className={`text-xs font-mono uppercase tracking-wider ${scenario.environment === name ? "text-white" : "text-white/60"}`}>{name}</span>
 								</button>
 							))}
 						</div>
-						{/* Custom Environment Section */}
-						<div className="mt-6">
-							<button
-								onClick={() =>
-									updateScenario({ environment: SocialEnvironment.CUSTOM })
-								}
-								className={`w-full p-3 rounded-lg border-2 flex items-center justify-center gap-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-teal-400
-									${
-										scenario.environment === SocialEnvironment.CUSTOM
-											? "bg-teal-500/20 border-teal-400 shadow-lg"
-											: "bg-slate-700/60 border-slate-600 hover:border-teal-500 hover:bg-slate-700"
-									}`}>
-								<CogIcon
-									className={`h-6 w-6 transition-colors ${
-										scenario.environment === SocialEnvironment.CUSTOM
-											? "text-teal-300"
-											: "text-slate-400"
-									}`}
-								/>
-								<span className="font-bold text-sm text-center text-gray-200">
-									{SocialEnvironment.CUSTOM}
-								</span>
-							</button>
+                        
+                        {scenario.environment === SocialEnvironment.CUSTOM && (
+                            <div className="pt-4 animate-fadeIn">
+                                <input 
+                                    type="text" 
+                                    value={scenario.customEnvironment} 
+                                    onChange={(e) => updateScenario({ customEnvironment: e.target.value })}
+                                    placeholder="DEFINE CUSTOM COORDINATES..."
+                                    className={schematicInputBase}
+                                />
+                            </div>
+                        )}
+					</motion.div>
+				);
+            case 2: // Identity (Gender/Age)
+                return (
+                    <motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+                        <div className="border-l-2 border-white/20 pl-6">
+                            <h2 className="text-2xl font-thin text-white uppercase tracking-widest">Identity Matrix</h2>
+                            <p className="text-white/40 font-mono text-xs mt-2">Define core demographic parameters.</p>
+                        </div>
 
-							{scenario.environment === SocialEnvironment.CUSTOM && (
-								<div className="mt-3 animate-slide-down-fade-in">
-									<textarea
-										value={scenario.customEnvironment || ""}
-										onChange={(e) =>
-											updateScenario({ customEnvironment: e.target.value })
-										}
-										placeholder="Describe your custom environment..."
-										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
-										rows={2}
-									/>
-									<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
-										<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-										<p>
-											Describe the specific place. Example: 'A bustling airport
-											terminal near the departure gates.'
-										</p>
-									</div>
-								</div>
-							)}
-						</div>
-						{/* User Name Toggle/Input (moved here) */}
-						<div className="mt-8 space-y-4 max-w-lg mx-auto">
-							<label className="flex items-center gap-2">
-								<button
-									type="button"
-									onClick={() => setProvideUserName((v) => !v)}
-									className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
-										provideUserName ? "bg-teal-500" : "bg-slate-600"
-									}`}
-									aria-pressed={provideUserName}>
-									<span
-										className={`inline-block w-4 h-4 transform bg-white rounded-full shadow transition-transform duration-200 ${
-											provideUserName ? "translate-x-6" : "translate-x-0"
-										}`}
-									/>
-								</button>
-								<span className="text-md font-medium text-gray-300">
-									Provide your name?
-								</span>
-							</label>
-							<p className="text-xs text-slate-400 mt-2">
-								Only provide your name if you want the relationship to be
-								prior-established. For natural, casual encounters, it's normal
-								for neither party to know each other's name.
-							</p>
-							{provideUserName && (
-								<div>
-									<label className="block text-md font-medium text-gray-300 mb-2">
-										Your Name
-									</label>
-									<input
-										type="text"
-										value={userName}
-										onChange={(e) => setUserName(e.target.value)}
-										placeholder="Enter your name (optional)"
-										className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-									/>
-								</div>
-							)}
-						</div>
-					</div>
-				);
-			case 2:
-				return (
-					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-3xl font-bold text-teal-400 mb-8 text-center">
-							Who are you talking to?
-						</h2>
-						<div className="space-y-6">
-							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-3 text-center">
-									Gender
-								</h3>
-								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-									{Object.values(AIGender).map((g) => {
-										const isSelected = scenario.aiGender === g;
-										return (
-											<button
-												key={g}
-												onClick={() => updateScenario({ aiGender: g })}
-												className={`${optionButtonBaseClasses} ${
-													isSelected
-														? optionButtonSelectedClasses
-														: optionButtonUnselectedClasses
-												}`}>
-												{g}
-											</button>
-										);
-									})}
-								</div>
-							</div>
-							<div>
-								<h3 className="text-lg font-medium text-gray-300 mb-3 text-center">
-									Age
-								</h3>
-								<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-									{Object.values(AIAgeBracket).map((age) => {
-										const isSelected = scenario.aiAgeBracket === age;
-										return (
-											<button
-												key={age}
-												onClick={() => updateScenario({ aiAgeBracket: age })}
-												className={`${optionButtonBaseClasses} ${
-													isSelected
-														? optionButtonSelectedClasses
-														: optionButtonUnselectedClasses
-												}`}>
-												{age}
-											</button>
-										);
-									})}
-								</div>
-								{scenario.aiAgeBracket === AIAgeBracket.CUSTOM && (
-									<div className="mt-4">
-										<input
-											type="number"
-											value={customAiAgeString}
-											onChange={handleCustomAgeChange}
-											placeholder="Enter age (18-100)"
-											className={`w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 ${
-												error ? "ring-red-500" : "focus:ring-teal-500"
-											}`}
-										/>
-										<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
-											<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-											<p>
-												Provide a specific age for the AI between 18 and 100.
-											</p>
-										</div>
-									</div>
-								)}
-							</div>
-						</div>
-					</div>
-				);
-			case 3:
-				const selectedCount = scenario.aiPersonalityTraits?.length || 0;
-				return (
-					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-3xl font-bold text-teal-400 mb-2 text-center">
-							Choose from the trait palette
-						</h2>
-						<p className="text-lg text-gray-400 mb-6 text-center">
-							Select up to {MAX_PERSONALITY_TRAITS} traits across the scientific
-							anchors below, and/or add your own.
-						</p>
-						<p className="text-sm text-slate-400 mb-2">
-							You may also type in your own custom personality description below
-							if you prefer.
-						</p>
-						<textarea
-							id="guided-custom-personality"
-							value={scenario.customAiPersonality || ""}
-							onChange={(e) =>
-								updateScenario({ customAiPersonality: e.target.value })
-							}
-							placeholder="Type your own personality description here..."
-							className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[80px]"
-							rows={2}
-						/>
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-mono text-white/40 uppercase">Gender</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {(Object.values(AIGender) as AIGender[]).map((g) => (
+                                        <button key={g} onClick={() => updateScenario({ aiGender: g })} className={`${schematicButtonBase} ${scenario.aiGender === g ? schematicButtonSelected : ""}`}>
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-mono text-white/40 uppercase">Age Bracket</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {(Object.values(AIAgeBracket) as AIAgeBracket[]).map((age) => (
+                                        <button key={age} onClick={() => updateScenario({ aiAgeBracket: age })} className={`${schematicButtonBase} ${scenario.aiAgeBracket === age ? schematicButtonSelected : ""}`}>
+                                            {age}
+                                        </button>
+                                    ))}
+                                </div>
+                                {scenario.aiAgeBracket === AIAgeBracket.CUSTOM && (
+                                    <input type="number" value={customAiAgeString} onChange={(e) => setCustomAiAgeString(e.target.value)} placeholder="SPECIFY YEARS (18-100)" className={schematicInputBase} />
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+            case 3: // Personality
+                return (
+                    <motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+                        <div className="border-l-2 border-white/20 pl-6">
+                            <h2 className="text-2xl font-thin text-white uppercase tracking-widest">Psych Profile</h2>
+                            <p className="text-white/40 font-mono text-xs mt-2">Select dominant behavioral traits.</p>
+                        </div>
 
-						<div className="space-y-4">
-							{orderedPersonalityCategories.map((category) => (
-								<div key={category}>
-									<h3 className="text-md font-semibold text-teal-300 mb-2">
-										{category}
-									</h3>
-									<div className="flex flex-wrap gap-2">
-										{personalityCategories[category].map((p) => {
-											const isSelected =
-												scenario.aiPersonalityTraits?.includes(p);
-											return (
-												<Tooltip
-													key={p}
-													content={personalityTraitDescriptions[p] || p}>
-													<button
-														data-testid={`trait-button-${p}`}
-														style={{ zIndex: 10 }}
-														onClick={() => {
-															const currentTraits =
-																scenario.aiPersonalityTraits || [];
-															if (isSelected) {
-																updateScenario({
-																	aiPersonalityTraits: currentTraits.filter(
-																		(trait) => trait !== p
-																	),
-																});
-															} else if (
-																selectedCount < MAX_PERSONALITY_TRAITS
-															) {
-																updateScenario({
-																	aiPersonalityTraits: [...currentTraits, p],
-																});
-															}
-														}}
-														className={`${traitButtonBaseClasses} ${
-															isSelected
-																? traitButtonSelectedClasses
-																: traitButtonUnselectedClasses
-														} ${
-															!isSelected &&
-															selectedCount >= MAX_PERSONALITY_TRAITS
-																? "opacity-50 cursor-not-allowed"
-																: ""
-														}`}>
-														{p}
-													</button>
-												</Tooltip>
-											);
-										})}
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-				);
-			case 4:
-				return (
-					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-3xl font-bold text-teal-400 mb-6 text-center">
-							Fine-tune their Background (Optional)
-						</h2>
-						<div className="space-y-6 max-w-lg mx-auto">
-							<div>
-								<label
-									htmlFor="ai-name"
-									className="block text-md font-medium text-gray-300 mb-2">
-									Name
-								</label>
-								<div className="flex items-start space-x-2">
-									<div className="flex-grow">
-										<input
-											id="ai-name"
-											type="text"
-											value={scenario.aiName || ""}
-											onChange={(e) =>
-												updateScenario({ aiName: e.target.value })
-											}
-											placeholder="Leave blank for random"
-											className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-										/>
-									</div>
-									<button
-										type="button"
-										onClick={() =>
-											updateScenario({
-												aiName: generateRandomAiName(
-													scenario.aiGender!,
-													scenario.aiCulture
-												),
-											})
-										}
-										className="p-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-sm transition-colors duration-150 h-[48px] flex-shrink-0"
-										title="Suggest a random name">
-										Suggest
-									</button>
-								</div>
-								<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
-									<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-									<p>
-										Give the AI a name, or leave it blank to have one generated
-										based on other selections.
-									</p>
-								</div>
-							</div>
-							<div>
-								<label
-									htmlFor="ai-culture"
-									className="block text-md font-medium text-gray-300 mb-2">
-									Culture/Race
-								</label>
-								<input
-									id="ai-culture"
-									type="text"
-									value={scenario.aiCulture || ""}
-									onChange={(e) =>
-										updateScenario({ aiCulture: e.target.value })
-									}
-									placeholder="E.g., Japanese, Italian-American..."
-									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-								/>
-								<div className="mt-2 flex items-start gap-2 text-xs text-slate-400">
-									<InfoIcon className="h-4 w-4 flex-shrink-0 mt-0.5 text-sky-400" />
-									<p>
-										This can influence the AI's name, appearance, and
-										communication style.
-									</p>
-								</div>
-							</div>
-						</div>
-					</div>
-				);
-			case 5:
-				return (
-					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-3xl font-bold text-teal-400 mb-6 text-center">
-							Set the Scene (Optional)
-						</h2>
-						<div className="space-y-6 max-w-lg mx-auto">
-							<div>
-								<label
-									htmlFor="conversation-goal"
-									className="block text-md font-medium text-gray-300 mb-2">
-									What is your goal for this conversation?
-								</label>
-								<input
-									id="conversation-goal"
-									type="text"
-									value={scenario.conversationGoal || ""}
-									onChange={(e) =>
-										updateScenario({ conversationGoal: e.target.value })
-									}
-									placeholder="E.g., Ask for a date, get a discount..."
-									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-								/>
-								<div className="mt-2">
-									<InfoCard
-										Icon={TargetIcon}
-										title="Example Goal"
-										description="“Ask for a date, get a discount, or convince your friend to see your favorite movie.”"
-									/>
-								</div>
-							</div>
-							<div>
-								<label
-									htmlFor="custom-context"
-									className="block text-md font-medium text-gray-300 mb-2">
-									Add any extra scenario details
-								</label>
-								<textarea
-									id="custom-context"
-									value={scenario.customContext || ""}
-									onChange={(e) =>
-										updateScenario({ customContext: e.target.value })
-									}
-									placeholder="E.g., You've met this person once before..."
-									className="w-full p-3 bg-slate-600 text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px]"
-									rows={3}
-								/>
-								<div className="mt-2">
-									<InfoCard
-										Icon={FastForwardIcon}
-										title="Example Context for an Action"
-										description="Context like “You are both walking out of an office building” can trigger an 'Active Action' banner in the simulation."
-									/>
-								</div>
-							</div>
-						</div>
-					</div>
-				);
-			case 6:
-				// Modern Scenario Locked In Card
-				return (
-					<div key={step} className={`${animationClass}`}>
-						<h2 className="text-3xl font-bold text-white mb-2 text-center">
-							Scenario Locked In
-						</h2>
-						<p className="text-md text-slate-300 mb-8 text-center">
-							Review your choices below. Press Start when you're ready to begin
-							the interaction.
-						</p>
-						<div className="bg-slate-800/80 rounded-2xl border border-slate-700 px-6 py-6 mb-8 max-w-2xl mx-auto shadow-lg">
-							<div className="space-y-6">
-								{/* Persona */}
-								<div className="flex items-start gap-4">
-									<div className="flex-shrink-0 mt-1 p-2 bg-slate-900/60 rounded-lg">
-										<UserCircleIcon className="h-5 w-5 text-sky-400" />
-									</div>
-									<div>
-										<h4 className="text-sm font-semibold text-gray-400 mb-1">
-											Persona
-										</h4>
-										<div className="text-white font-medium">
-											{(() => {
-												const gender =
-													scenario.aiGender && scenario.aiGender !== "Random"
-														? scenario.aiGender
-														: null;
-												const age =
-													scenario.aiAgeBracket &&
-													scenario.aiAgeBracket !== AIAgeBracket.NOT_SPECIFIED
-														? scenario.aiAgeBracket
-														: null;
-												let persona = [];
-												if (gender) persona.push(gender.toLowerCase());
-												if (age) persona.push(age.toLowerCase());
-												if (persona.length) return persona.join(" ");
-												return (
-													<span className="italic text-slate-400">
-														(No persona details set)
-													</span>
-												);
-											})()}
-											{scenario.aiName && (
-												<span className="ml-2 text-slate-400 text-sm">
-													({scenario.aiName})
-												</span>
-											)}
-											{scenario.aiCulture && (
-												<span className="ml-2 text-slate-400 text-sm">
-													[{scenario.aiCulture}]
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-								{/* Environment */}
-								<div className="flex items-start gap-4">
-									<div className="flex-shrink-0 mt-1 p-2 bg-slate-900/60 rounded-lg">
-										<MapPinIcon className="h-5 w-5 text-sky-400" />
-									</div>
-									<div>
-										<h4 className="text-sm font-semibold text-gray-400 mb-1">
-											Environment
-										</h4>
-										<div className="text-white font-medium">
-											{scenario.environment === SocialEnvironment.CUSTOM
-												? scenario.customEnvironment || (
-														<span className="italic text-slate-400">
-															(Describe your unique setting)
-														</span>
-												  )
-												: scenario.environment}
-										</div>
-									</div>
-								</div>
-								{/* Personality Traits */}
-								<div className="flex items-start gap-4">
-									<div className="flex-shrink-0 mt-1 p-2 bg-slate-900/60 rounded-lg">
-										<TagIcon className="h-5 w-5 text-sky-400" />
-									</div>
-									<div>
-										<h4 className="text-sm font-semibold text-gray-400 mb-1">
-											Personality Traits
-										</h4>
-										<div className="flex flex-wrap gap-2 mt-1">
-											{scenario.aiPersonalityTraits &&
-											scenario.aiPersonalityTraits.length > 0 ? (
-												scenario.aiPersonalityTraits.map((trait) => (
-													<span
-														key={trait}
-														className="px-3 py-1 rounded-full bg-teal-700/80 text-teal-100 text-xs font-semibold">
-														{trait}
-													</span>
-												))
-											) : scenario.customAiPersonality ? (
-												<span className="italic text-slate-400">
-													{scenario.customAiPersonality}
-												</span>
-											) : (
-												<span className="italic text-slate-400">
-													(No traits selected)
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-								{/* Goal */}
-								<div className="flex items-start gap-4">
-									<div className="flex-shrink-0 mt-1 p-2 bg-slate-900/60 rounded-lg">
-										<ChatBubbleBottomCenterTextIcon className="h-5 w-5 text-sky-400" />
-									</div>
-									<div>
-										<h4 className="text-sm font-semibold text-gray-400 mb-1">
-											Goal
-										</h4>
-										<div className="text-white font-medium">
-											{scenario.conversationGoal || (
-												<span className="italic text-slate-400">
-													(Leave blank to let the AI suggest a goal)
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-								{/* Extra Context */}
-								<div className="flex items-start gap-4">
-									<div className="flex-shrink-0 mt-1 p-2 bg-slate-900/60 rounded-lg">
-										<InfoIcon className="h-5 w-5 text-sky-400" />
-									</div>
-									<div>
-										<h4 className="text-sm font-semibold text-gray-400 mb-1">
-											Extra Context
-										</h4>
-										<div className="text-white font-medium">
-											{scenario.customContext || (
-												<span className="italic text-slate-400">
-													(No extra details provided)
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-								{/* Your Name */}
-								<div className="flex items-start gap-4">
-									<div className="flex-shrink-0 mt-1 p-2 bg-slate-900/60 rounded-lg">
-										<UserCircleIcon className="h-5 w-5 text-sky-400" />
-									</div>
-									<div>
-										<h4 className="text-sm font-semibold text-gray-400 mb-1">
-											Your Name
-										</h4>
-										<div className="text-white font-medium">
-											{provideUserName && userName.trim() ? (
-												userName
-											) : (
-												<span className="italic text-slate-400">
-													(The AI won’t know your name)
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div className="flex justify-between items-center mt-8 gap-4">
-							<button
-								type="button"
-								className="px-6 py-3 bg-slate-600/80 text-white font-semibold rounded-lg hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors"
-								onClick={handleBack}>
-								<ArrowLeftIcon className="h-5 w-5" />
-								<span>Back</span>
-							</button>
-							<button
-								type="button"
-								className="px-8 py-3 bg-teal-500 text-white font-bold rounded-lg shadow hover:bg-teal-400 transition-colors flex items-center gap-2"
-								onClick={handleStart}>
-								Start
-								<PlayIcon className="h-6 w-6 ml-1" />
-							</button>
-						</div>
-					</div>
-				);
+                        <div className="space-y-6 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                            {orderedPersonalityCategories.map((category) => (
+                                <div key={category} className="space-y-2">
+                                    <h3 className="text-xs font-mono text-white/30 uppercase border-b border-white/5 pb-1">{category}</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {personalityCategories[category].map((p) => {
+                                            const isSelected = scenario.aiPersonalityTraits?.includes(p);
+                                            return (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => {
+                                                        const current = scenario.aiPersonalityTraits || [];
+                                                        const updated = current.includes(p) ? current.filter(t => t !== p) : [...current, p].slice(0, MAX_PERSONALITY_TRAITS);
+                                                        updateScenario({ aiPersonalityTraits: updated });
+                                                    }}
+                                                    className={`px-2 py-1 text-[10px] font-mono border transition-all ${isSelected ? "bg-white text-black border-white" : "bg-transparent text-white/50 border-white/10 hover:border-white/30"}`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="pt-4">
+                                <textarea 
+                                    value={scenario.customAiPersonality} 
+                                    onChange={(e) => updateScenario({ customAiPersonality: e.target.value })} 
+                                    placeholder="CUSTOM BEHAVIORAL PARAMETERS..." 
+                                    className={`${schematicInputBase} min-h-[60px] resize-none`} 
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+            case 4: // Name/Culture
+                return (
+                    <motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+                        <div className="border-l-2 border-white/20 pl-6">
+                            <h2 className="text-2xl font-thin text-white uppercase tracking-widest">Designation</h2>
+                            <p className="text-white/40 font-mono text-xs mt-2">Assign identity labels.</p>
+                        </div>
+
+                        <div className="space-y-8">
+                            <div className="space-y-2">
+                                <label className="text-xs font-mono text-white/40 uppercase">Name</label>
+                                <input type="text" value={scenario.aiName} onChange={(e) => updateScenario({ aiName: e.target.value })} placeholder="AUTO-GENERATE IF BLANK" className={schematicInputBase} />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-mono text-white/40 uppercase">Cultural Origin</label>
+                                <input type="text" value={scenario.aiCulture} onChange={(e) => updateScenario({ aiCulture: e.target.value })} placeholder="UNDEFINED" className={schematicInputBase} />
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+            case 5: // Goal/Context
+                return (
+                    <motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+                        <div className="border-l-2 border-white/20 pl-6">
+                            <h2 className="text-2xl font-thin text-white uppercase tracking-widest">Mission Parameters</h2>
+                            <p className="text-white/40 font-mono text-xs mt-2">Define objectives and situational context.</p>
+                        </div>
+
+                        <div className="space-y-8">
+                            <div className="space-y-2">
+                                <label className="text-xs font-mono text-white/40 uppercase">Objective</label>
+                                <textarea value={scenario.conversationGoal} onChange={(e) => updateScenario({ conversationGoal: e.target.value })} placeholder="PRIMARY DIRECTIVE..." className={`${schematicInputBase} min-h-[80px] resize-none`} />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-mono text-white/40 uppercase">Context</label>
+                                <textarea value={scenario.customContext} onChange={(e) => updateScenario({ customContext: e.target.value })} placeholder="SITUATIONAL DATA..." className={`${schematicInputBase} min-h-[80px] resize-none`} />
+                            </div>
+                        </div>
+                    </motion.div>
+                );
+            case 6: // User Identity
+                return (
+                    <motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+                        <div className="border-l-2 border-white/20 pl-6">
+                            <h2 className="text-2xl font-thin text-white uppercase tracking-widest">User Override</h2>
+                            <p className="text-white/40 font-mono text-xs mt-2">Optional: Attach user identity.</p>
+                        </div>
+
+                        <div className="space-y-8">
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={() => setProvideUserName(!provideUserName)}
+                                    className={`text-xs font-mono uppercase tracking-wider ${provideUserName ? "text-white" : "text-white/40"}`}
+                                >
+                                    [ {provideUserName ? "X" : " "} ] Attach User Identity
+                                </button>
+                            </div>
+                            {provideUserName && (
+                                <div className="animate-fadeIn">
+                                    <input 
+                                        type="text" 
+                                        placeholder="USER DESIGNATION" 
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        className={schematicInputBase}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                );
+            case 7: // Review
+                return (
+                    <motion.div variants={contentVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-xl space-y-8">
+                        <div className="border-l-2 border-white/20 pl-6">
+                            <h2 className="text-2xl font-thin text-white uppercase tracking-widest">Final Verification</h2>
+                            <p className="text-white/40 font-mono text-xs mt-2">Confirm fabrication parameters.</p>
+                        </div>
+
+                        <div className="space-y-4 border border-white/10 p-6 font-mono text-xs text-white/70">
+                            <div className="flex justify-between border-b border-white/5 pb-2">
+                                <span className="uppercase text-white/40">Environment</span>
+                                <span>{scenario.environment}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-2">
+                                <span className="uppercase text-white/40">Identity</span>
+                                <span>{scenario.aiGender} / {scenario.aiAgeBracket}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-2">
+                                <span className="uppercase text-white/40">Traits</span>
+                                <span className="text-right max-w-[200px]">{scenario.aiPersonalityTraits?.join(", ") || "Custom"}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-white/5 pb-2">
+                                <span className="uppercase text-white/40">Objective</span>
+                                <span className="text-right max-w-[200px] truncate">{scenario.conversationGoal || "None"}</span>
+                            </div>
+                        </div>
+                    </motion.div>
+                );
 			default:
-				return <div>Setup complete.</div>;
+				return null;
 		}
 	};
 
 	return (
-		<motion.div
-			layout
-			transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.9 }}
-			className="w-full max-w-3xl p-6 md:p-8 bg-slate-900/70 border border-slate-700 backdrop-blur-lg rounded-xl shadow-2xl space-y-6 my-4">
-			<div className="flex-grow min-h-0 overflow-y-auto custom-scrollbar pr-2 -mr-2">
-				{step > 0 && (
-					<SegmentedProgressBar currentStep={step} totalSteps={MAX_STEPS} />
-				)}
-				<div className="px-2">{renderStepContent()}</div>
-				{error && (
-					<p className="text-red-400 text-sm mt-4 text-center animate-pulse">
-						{error}
-					</p>
-				)}
+		<div className="absolute inset-0 overflow-y-auto custom-scrollbar z-10 flex flex-col">
+            {/* Progress Line */}
+            {step > 0 && (
+                <div className="w-full h-[1px] bg-white/10 fixed top-0 left-0 z-20">
+                    <div className="h-full bg-white/60 transition-all duration-500" style={{ width: `${(step / MAX_STEPS) * 100}%` }} />
+                </div>
+            )}
+
+            {/* Back Button */}
+            {step > 0 && (
+                <div className="absolute top-8 left-8 z-50">
+                    <button onClick={handleBack} className="text-white/30 hover:text-white transition-colors flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
+                        <ArrowLeftIcon className="w-4 h-4" />
+                        Back
+                    </button>
+                </div>
+            )}
+
+			<div className="flex-grow flex flex-col items-center justify-center p-8 md:p-16 min-h-[600px]">
+                <AnimatePresence mode="wait">
+                    {!exiting && renderStepContent()}
+                </AnimatePresence>
 			</div>
 
-			{/* Only render the default navigation bar if not on the confirmation step */}
-			{step !== 6 && (
-				<div className="flex-shrink-0 flex items-center mt-6 pt-4 border-t border-slate-700/60">
-					<div className="flex-1">
-						{step > 0 && (
-							<button
-								onClick={handleBack}
-								className="px-6 py-3 bg-slate-600/80 text-white font-semibold rounded-lg hover:bg-slate-600 flex items-center justify-center gap-2 transition-colors">
-								<ArrowLeftIcon className="h-5 w-5" />
-								<span>Back</span>
-							</button>
-						)}
-					</div>
-					<div className="flex-1 text-right">
-						{step > 0 && step < MAX_STEPS && (
-							<button
-								onClick={handleNext}
-								className="px-8 py-3 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-500 transition-colors">
-								Next
-							</button>
-						)}
-						{step === MAX_STEPS && (
-							<button
-								onClick={handleStart}
-								className="group w-full bg-teal-500 hover:bg-teal-400 text-white font-bold py-4 px-6 rounded-lg text-lg shadow-lg 
-                       transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none 
-                       focus:ring-4 focus:ring-teal-300 focus:ring-opacity-50 flex items-center justify-center gap-2">
-								<span>Start</span>
-								<PlayIcon className="h-6 w-6 transition-transform group-hover:translate-x-1" />
-							</button>
-						)}
-					</div>
-				</div>
-			)}
-		</motion.div>
+            {/* Navigation Footer (Floating) */}
+            {step > 0 && (
+                <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-2">
+                    {error && (
+                        <span className="text-red-400 font-mono text-xs animate-pulse mb-2">
+                            {error}
+                        </span>
+                    )}
+                    <button
+                        onClick={step === MAX_STEPS ? handleStart : handleNext}
+                        className="group flex items-center gap-4 px-8 py-3 bg-white text-black font-mono text-sm font-bold uppercase tracking-widest hover:bg-white/90 transition-colors"
+                    >
+                        <span>{step === MAX_STEPS ? "Initialize" : "Next"}</span>
+                        <ArrowRightIcon className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </div>
+            )}
+		</div>
 	);
 };

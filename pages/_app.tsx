@@ -38,10 +38,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 		<AuthProvider>
 			<SessionContext.Provider value={{ sessionInPlay, setSessionInPlay }}>
 				<ErrorBoundary>
-					{/* Global firefly background effect - only show when session is NOT in play and not on mobile */}
-					{!sessionInPlay && !isMobile && (
-						<FireflyField zIndex={2} count={fireflyCount} />
-					)}
+
 					<AccessibilityProvider>
 						<Component {...pageProps} />
 					</AccessibilityProvider>

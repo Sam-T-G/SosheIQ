@@ -3,182 +3,90 @@ import React, {
 	useEffect,
 	useRef,
 	useCallback,
-	forwardRef,
 } from "react";
 import type { ChatMessage, ActiveAction, UserTurnFeedback } from "../types";
-import { ChatMessageView } from "./ChatMessageView";
-import { ProgressBar } from "./ProgressBar"; // Import ProgressBar
 import {
 	SendIcon,
 	StopCircleIcon,
-	CheckCircleIcon,
-	CloseIcon,
-	QuestionMarkIcon,
-	ChevronDownIcon,
-	ChevronUpIcon,
 	PlayIcon,
 	GestureIcon,
-	StarIcon,
-	SparklesIcon,
-	XCircleIcon,
-	BookOpenIcon,
+    ArrowRightIcon,
+    SparklesIcon,
 } from "./Icons";
-import { ChatMessageViewAIThinking } from "./ChatMessageViewAIThinking";
-import { TopBannerContainer } from "./TopBannerContainer";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 
-// --- Badge components, duplicated for use in the animation tray ---
+// --- Minimalist Void Components ---
 
-const EngagementDeltaBadge: React.FC<{ delta: number }> = ({ delta }) => {
-	const isPositive = delta >= 0;
-	const colorClasses = isPositive
-		? "bg-green-600 text-white ring-green-400"
-		: "bg-red-600 text-white ring-red-400";
-	const sign = isPositive ? "+" : "";
-
-	return (
-		<div
-			className={`px-2 py-0.5 rounded-full text-xs font-bold ring-1 ring-inset ${colorClasses}`}
-			aria-label={`Engagement change: ${sign}${delta}%`}>
-			{sign}
-			{delta}%
-		</div>
-	);
+const VoidBadge: React.FC<{ text: string; type: 'positive' | 'negative' | 'neutral' }> = ({ text, type }) => {
+    const color = type === 'positive' ? 'text-cyan-400 border-cyan-400/30' : type === 'negative' ? 'text-red-400 border-red-400/30' : 'text-white/40 border-white/10';
+    return <span className={`text-[10px] font-mono uppercase tracking-wider ${color} border px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-sm`}>{text}</span>;
 };
 
-const EffectivenessBadge: React.FC<{ score: number }> = ({ score }) => {
-	const colorClasses =
-		score >= 75
-			? "bg-sky-600 text-white ring-sky-400"
-			: score >= 40
-			? "bg-yellow-600 text-white ring-yellow-400"
-			: "bg-red-600 text-white ring-red-400";
+const VoidMessage: React.FC<{
+    message: ChatMessage;
+    isLast: boolean;
+    scenarioDetailsAiName: string;
+}> = ({ message, isLast, scenarioDetailsAiName }) => {
+    const isAI = message.sender === "ai";
+    const isUser = message.sender === "user";
+    const isAction = message.sender === "user_action";
+    const isSystem = message.sender === "system";
+    const isBackstory = message.sender === "backstory";
 
-	return (
-		<div
-			className={`px-2 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1 ${colorClasses}`}
-			aria-label={`Effectiveness score: ${score}%`}>
-			<StarIcon className="h-3 w-3" />
-			<span>{score}%</span>
-		</div>
-	);
-};
+    if (isSystem) {
+        return (
+            <div className="py-2 text-center opacity-50">
+                <span className="text-xs font-mono text-white/40 uppercase tracking-widest">[{message.text}]</span>
+            </div>
+        );
+    }
 
-const TraitContributionBadge: React.FC<{ trait: string }> = ({ trait }) => {
-	return (
-		<div
-			className={`px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1.5 bg-purple-600 text-white ring-purple-400`}
-			aria-label={`Positive Trait: ${trait}`}>
-			<SparklesIcon className="h-3.5 w-3.5" />
-			<span>{trait} +</span>
-		</div>
-	);
-};
+    if (isBackstory) {
+        return (
+            <div className="py-6 border-y border-white/10 my-6">
+                <span className="block text-xs font-mono text-cyan-500/70 uppercase tracking-widest mb-3">Context Data</span>
+                <p className="text-sm font-mono text-gray-400 leading-relaxed">{message.text}</p>
+            </div>
+        );
+    }
 
-const NegativeTraitContributionBadge: React.FC<{ trait: string }> = ({
-	trait,
-}) => {
-	return (
-		<div
-			className={`px-2.5 py-1 rounded-full text-xs font-bold ring-1 ring-inset flex items-center space-x-1.5 bg-red-600 text-white ring-red-400`}
-			aria-label={`Negative Trait: ${trait}`}>
-			<XCircleIcon className="h-3.5 w-3.5" />
-			<span>{trait} -</span>
-		</div>
-	);
-};
-
-// --- Animation Phase 1 & 2: Self-contained Tray ---
-
-interface FeedbackAnimationTrayProps {
-	data: { messageId: string; feedback: UserTurnFeedback };
-	onComplete: (messageId: string, feedback: UserTurnFeedback) => void;
-}
-
-const FeedbackAnimationTray: React.FC<FeedbackAnimationTrayProps> = ({
-	data,
-	onComplete,
-}) => {
-	const { messageId, feedback } = data;
-
-	// Check if we have any badges to show BEFORE calling any hooks
-	const badges: React.ReactNode[] = [];
-	if (feedback.positiveTraitContribution) {
-		badges.push(
-			<TraitContributionBadge
-				key="pos-trait"
-				trait={feedback.positiveTraitContribution}
-			/>
-		);
-	}
-	if (feedback.negativeTraitContribution) {
-		badges.push(
-			<NegativeTraitContributionBadge
-				key="neg-trait"
-				trait={feedback.negativeTraitContribution}
-			/>
-		);
-	}
-	if (typeof feedback.userTurnEffectivenessScore === "number") {
-		badges.push(
-			<EffectivenessBadge
-				key="effectiveness"
-				score={feedback.userTurnEffectivenessScore}
-			/>
-		);
-	}
-	if (typeof feedback.engagementDelta === "number") {
-		badges.push(
-			<EngagementDeltaBadge key="engagement" delta={feedback.engagementDelta} />
-		);
-	}
-
-	// Early return BEFORE hooks if no badges
-	if (badges.length === 0) return null;
-
-	const [isExiting, setIsExiting] = useState(false);
-
-	// On mount (which happens on new data due to the key), set a timer to trigger the exit animation.
-	useEffect(() => {
-		const holdTimer = setTimeout(() => {
-			setIsExiting(true);
-		}, 2000); // 2-second hold time
-
-		return () => {
-			clearTimeout(holdTimer);
-		};
-	}, []); // Empty dependency array makes this effect run only once on mount
-
-	const lastBadgeIndex = badges.length - 1;
-
-	// This function is called when the last badge finishes its exit animation.
-	const handleAnimationEnd = (e: React.AnimationEvent) => {
-		// Only trigger on the pop-out animation to avoid firing on entry
-		if (isExiting && e.animationName === "badge-pop-out") {
-			onComplete(messageId, feedback);
-		}
-	};
-
-	return (
-		<div
-			className="fixed bottom-[110px] sm:bottom-24 right-4 sm:right-6 z-50 flex flex-row items-center gap-4"
-			role="status"
-			aria-live="polite">
-			{badges.map((badge, index) => (
-				<div
-					key={index}
-					className={
-						isExiting ? "animate-badge-pop-out" : "animate-badge-slide-in-right"
-					}
-					style={{ animationDelay: `${index * 0.15}s` }}
-					onAnimationEnd={
-						index === lastBadgeIndex ? handleAnimationEnd : undefined
-					}>
-					{badge}
-				</div>
-			))}
-		</div>
-	);
+    const label = isAI ? scenarioDetailsAiName.toUpperCase() : isUser ? "USER" : "ACTION";
+    // Increased contrast for labels
+    const labelColor = isAI ? "text-cyan-400" : isUser ? "text-white/80" : "text-emerald-400";
+    
+    return (
+        <motion.div 
+            layout
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className={`py-4 font-mono group ${isAction ? "pl-4 border-l-2 border-emerald-500/20" : ""}`}
+        >
+            <div className="flex items-baseline gap-4 mb-2">
+                <span className={`text-xs font-bold tracking-widest uppercase min-w-[80px] text-right ${labelColor}`}>{label}</span>
+                {isAI && message.bodyLanguageDescription && (
+                    // Increased contrast for body language: text-white/30 -> text-gray-500
+                    <span className="text-xs text-gray-500 italic">({message.bodyLanguageDescription})</span>
+                )}
+            </div>
+            <div className="pl-[96px] pr-4 md:pr-12">
+                {/* Increased contrast for message text: text-white/90 -> text-gray-200, text-white/50 -> text-gray-400 */}
+                <p className={`text-sm md:text-base leading-relaxed ${isAction ? "text-emerald-400/80 italic" : "text-gray-200"}`}>
+                    {message.text}
+                </p>
+                
+                {/* Feedback Badges (Minimalist) */}
+                {(message.positiveTraitContribution || message.negativeTraitContribution || message.engagementDelta) && (
+                    <div className="flex flex-wrap gap-2 mt-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                        {message.positiveTraitContribution && <VoidBadge text={`${message.positiveTraitContribution} +`} type="positive" />}
+                        {message.negativeTraitContribution && <VoidBadge text={`${message.negativeTraitContribution} -`} type="negative" />}
+                        {message.engagementDelta !== undefined && message.engagementDelta !== 0 && (
+                            <VoidBadge text={`ENG ${message.engagementDelta > 0 ? '+' : ''}${message.engagementDelta}%`} type={message.engagementDelta > 0 ? 'positive' : 'negative'} />
+                        )}
+                    </div>
+                )}
+            </div>
+        </motion.div>
+    );
 };
 
 interface RenderChatInterfaceProps {
@@ -189,20 +97,18 @@ interface RenderChatInterfaceProps {
 	isActionPaused: boolean;
 	isPinnable: boolean;
 	isGoalPinned: boolean;
+	onPinGoal: (goalText: string) => void;
+	onUnpinGoal: () => void;
 	isContinueActionSuggested: boolean;
 	onSendMessage: (messages: { gesture?: string; dialogue?: string }) => void;
 	onEndConversation: () => void;
 	onFastForwardAction: () => void;
-	onPinGoal: (goalText: string) => void;
-	onUnpinGoal: () => void;
 	onContinueWithoutSpeaking: () => void;
 	onRetryMessage: (messageText: string) => void;
 	isLoadingAI: boolean;
 	scenarioDetailsAiName: string;
 	isMaxEngagement: boolean;
 	isOverlay: boolean;
-	hasBlurredBackground?: boolean;
-	onCloseOverlay?: () => void;
 	onToggleHelp: () => void;
 	onViewImage: (url: string | null) => void;
 	goalJustChanged: boolean;
@@ -214,650 +120,187 @@ interface RenderChatInterfaceProps {
 	) => void;
 }
 
-// Define InputArea as a standalone component to prevent re-renders from losing focus
-interface InputAreaProps {
-	onSend: (gesture: string, dialogue: string) => void;
-	handleEndOrFinish: () => void;
-	handleContinue: () => void;
-	isLoadingAI: boolean;
-	isMaxEngagement: boolean;
-	hasBlurredBackground: boolean;
-	isContinueActionSuggested: boolean;
-	isUserStart: boolean;
-	onFocus: () => void;
-}
-
-const InputArea: React.FC<InputAreaProps> = ({
-	onSend,
-	handleEndOrFinish,
-	handleContinue,
-	isLoadingAI,
-	isMaxEngagement,
-	hasBlurredBackground,
-	isContinueActionSuggested,
-	isUserStart,
-	onFocus,
-}) => {
-	const [dialogueInput, setDialogueInput] = useState("");
-	const [gestureInput, setGestureInput] = useState("");
-	const [showGestureInput, setShowGestureInput] = useState(false);
-	const [isMaxEngagementBannerOpen, setIsMaxEngagementBannerOpen] =
-		useState(true);
-	const dialogueTextareaRef = useRef<HTMLTextAreaElement>(null);
-
-	const handleGestureButtonClick = () => {
-		onFocus();
-		setShowGestureInput((prev) => !prev);
-	};
-
-	const handleSendClick = () => {
-		onFocus();
-		if (gestureInput.trim() || dialogueInput.trim()) {
-			onSend(gestureInput.trim(), dialogueInput.trim());
-			setGestureInput("");
-			setDialogueInput("");
-			// Optionally close gesture input on send
-			if (showGestureInput) {
-				setShowGestureInput(false);
-			}
-		}
-	};
-
-	const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
-			handleSendClick();
-		}
-	};
-
-	const wrapperClasses = hasBlurredBackground
-		? "flex-shrink-0 p-3 border-t border-slate-700/40 bg-slate-900/50 backdrop-blur-sm shadow-lg z-10"
-		: "flex-shrink-0 p-4 border-t border-slate-600 bg-slate-700";
-
-	const textareaClasses = hasBlurredBackground
-		? `w-full text-base flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-800/50 placeholder-gray-300`
-		: `w-full text-base flex-grow p-3 text-gray-200 rounded-lg focus:ring-2 focus:ring-sky-500 focus:outline-none resize-none bg-slate-600 placeholder-gray-300`;
-
-	const placeholderText = isUserStart
-		? "The scene is set. What's your opening line?"
-		: "Type your response...";
-
-	const gesturePlaceholderText = "e.g., smiles and nods";
-
-	return (
-		<div className={wrapperClasses}>
-			{isMaxEngagement && (
-				<div
-					role="button"
-					tabIndex={0}
-					onClick={() => setIsMaxEngagementBannerOpen((prev) => !prev)}
-					onKeyPress={(e) => {
-						if (e.key === "Enter" || e.key === " ") {
-							e.preventDefault();
-							setIsMaxEngagementBannerOpen((prev) => !prev);
-						}
-					}}
-					className="mb-2 bg-green-800/30 border border-green-700/40 rounded-lg cursor-pointer hover:border-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-					aria-expanded={isMaxEngagementBannerOpen}
-					aria-label={
-						isMaxEngagementBannerOpen
-							? "Collapse max engagement message"
-							: "Expand max engagement message"
-					}>
-					<div
-						id="max-engagement-content"
-						className={`overflow-hidden transition-all duration-300 ease-in-out ${
-							isMaxEngagementBannerOpen ? "max-h-24" : "max-h-0"
-						}`}>
-						<p className="p-3 text-center text-green-300 font-semibold text-sm">
-							Max Engagement Reached! You can 'Finish' for your analysis, or
-							click this banner to hide it and keep practicing.
-						</p>
-					</div>
-					<div
-						className="w-full flex justify-center items-center py-0.5 bg-green-900/50 rounded-b-lg"
-						aria-hidden="true">
-						{isMaxEngagementBannerOpen ? (
-							<ChevronUpIcon className="h-5 w-5 text-green-400" />
-						) : (
-							<ChevronDownIcon className="h-5 w-5 text-green-400" />
-						)}
-					</div>
-				</div>
-			)}
-			<div className="flex flex-col gap-2">
-				{/* Gesture Input Area - Conditionally rendered with animation */}
-				<div
-					className={`grid transition-all duration-300 ease-in-out ${
-						showGestureInput
-							? "grid-rows-[1fr] opacity-100"
-							: "grid-rows-[0fr] opacity-0"
-					}`}>
-					<div className="overflow-hidden">
-						<label
-							htmlFor="gesture-input"
-							className="block text-xs font-semibold text-sky-400 mb-1">
-							Action/Gesture
-						</label>
-						<textarea
-							id="gesture-input"
-							value={gestureInput}
-							onChange={(e) => setGestureInput(e.target.value)}
-							onFocus={onFocus}
-							placeholder={gesturePlaceholderText}
-							className={`${textareaClasses} min-h-[50px]`}
-							rows={1}
-							aria-label="Your gesture or action input"
-						/>
-					</div>
-				</div>
-
-				<div className="flex items-end sm:items-center space-x-2">
-					<button
-						onClick={() => {
-							onFocus();
-							handleEndOrFinish();
-						}}
-						disabled={isLoadingAI}
-						className={`p-3 text-white rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed flex-shrink-0 min-h-[52px] sm:min-h-0
-							${
-								isMaxEngagement
-									? "bg-green-600 hover:bg-green-700 animate-pulse-glow"
-									: "bg-red-600 hover:bg-red-700"
-							}`}
-						aria-label={
-							isMaxEngagement ? "Finish conversation" : "End conversation"
-						}>
-						{isMaxEngagement ? (
-							<CheckCircleIcon className="h-5 w-5" />
-						) : (
-							<StopCircleIcon className="h-5 w-5" />
-						)}
-						<span className="hidden sm:inline">
-							{isMaxEngagement ? "Finish" : "End"}
-						</span>
-					</button>
-					<button
-						onClick={handleGestureButtonClick}
-						disabled={isLoadingAI}
-						className={`p-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0 ${
-							showGestureInput
-								? "bg-sky-700 text-white"
-								: "bg-slate-600 hover:bg-slate-500 text-white"
-						}`}
-						aria-label="Add a gesture or action"
-						title="Add a gesture or action"
-						aria-pressed={showGestureInput}>
-						<GestureIcon className="h-5 w-5" />
-					</button>
-					<textarea
-						ref={dialogueTextareaRef}
-						value={dialogueInput}
-						onChange={(e) => setDialogueInput(e.target.value)}
-						onFocus={onFocus}
-						onKeyPress={handleKeyPress}
-						placeholder={placeholderText}
-						className={`${textareaClasses} max-h-32`}
-						rows={1}
-						aria-label="Your response input"
-					/>
-					<button
-						onClick={() => {
-							onFocus();
-							handleContinue();
-						}}
-						disabled={isLoadingAI}
-						className={`p-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0 ${
-							isContinueActionSuggested ? "animate-pulse-glow-slow" : ""
-						}`}
-						aria-label="Continue without speaking"
-						title="Continue without speaking (pass your turn)">
-						<PlayIcon className="h-5 w-5" />
-					</button>
-					<button
-						onClick={handleSendClick}
-						disabled={
-							(!dialogueInput.trim() && !gestureInput.trim()) || isLoadingAI
-						}
-						className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 flex items-center justify-center space-x-2 flex-shrink-0 min-h-[52px] sm:min-h-0"
-						aria-label="Send message">
-						<SendIcon className="h-5 w-5" />
-						<span className="hidden sm:inline">Send</span>
-					</button>
-				</div>
-			</div>
-		</div>
-	);
-};
-
 export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	conversationHistory,
 	currentEngagement,
-	displayedGoal,
-	activeAction,
-	isActionPaused,
-	isPinnable,
-	isGoalPinned,
-	onPinGoal,
-	onUnpinGoal,
-	isContinueActionSuggested,
 	onSendMessage,
 	onEndConversation,
-	onFastForwardAction,
 	onContinueWithoutSpeaking,
-	onRetryMessage,
 	isLoadingAI,
 	scenarioDetailsAiName,
-	isMaxEngagement,
-	isOverlay,
-	hasBlurredBackground = false,
-	onCloseOverlay,
-	onToggleHelp,
-	onViewImage,
-	goalJustChanged,
-	onAnimationComplete,
-	pendingFeedback,
-	onFeedbackAnimationComplete,
+    isMaxEngagement,
 }) => {
 	const chatContainerRef = useRef<HTMLDivElement>(null);
-	// Add ref for top UI (header + engagement + banners)
-	const topUiRef = useRef<HTMLDivElement>(null);
-	// Add ref and state for input area height
-	const inputAreaRef = useRef<HTMLDivElement>(null);
-	const [inputAreaHeight, setInputAreaHeight] = useState(0);
-	// Restore chatEndRef
-	const chatEndRef = useRef<HTMLDivElement>(null);
-	const [processedMessagesForDisplay, setProcessedMessagesForDisplay] =
-		useState<ChatMessage[]>([]);
-	const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
-	const [showGlow, setShowGlow] = useState(false);
-	const [pressedMessageId, setPressedMessageId] = useState<string | null>(null);
-	const pointerStartRef = useRef<{ x: number; y: number; id: string | null }>({
-		x: 0,
-		y: 0,
-		id: null,
-	});
-	const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+	const [inputValue, setInputValue] = useState("");
+    const [inputMode, setInputMode] = useState<'dialogue' | 'action'>('dialogue');
+    const inputRef = useRef<HTMLInputElement>(null);
 
-	const isScrollingMutedRef = useRef(false);
-
-	const scrollToBottom = useCallback((force = false) => {
-		const container = chatContainerRef.current;
-		if (!container) return;
-		if (isScrollingMutedRef.current && !force) return;
-		container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-	}, []);
-
-	const handleThoughtToggle = useCallback(() => {
-		isScrollingMutedRef.current = true;
-		setTimeout(() => {
-			isScrollingMutedRef.current = false;
-		}, 500); // Mute for 500ms, longer than the animation duration
-	}, []);
-
-	// Handler to track if user is at the bottom of the chat
-	const handleScroll = useCallback(() => {
-		const container = chatContainerRef.current;
-		if (!container) return;
-		// Allow a small threshold for floating point errors
-		const threshold = 32;
-		const atBottom =
-			container.scrollHeight - container.scrollTop - container.clientHeight <
-			threshold;
-		setIsUserAtBottom(atBottom);
-	}, []);
-
-	// useEffect to auto-scroll on every new message render or input area height change
-	useEffect(() => {
-		const finalMessages: ChatMessage[] = [];
-		let lastAiImageUrl: string | undefined;
-
-		conversationHistory.forEach((msg) => {
-			if (msg.sender === "ai") {
-				const msgWithFallback = { ...msg, fallbackImageUrl: lastAiImageUrl };
-				finalMessages.push(msgWithFallback);
-				if (msg.imageUrl) {
-					lastAiImageUrl = msg.imageUrl;
-				}
-			} else {
-				finalMessages.push(msg);
-			}
-		});
-
-		setProcessedMessagesForDisplay(finalMessages);
-		// Always auto-scroll for every new message if user is at bottom
-		if (
-			conversationHistory.length > processedMessagesForDisplay.length &&
-			isUserAtBottom
-		) {
-			scrollToBottom(true);
-		}
-	}, [
-		conversationHistory,
-		processedMessagesForDisplay.length,
-		scrollToBottom,
-		isUserAtBottom,
-	]);
-
-	// Force scroll when AI thinking state changes.
-	useEffect(() => {
-		if (isLoadingAI && isUserAtBottom) {
-			scrollToBottom(true);
-		}
-	}, [isLoadingAI, scrollToBottom, isUserAtBottom]);
-
-	// Observer for DOM mutations (like image loads, staged text)
-	useEffect(() => {
-		const container = chatContainerRef.current;
-		if (!container) return;
-
-		const observer = new MutationObserver((mutations) => {
-			// Don't scroll for attribute changes (like adding an image src to an existing element)
-			// as this was causing jumps. Only scroll for new nodes being added.
-			const shouldScroll = mutations.some((m) => m.addedNodes.length > 0);
-			if (shouldScroll && isUserAtBottom) {
-				scrollToBottom();
-			}
-		});
-
-		observer.observe(container, {
-			childList: true,
-			subtree: true,
-		});
-
-		return () => observer.disconnect();
-	}, [scrollToBottom, isUserAtBottom]);
-
-	useEffect(() => {
-		const container = chatContainerRef.current;
-		if (!container) return;
-		container.addEventListener("scroll", handleScroll);
-		// Set initial state
-		handleScroll();
-		return () => container.removeEventListener("scroll", handleScroll);
-	}, [handleScroll]);
-
-	const handlePopoverSet = useCallback(
-		(messageId: string | null) => {
-			if (messageId && messageId === activePopoverId) {
-				setActivePopoverId(null);
-			} else {
-				setActivePopoverId(messageId);
-			}
-		},
-		[activePopoverId]
-	);
-
-	const handleSend = (gesture: string, dialogue: string) => {
-		setShowGlow(false); // reset
-		setTimeout(() => setShowGlow(true), 10); // retrigger for every interaction
-		setActivePopoverId(null);
-		if (gesture.trim() || dialogue.trim()) {
-			onSendMessage({ gesture, dialogue });
+	const scrollToBottom = () => {
+		if (chatContainerRef.current) {
+			chatContainerRef.current.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: "smooth" });
 		}
 	};
 
-	const handleEndOrFinish = () => {
-		setActivePopoverId(null);
-		onEndConversation();
-		if (isOverlay && onCloseOverlay) {
-			setTimeout(() => {
-				onCloseOverlay();
-			}, 100);
-		}
-	};
-
-	const headerBgClass =
-		isOverlay || hasBlurredBackground
-			? "bg-slate-900/60 backdrop-blur-sm"
-			: "bg-slate-700";
-
-	const ChatAreaHeader = () => (
-		<div
-			className={`flex-shrink-0 flex justify-between items-center p-3 z-10
-				${headerBgClass} 
-				border-b border-slate-700/50 shadow-md
-			`}>
-			<h3 className="text-lg font-semibold text-sky-400">
-				{isOverlay
-					? `Chat with ${scenarioDetailsAiName}`
-					: `Conversation with ${scenarioDetailsAiName}`}
-			</h3>
-			<div className="flex items-center space-x-1 sm:space-x-2">
-				<button
-					onClick={onToggleHelp}
-					className="p-2 text-sky-300 hover:text-sky-100 rounded-full transition-colors duration-150 shadow-sm bg-slate-700/70 hover:bg-slate-600"
-					aria-label="Show help and tips"
-					title="Help & Tips">
-					<QuestionMarkIcon className="h-5 w-5" />
-				</button>
-				{isOverlay && onCloseOverlay && (
-					<button
-						onClick={onCloseOverlay}
-						className="p-2 text-gray-400 hover:text-gray-200 bg-slate-700/70 hover:bg-slate-600 rounded-full transition-colors"
-						aria-label="Close chat"
-						title="Close Chat">
-						<CloseIcon className="h-6 w-6" />
-					</button>
-				)}
-			</div>
-		</div>
-	);
-
-	const EngagementBar = () => (
-		<div className="px-4 pt-2 pb-3 bg-slate-800 border-b border-slate-700/50 shadow-sm z-20">
-			<div className="flex justify-between items-center mb-1">
-				<span className="text-sm font-medium text-sky-300">Engagement</span>
-				<span className="text-sm font-bold text-white">
-					{currentEngagement}%
-				</span>
-			</div>
-			<ProgressBar percentage={currentEngagement} />
-		</div>
-	);
-
-	const isUserStart = conversationHistory.length === 0;
-
-	const inputAreaProps = {
-		onSend: handleSend,
-		handleEndOrFinish,
-		handleContinue: onContinueWithoutSpeaking,
-		isLoadingAI,
-		isMaxEngagement,
-		hasBlurredBackground,
-		isContinueActionSuggested,
-		isUserStart,
-		onFocus: () => setActivePopoverId(null),
-	};
-	const lastMessageIsAi =
-		conversationHistory[conversationHistory.length - 1]?.sender === "ai";
-
-	const mainContainerClasses = hasBlurredBackground
-		? "bg-transparent"
-		: "bg-slate-800";
-
-	// Utility to detect mobile (treat tablets as mobile)
-	const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
-
-	// Utility to detect touch device
-	const isTouchDevice =
-		typeof window !== "undefined" &&
-		("ontouchstart" in window ||
-			(navigator.maxTouchPoints && navigator.maxTouchPoints > 0));
-
-	// Add a ref to track if a drag is in progress
-	const isDraggingRef = useRef(false);
-	// Add a ref to track if the current pointer is a touch event
-	const isTouchRef = useRef(false);
-
-	// Helper to scroll to bottom using chatEndRef
-	const scrollToEnd = useCallback(() => {
-		setTimeout(() => {
-			if (chatEndRef.current) {
-				chatEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-			}
-		}, 0);
-	}, []);
-
-	// useEffect to auto-scroll on every new message render or input area height change
 	useEffect(() => {
-		scrollToEnd();
-	}, [conversationHistory, inputAreaHeight]);
+		scrollToBottom();
+	}, [conversationHistory, isLoadingAI]);
 
-	// Track input area height with ResizeObserver
-	useEffect(() => {
-		const inputArea = inputAreaRef.current;
-		if (!inputArea) return;
-		const updateHeight = () => setInputAreaHeight(inputArea.offsetHeight);
-		updateHeight();
-		const resizeObserver = new (window as any).ResizeObserver(updateHeight);
-		resizeObserver.observe(inputArea);
-		return () => resizeObserver.disconnect();
-	}, []);
+    // Auto-focus input
+    useEffect(() => {
+        if (!isLoadingAI) {
+            inputRef.current?.focus();
+        }
+    }, [isLoadingAI]);
 
-	// Image load scroll handler for messages
-	const handleImageLoad = useCallback(() => {
-		scrollToEnd();
-	}, [scrollToEnd]);
+    const handleSend = () => {
+        if (inputValue.trim()) {
+            if (inputMode === 'action') {
+                onSendMessage({ gesture: inputValue });
+            } else {
+                onSendMessage({ dialogue: inputValue });
+            }
+            setInputValue("");
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+        // Toggle mode with Tab
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            setInputMode(prev => prev === 'dialogue' ? 'action' : 'dialogue');
+        }
+    };
 
 	return (
-		<>
-			<div className={`flex flex-col h-full ${mainContainerClasses} relative`}>
-				{/* Header and Engagement Container - Fixed at top */}
-				<div className="flex-shrink-0 z-20 relative" ref={topUiRef}>
-					<ChatAreaHeader />
-					{isOverlay && <EngagementBar />}
-				</div>
-				{/* Mobile Banner Container - Positioned right under engagement element */}
-				{isOverlay && (
-					<div className="flex-shrink-0 relative">
-						<TopBannerContainer
-							activeAction={activeAction}
-							isActionPaused={isActionPaused}
-							displayedGoal={displayedGoal}
-							isPinnable={isPinnable}
-							isGoalPinned={isGoalPinned}
-							onPinGoal={onPinGoal}
-							onUnpinGoal={onUnpinGoal}
-							onFastForwardAction={onFastForwardAction}
-							isLoadingAI={isLoadingAI}
-							goalJustChanged={goalJustChanged}
-							isOverlay={true}
-						/>
-					</div>
-				)}
-				<div
-					ref={chatContainerRef}
-					className="flex-grow min-h-0 overflow-y-auto px-0 pt-0"
-					onClick={() => {
-						if (!isDraggingRef.current) setActivePopoverId(null);
-					}}
-					onScroll={handleScroll}>
-					{isOverlay ? (
-						<div
-							className="space-y-3 md:space-y-4"
-							style={{ touchAction: "pan-y", willChange: "transform" }}>
-							{processedMessagesForDisplay.map((msg, index) => {
-								const isLast = index === processedMessagesForDisplay.length - 1;
-								const isAI = msg.sender === "ai";
-								const isUser = msg.sender === "user";
-								const addBottomPadding =
-									(isLast && isAI && !isLoadingAI) ||
-									(isLast && isUser && isLoadingAI);
-								return (
-									<ChatMessageView
-										key={msg.id}
-										message={msg}
-										isLastMessage={
-											isLast &&
-											msg.id ===
-												conversationHistory[conversationHistory.length - 1]
-													?.id &&
-											!msg.isThoughtBubble
-										}
-										isLoadingAI={
-											isLoadingAI &&
-											isLast &&
-											msg.id ===
-												conversationHistory[conversationHistory.length - 1]?.id
-										}
-										addBottomPadding={addBottomPadding}
-										onAnimationComplete={onAnimationComplete}
-										onThoughtToggle={handleThoughtToggle}
-										scenarioDetailsAiName={scenarioDetailsAiName}
-										onViewImage={onViewImage}
-										onRetryMessage={onRetryMessage}
-										onImageLoad={handleImageLoad}
-										chatContainerRef={chatContainerRef}
-										inputAreaRef={inputAreaRef}
-										topUiRef={topUiRef}
-									/>
-								);
-							})}
-							{isLoadingAI && <ChatMessageViewAIThinking />}
-							{/* Dynamic bottom spacer */}
-							<div ref={chatEndRef} />
-						</div>
-					) : (
-						<div
-							className="space-y-3 md:space-y-4"
-							style={{ touchAction: "pan-y", willChange: "transform" }}>
-							{processedMessagesForDisplay.map((msg, index) => {
-								const isLast = index === processedMessagesForDisplay.length - 1;
-								const isAI = msg.sender === "ai";
-								const isUser = msg.sender === "user";
-								const addBottomPadding =
-									(isLast && isAI && !isLoadingAI) ||
-									(isLast && isUser && isLoadingAI);
-								return (
-									<ChatMessageView
-										key={msg.id}
-										message={msg}
-										isLastMessage={
-											isLast &&
-											msg.id ===
-												conversationHistory[conversationHistory.length - 1]
-													?.id &&
-											!msg.isThoughtBubble
-										}
-										isLoadingAI={
-											isLoadingAI &&
-											isLast &&
-											msg.id ===
-												conversationHistory[conversationHistory.length - 1]?.id
-										}
-										addBottomPadding={addBottomPadding}
-										onAnimationComplete={onAnimationComplete}
-										onThoughtToggle={handleThoughtToggle}
-										scenarioDetailsAiName={scenarioDetailsAiName}
-										onViewImage={onViewImage}
-										onRetryMessage={onRetryMessage}
-										onImageLoad={handleImageLoad}
-										chatContainerRef={chatContainerRef}
-										inputAreaRef={inputAreaRef}
-										topUiRef={topUiRef}
-									/>
-								);
-							})}
-							{isLoadingAI && <ChatMessageViewAIThinking />}
-							{/* Dynamic bottom spacer */}
-							<div ref={chatEndRef} />
-						</div>
-					)}
-				</div>
+		<div className="flex flex-col h-full bg-transparent text-white font-mono relative">
+            {/* Top Bar (Minimalist Engagement) */}
+            <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20 pointer-events-none bg-gradient-to-b from-black via-black/80 to-transparent h-24">
+                <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-white/40 uppercase tracking-widest">Engagement Protocol</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
+                            <motion.div 
+                                layout
+                                className={`h-full transition-all duration-500 ${currentEngagement > 80 ? 'bg-cyan-400' : 'bg-white/60'}`} 
+                                style={{ width: `${currentEngagement}%` }} 
+                            />
+                        </div>
+                        <span className={`text-xs font-bold ${currentEngagement > 80 ? 'text-cyan-400' : 'text-white/60'}`}>{currentEngagement}%</span>
+                    </div>
+                </div>
+            </div>
 
-				{pendingFeedback && (
-					<FeedbackAnimationTray
-						key={pendingFeedback.messageId}
-						data={pendingFeedback}
-						onComplete={onFeedbackAnimationComplete}
-					/>
-				)}
-
-				<div className="flex-shrink-0 z-20" ref={inputAreaRef}>
-					<InputArea {...inputAreaProps} />
-				</div>
+			{/* Chat Area */}
+			<div ref={chatContainerRef} className="flex-grow overflow-y-auto px-4 md:px-8 pt-24 pb-32 custom-scrollbar scroll-smooth">
+                <div className="max-w-4xl mx-auto space-y-2">
+                    <AnimatePresence initial={false}>
+                        {conversationHistory.map((msg, index) => (
+                            <VoidMessage 
+                                key={msg.id} 
+                                message={msg} 
+                                isLast={index === conversationHistory.length - 1} 
+                                scenarioDetailsAiName={scenarioDetailsAiName} 
+                            />
+                        ))}
+                    </AnimatePresence>
+                    
+                    {isLoadingAI && (
+                        <motion.div 
+                            initial={{ opacity: 0 }} 
+                            animate={{ opacity: 1 }} 
+                            className="py-4 pl-[96px] flex items-center gap-2"
+                        >
+                            <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
+                            <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse delay-75" />
+                            <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse delay-150" />
+                            <span className="text-cyan-500/70 text-xs uppercase tracking-widest ml-2">Processing</span>
+                        </motion.div>
+                    )}
+                </div>
 			</div>
-		</>
+
+			{/* Terminal Input Area (Fixed Bottom) */}
+			<div className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-white/10 p-4 md:p-6 z-30">
+                <div className="max-w-4xl mx-auto">
+                    <div className="flex items-center gap-4">
+                        {/* Mode Indicator */}
+                        <button 
+                            onClick={() => setInputMode(prev => prev === 'dialogue' ? 'action' : 'dialogue')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded border transition-all uppercase text-[10px] tracking-widest font-bold ${
+                                inputMode === 'action' 
+                                    ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10' 
+                                    : 'border-white/20 text-white/60 hover:border-white/40 hover:text-white'
+                            }`}
+                        >
+                            {inputMode === 'action' ? (
+                                <>
+                                    <SparklesIcon className="w-3 h-3" />
+                                    Action
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-xs">›</span>
+                                    Dialogue
+                                </>
+                            )}
+                        </button>
+
+                        {/* Terminal Input Line */}
+                        <div className="flex-grow relative group">
+                            <span className={`absolute left-0 top-1/2 -translate-y-1/2 font-mono text-lg ${inputMode === 'action' ? 'text-emerald-500' : 'text-cyan-500'}`}>
+                                {inputMode === 'action' ? '*' : '›'}
+                            </span>
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                placeholder={inputMode === 'action' ? "Describe your action..." : "Type your response..."}
+                                className={`w-full bg-transparent border-none outline-none font-mono text-base md:text-lg pl-6 py-2 transition-colors ${
+                                    inputMode === 'action' 
+                                        ? 'text-emerald-100 placeholder:text-emerald-500/30' 
+                                        : 'text-white placeholder:text-white/20'
+                                }`}
+                                autoComplete="off"
+                            />
+                            {/* Blinking Cursor Effect (CSS) */}
+                            <div className={`absolute bottom-0 left-6 right-0 h-[1px] transition-colors ${
+                                inputMode === 'action' ? 'bg-emerald-500/30 group-focus-within:bg-emerald-500' : 'bg-white/10 group-focus-within:bg-cyan-500'
+                            }`} />
+                        </div>
+
+                        {/* Send Button */}
+                        <button 
+                            onClick={handleSend}
+                            disabled={!inputValue.trim()}
+                            className={`p-2 rounded-full transition-all ${
+                                inputValue.trim() 
+                                    ? inputMode === 'action' ? 'text-emerald-400 hover:bg-emerald-500/20' : 'text-cyan-400 hover:bg-cyan-500/20' 
+                                    : 'text-white/10 cursor-not-allowed'
+                            }`}
+                        >
+                            <ArrowRightIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                    
+                    {/* Helper Text */}
+                    <div className="flex justify-between items-center mt-2 px-1">
+                        <span className="text-[10px] text-white/20 uppercase tracking-widest">
+                            [TAB] to switch mode
+                        </span>
+                        <div className="flex gap-4">
+                             <button onClick={onContinueWithoutSpeaking} className="text-[10px] text-white/30 hover:text-white transition-colors uppercase tracking-widest">
+                                [Silent Nod]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+			</div>
+		</div>
 	);
 };

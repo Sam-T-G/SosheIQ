@@ -103,15 +103,15 @@ const MOTION_SPRING_CONFIGS = {
 
 // Firefly particle system - authentic firefly field effect
 const FIREFLY_COUNT = 15; // Reduced to 15 for fewer fireflies
-const FIREFLY_BLUE = "rgba(59, 130, 246, 0.9)"; // Increased opacity from 0.8 to 0.9
-const FIREFLY_LIGHT_BLUE = "rgba(56, 189, 248, 0.8)"; // Increased opacity from 0.6 to 0.8
+const FIREFLY_CYAN = "rgba(6, 182, 212, 0.9)"; // Cyan-500
+const FIREFLY_LIGHT_CYAN = "rgba(34, 211, 238, 0.8)"; // Cyan-400
 
 // Generate fireflies with natural characteristics
 const generateFireflies = () => {
 	return Array.from({ length: FIREFLY_COUNT }, (_, i) => ({
 		id: i,
-		// Fireflies use consistent blue color palette
-		color: Math.random() > 0.7 ? FIREFLY_LIGHT_BLUE : FIREFLY_BLUE,
+		// Fireflies use consistent cyan color palette
+		color: Math.random() > 0.7 ? FIREFLY_LIGHT_CYAN : FIREFLY_CYAN,
 		size: Math.random() * 3 + 2, // 2-5px (small like real fireflies)
 		initialX: Math.random() * 100, // 0-100%
 		initialY: Math.random() * 100, // 0-100%
@@ -174,6 +174,7 @@ const KEYFRAMES = {
 		@keyframes fireflyFlicker {
 			0%, 90%, 100% { opacity: 1; }
 			95% { opacity: 0.2; }
+			100% { opacity: 1; }
 		}
 	`,
 } as const;
@@ -258,9 +259,9 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 		completionGlowSpring,
 		[0, 0.5, 1],
 		[
-			"0 0 16px rgba(59, 130, 246, 0.4)",
-			"0 0 24px rgba(59, 130, 246, 0.6), 0 0 48px rgba(6, 182, 212, 0.4)",
-			"0 0 32px rgba(59, 130, 246, 0.8), 0 0 64px rgba(6, 182, 212, 0.6)",
+			"0 0 16px rgba(6, 182, 212, 0.4)", // Cyan-500
+			"0 0 24px rgba(6, 182, 212, 0.6), 0 0 48px rgba(34, 211, 238, 0.4)", // Cyan-500, Cyan-400
+			"0 0 32px rgba(6, 182, 212, 0.8), 0 0 64px rgba(34, 211, 238, 0.6)", // Cyan-500, Cyan-400
 		]
 	);
 
@@ -268,12 +269,12 @@ export const InitialLoadingScreen: React.FC<InitialLoadingScreenProps> = ({
 	const progressTextColor = useTransform(
 		completionGlowSpring,
 		[0, 1],
-		["rgba(56, 189, 248, 0.8)", "rgba(255, 255, 255, 1)"]
+		["rgba(34, 211, 238, 0.8)", "rgba(255, 255, 255, 1)"] // Cyan-400
 	);
 	const progressTextShadow = useTransform(
 		completionGlowSpring,
 		[0, 1],
-		["0 0 10px rgba(56, 189, 248, 0.3)", "0 0 20px rgba(255, 255, 255, 0.6)"]
+		["0 0 10px rgba(34, 211, 238, 0.3)", "0 0 20px rgba(255, 255, 255, 0.6)"] // Cyan-400
 	);
 
 	// Performance optimization refs - ALWAYS called in the same order
