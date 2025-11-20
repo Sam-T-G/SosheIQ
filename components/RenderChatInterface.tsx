@@ -14,6 +14,8 @@ import {
     SparklesIcon,
 } from "./Icons";
 import { motion, AnimatePresence } from "motion/react";
+import { VoidTopBanner } from "./VoidTopBanner";
+import { VoidFeedbackTray } from "./VoidFeedbackTray";
 
 // --- Minimalist Void Components ---
 
@@ -123,12 +125,23 @@ interface RenderChatInterfaceProps {
 export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 	conversationHistory,
 	currentEngagement,
+	displayedGoal,
+	activeAction,
+	isActionPaused,
+	isPinnable,
+	isGoalPinned,
+	onPinGoal,
+	onUnpinGoal,
 	onSendMessage,
 	onEndConversation,
+	onFastForwardAction,
 	onContinueWithoutSpeaking,
 	isLoadingAI,
 	scenarioDetailsAiName,
     isMaxEngagement,
+	goalJustChanged,
+	pendingFeedback,
+	onFeedbackAnimationComplete,
 }) => {
 	const chatContainerRef = useRef<HTMLDivElement>(null);
 	const [inputValue, setInputValue] = useState("");
@@ -192,7 +205,28 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
                         <span className={`text-xs font-bold ${currentEngagement > 80 ? 'text-cyan-400' : 'text-white/60'}`}>{currentEngagement}%</span>
                     </div>
                 </div>
+                {/* Void Top Banner (Goals & Actions) */}
+                <VoidTopBanner 
+                    activeAction={activeAction}
+                    isActionPaused={isActionPaused}
+                    displayedGoal={displayedGoal}
+                    isPinnable={isPinnable}
+                    isGoalPinned={isGoalPinned}
+                    onPinGoal={onPinGoal}
+                    onUnpinGoal={onUnpinGoal}
+                    onFastForwardAction={onFastForwardAction}
+                    isLoadingAI={isLoadingAI}
+                    goalJustChanged={goalJustChanged}
+                />
             </div>
+
+            {/* Feedback Tray */}
+            {pendingFeedback && (
+                <VoidFeedbackTray 
+                    data={pendingFeedback}
+                    onComplete={onFeedbackAnimationComplete}
+                />
+            )}
 
 			{/* Chat Area */}
 			<div ref={chatContainerRef} className="flex-grow overflow-y-auto px-4 md:px-8 pt-24 pb-32 custom-scrollbar scroll-smooth">
@@ -304,3 +338,4 @@ export const RenderChatInterface: React.FC<RenderChatInterfaceProps> = ({
 		</div>
 	);
 };
+
